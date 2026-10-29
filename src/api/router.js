@@ -10,8 +10,6 @@ import { interpret, describeOperation, applyOperation, READ_ONLY } from '../agen
 import { buildReport } from '../agents/monitoring/report.js';
 import { answerQuestion } from '../agents/monitoring/qa.js';
 import { computeTrends } from '../agents/monitoring/trend.js';
-import { createHandoffs } from '../core/handoff.js';
-import { handoffHandlers } from '../cloudflare/scheduler.js';
 import { createDocs, CATEGORIES } from '../docs/store.js';
 import { DocError, DOC_LIMITS } from '../docs/extract.js';
 import { answerFromDocs, suggestKeywords } from '../docs/answer.js';
@@ -21,6 +19,11 @@ import { ingest, processLetter, decideLetter, run as runMailAgent } from '../age
 import { buildDraft } from '../agents/kapcsolattarto/draft.js';
 import { isBridged, createMailbox } from '../mail/providers.js';
 import { MAIL_LIMITS } from '../mail/message.js';
+import { createPackage, AgentError, DAILY_LIMIT as PACKAGE_LIMIT } from '../agents/felkeszito/index.js';
+import { OCCASIONS } from '../agents/felkeszito/package.js';
+import { createProposal, decideProposal, DAILY_LIMIT as PROPOSAL_LIMIT } from '../agents/proaktiv/index.js';
+import { CalendarError, CAL_TYPES } from '../cloudflare/proaktiv-store.js';
+import { startOfDayIso } from '../agents/common/sources.js';
 import { validateMailbox } from '../core/profile.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
@@ -32,7 +35,7 @@ class HttpError extends Error { constructor(status, message) { super(message); t
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...SECURITY, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 
 // Mit szerkeszthet az ügyfél (vezető), és mit csak az üzemeltető.
-const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true };
+const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true, proaktiv: true };
 const UZEMELTETO_EXTRA = { vezeto: true, nyelv: true, trend: true, megorzes: true, ai_jelzes: true, utemezes: ['szemle', 'idozona'], megjelenes: true, postafiok: true };
 
 const cleanList = (a) => [...new Set((Array.isArray(a) ? a : []).map(x => String(x).trim()).filter(Boolean))];
@@ -58,6 +61,7 @@ export function applyProfileEdit(profile, patch, role) {
   if (patch.kapcsolattarto) {
     for (const k of ['alairas', 'hangnem']) if (k in patch.kapcsolattarto) next.kapcsolattarto = { ...next.kapcsolattarto, [k]: String(patch.kapcsolattarto[k] ?? '').trim().slice(0, k === 'alairas' ? 400 : 300) };
   }
+  if (patch.proaktiv && 'szabalyok' in patch.proaktiv) next.proaktiv = { ...next.proaktiv, szabalyok: String(patch.proaktiv.szabalyok ?? '').trim().slice(0, 600) };
   if ('postafiok' in patch) {
     if (patch.postafiok === null) delete next.postafiok;
     else { try { next.postafiok = validateMailbox(patch.postafiok); } catch (e) { throw new HttpError(400, e.message.replace(/^Érvénytelen ügyfélprofil:\n- /, '')); } }
@@ -174,9 +178,9 @@ async function route(request, env, deps) {
   catch { llm = createLlm({ mode: 'mock' }); }
   const prompts = deps.prompts;
   const docs = createDocs({ db: env.DB, bucket: env.DOCS || null, tenantId, now });
-  const handoffs = createHandoffs({ repo: desk.atadasok, log, agentIds: AGENTS.map(a => a.id), handlers: handoffHandlers, now, isAvailable: (id) => !!agentById(id)?.elerheto && agentActive(profile, id, now()) });
   const mapHandoff = (h) => ({ id: h.id, tipus: h.tipus, honnan: h.honnan, hova: h.hova, targy: h.targy, szoveg: h.szoveg, anyag_id: h.anyag_id, melyseg: h.melyseg, allapot: h.allapot, ido: h.ido, valasz: h.valasz });
   const lctx = buildLetterCtx({ env, profile, now, prompts, llmFetch: deps.llmFetch });
+  const handoffs = lctx.handoffs;
   const actor = `ember:${who.email}`;
   const p = url.pathname;
   let m;
@@ -186,12 +190,13 @@ async function route(request, env, deps) {
     const [unread, pending, layout, open] = await Promise.all([desk.anyagok.unreadCounts(), desk.utasitasok.pendingCounts(), desk.layout.get(who.email), desk.atadasok.openCounts()]);
     const agents = [];
     const letterCounts = await lctx.levelek.counts();
+    const openProposals = await lctx.proactive.proposals.openCount();
     for (const a of AGENTS) {
       const last = a.elerheto ? (await desk.anyagok.list({ ugynok: a.id, limit: 1 }))[0] : null;
       const aktiv = a.elerheto && agentActive(profile, a.id, now());
       agents.push({ id: a.id, nev: a.nev, munkanev: a.munkanev, szakasz: a.szakasz, elerheto: a.elerheto,
         allapot: !a.elerheto ? 'ures' : aktiv ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
+        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
       mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
@@ -221,6 +226,14 @@ async function route(request, env, deps) {
         utasitasok: [], anyagok: role === 'vezeto' ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok,
         munka: { tipus: 'kapcsolattarto', szamok: await lctx.levelek.counts(), postafiok: await mailboxStatus(lctx, env, profile), tartalom_lathato: role === 'vezeto',
           legutobbi: role === 'vezeto' ? (await lctx.levelek.list({ limit: 6 })) : [] } });
+    }
+    if (a.id === 'felkeszito' || a.id === 'proaktiv') {
+      const leader = role === 'vezeto';
+      const base = { ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null, utasitasok: [], anyagok: leader ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok };
+      if (a.id === 'felkeszito') return json({ ...base, munka: { tipus: 'felkeszito', csomag_ma: await desk.anyagok.countSince('felkeszito', 'felkeszito_csomag', startOfDayIso(now())), korlat: PACKAGE_LIMIT, alkalmak: OCCASIONS, tartalom_lathato: leader } });
+      const today = dayKey(now(), profile.utemezes.idozona);
+      return json({ ...base, munka: { tipus: 'proaktiv', javaslat_ma: await lctx.proactive.proposals.countSince(startOfDayIso(now())), korlat: PROPOSAL_LIMIT, tartalom_lathato: leader, nyitott_db: await lctx.proactive.proposals.openCount(),
+        javaslatok: leader ? await lctx.proactive.proposals.list({ limit: 30 }) : [], naptar: leader ? await lctx.proactive.calendar.list({ from: today, limit: 60 }) : [], naptar_tipusok: CAL_TYPES, szabalyok: profile.proaktiv?.szabalyok || '' } });
     }
     const articles = await store.load();
     const today = dayKey(now(), profile.utemezes.idozona);
@@ -452,6 +465,44 @@ async function route(request, env, deps) {
     throw new HttpError(404, 'Nem található.');
   }
 
+  // ---- Felkészítő és Proaktív: csomag, javaslat, döntés, naptár (a tartalmat csak a vezető látja és kezeli)
+  if (p.startsWith('/api/felkeszito') || p.startsWith('/api/proaktiv') || p.startsWith('/api/javaslatok') || p.startsWith('/api/naptar')) {
+    if (role !== 'vezeto') throw new HttpError(403, 'Ezt csak a vezető kezelheti.');
+    const agentErr = (e) => { if (e instanceof AgentError) throw new HttpError(e.status, e.message); if (e instanceof CalendarError) throw new HttpError(400, e.message); throw e; };
+    if (method === 'POST' && p === '/api/felkeszito/csomag') {
+      const b = await body();
+      try { const r = await createPackage(lctx, { tema: b.tema, alkalom: b.alkalom || 'nyilatkozat', idopont: b.idopont, megszolalo: b.megszolalo, by: actor }); return json({ anyag_id: r.anyagId, cim: r.cim, red_flag: r.redFlag, modell: r.modell }, 201); }
+      catch (e) { agentErr(e); }
+    }
+    if (method === 'POST' && p === '/api/proaktiv/javaslat') {
+      const b = await body();
+      try { const r = await createProposal(lctx, { tema: b.tema, jelzes: String(b.jelzes || ''), by: actor }); return json({ id: r.id, anyag_id: r.anyagId, cim: r.cim, modell: r.modell }, 201); }
+      catch (e) { agentErr(e); }
+    }
+    if (method === 'GET' && p === '/api/javaslatok') return json({ javaslatok: await lctx.proactive.proposals.list({ allapot: url.searchParams.get('allapot') || null, limit: 100 }) });
+    if ((m = p.match(/^\/api\/javaslatok\/([^/]+)\/dontes$/)) && method === 'POST') {
+      const b = await body();
+      const r = await decideProposal(lctx, decodeURIComponent(m[1]), { dontes: b.dontes, csomag: b.csomag === true, by: actor });
+      if (r.status !== 200) throw new HttpError(r.status, r.hiba);
+      return json({ allapot: r.allapot, csomag_atadas: r.csomag_atadas });
+    }
+    if (method === 'GET' && p === '/api/naptar') return json({ naptar: await lctx.proactive.calendar.list({ from: url.searchParams.get('tol') || null, limit: 300 }), tipusok: CAL_TYPES });
+    if (method === 'POST' && p === '/api/naptar') {
+      const b = await body();
+      try {
+        const id = await lctx.proactive.calendar.add({ datum: b.datum, cim: b.cim, megjegyzes: b.megjegyzes, tipus: b.tipus || 'kulso' });
+        await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: id, tartalom: { esemeny: 'felvitel', datum: b.datum, cim: String(b.cim).slice(0, 200) } });
+        return json({ id }, 201);
+      } catch (e) { agentErr(e); }
+    }
+    if ((m = p.match(/^\/api\/naptar\/([^/]+)$/)) && method === 'DELETE') {
+      if (!(await lctx.proactive.calendar.remove(decodeURIComponent(m[1])))) throw new HttpError(404, 'Nincs ilyen naptárbejegyzés.');
+      await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: decodeURIComponent(m[1]), tartalom: { esemeny: 'torles' } });
+      return json({ ok: true });
+    }
+    throw new HttpError(404, 'Nem található.');
+  }
+
   // ---- Átadások az ügynökök között
   if (method === 'GET' && p === '/api/atadasok') {
     const list = await desk.atadasok.list({ ugynok: url.searchParams.get('ugynok'), allapot: url.searchParams.get('allapot'), limit: 200 });
@@ -466,8 +517,8 @@ async function route(request, env, deps) {
 
   // ---- Beállítások
   if (method === 'GET' && p === '/api/profil') {
-    const { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok } = profile;
-    return json({ szerep: role, profil: { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok: postafiok || null }, szerkesztheto_vezeto: Object.keys(VEZETO_EDITABLE), verzio: current.version });
+    const { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok, proaktiv } = profile;
+    return json({ szerep: role, profil: { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, proaktiv, postafiok: postafiok || null }, szerkesztheto_vezeto: Object.keys(VEZETO_EDITABLE), verzio: current.version });
   }
   if (method === 'PUT' && p === '/api/profil') {
     const next = applyProfileEdit(profile, await body(), role);

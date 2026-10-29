@@ -154,25 +154,27 @@ async function office() {
   return { db, call };
 }
 
-test('a Monitoring riasztásából átadás születik a Proaktív üres asztalának; az iroda és az asztal mutatja', async () => {
+test('a Monitoring riasztásából átadás születik; a megérkezett Proaktív feldolgozza és megszólalási javaslatot készít; az iroda és az asztal mutatja', async () => {
   const o = await office();
   const list = (await o.call('GET', '/api/atadasok')).data.atadasok;
   assert.ok(list.length >= 1);
   const h = list[0];
-  assert.deepEqual([h.honnan, h.hova, h.tipus, h.allapot], ['monitoring', 'proaktiv', 'jelzes', 'varakozik']);
+  assert.deepEqual([h.honnan, h.hova, h.tipus, h.allapot], ['monitoring', 'proaktiv', 'jelzes', 'feldolgozva']);
   assert.ok(h.anyag_id); // a riasztás anyagára hivatkozik
   const iroda = (await o.call('GET', '/api/iroda')).data.ugynokok;
-  assert.ok(iroda.find(a => a.id === 'proaktiv').atadas_varakozik >= 1);
+  assert.equal(iroda.find(a => a.id === 'proaktiv').atadas_varakozik, 0);
+  assert.ok(iroda.find(a => a.id === 'proaktiv').jovahagyasra_var >= 1); // nyitott megszólalási javaslat
   assert.equal(iroda.find(a => a.id === 'monitoring').atadas_nyitott, 0);
-  assert.ok((await o.call('GET', '/api/ugynok/proaktiv')).data.atadasok.some(x => x.id === h.id)); // az üres asztalnál is látszik
+  assert.ok((await o.call('GET', '/api/ugynok/proaktiv')).data.atadasok.some(x => x.id === h.id)); // a címzett asztalánál is látszik
   assert.ok((await o.call('GET', '/api/ugynok/monitoring')).data.atadasok.some(x => x.id === h.id)); // és a küldőnél is
-  assert.ok((await o.call('GET', '/api/atadasok?allapot=varakozik')).data.atadasok.length >= 1);
+  assert.ok((await o.call('GET', '/api/atadasok?allapot=feldolgozva')).data.atadasok.length >= 1);
   assert.equal((await o.call('GET', '/api/atadasok?allapot=lezarva')).data.atadasok.length, 0);
 });
 
 test('a vezető megállíthat egy átadást; másik ügyfél átadásához nem fér hozzá', async () => {
   const o = await office();
-  const id = (await o.call('GET', '/api/atadasok')).data.atadasok[0].id;
+  // üres asztalnak (Eseményszervező) szóló átadás vár; azt lehet megállítani
+  const id = await createDesk({ db: o.db, tenantId: 'pelda-korhazak' }).atadasok.add({ tipus: 'jelzes', honnan: 'monitoring', hova: 'esemenyszervezo', targy: 'T', szoveg: 'Sz', allapot: 'varakozik' });
   assert.equal((await o.call('POST', `/api/atadasok/${encodeURIComponent(id)}/megallit`, {}, 'masik@masik.example')).status, 404);
   assert.equal((await o.call('POST', `/api/atadasok/${encodeURIComponent(id)}/megallit`, {})).status, 200);
   assert.equal((await o.call('GET', '/api/atadasok?allapot=megallitva')).data.atadasok[0].id, id);

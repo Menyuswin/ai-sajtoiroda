@@ -165,7 +165,7 @@ test('az egyéb döntések: elvetés, halasztás (később még eldönthető), t
   assert.equal((await dec(2, { dontes: 'tovabbit', hova: 'nincsilyen' })).status, 400);
   assert.equal((await dec(2, { dontes: 'tovabbit', hova: 'felkeszito' })).data.allapot, 'tovabbitva');
   const at = (await s.call('GET', '/api/atadasok')).data.atadasok.find(x => x.hova === 'felkeszito');
-  assert.equal(at.allapot, 'varakozik'); assert.equal(at.honnan, 'kapcsolattarto');
+  assert.equal(at.allapot, 'feldolgozva'); assert.equal(at.honnan, 'kapcsolattarto'); // a Felkészítő már dolgozik: a kérelemből csomag készült
   assert.equal((await dec(0, { dontes: 'halaszt' })).status, 409);
   assert.ok((await s.log({ tipus: 'dontes' })).length >= 4);
 });

@@ -49,6 +49,7 @@ export function validateProfile(raw) {
     ugynokok: p.ugynokok || {},
     ...(mailbox ? { postafiok: mailbox } : {}),
     kapcsolattarto: { alairas: '', hangnem: '', ...(p.kapcsolattarto || {}) },
+    proaktiv: { szabalyok: '', ...(p.proaktiv || {}) },
     ai_jelzes: p.ai_jelzes || 'Ezt a szemlét mesterséges intelligencia készítette elő; a hivatkozott cikkek ellenőrzése a vezető feladata.',
   };
 }

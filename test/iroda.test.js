@@ -61,13 +61,13 @@ test('belépés zárt alapértelmezéssel: beállítás nélkül 503, ismeretlen
   assert.equal(noAuthCfg.status, 503);
 });
 
-test('az iroda: 8 asztal, a Monitoring és a Kapcsolattartó dolgozik, a többi üres; olvasatlan anyagok jelezve', async () => {
+test('az iroda: 8 asztal, a Monitoring, a Kapcsolattartó, a Felkészítő és a Proaktív dolgozik, a többi üres; olvasatlan anyagok jelezve', async () => {
   const o = await office();
   const { status, data } = await o.call('GET', '/api/iroda');
   assert.equal(status, 200);
   assert.equal(data.ugynokok.length, 8);
   assert.equal(data.ugynokok.find(a => a.id === 'monitoring').allapot, 'dolgozik');
-  assert.ok(data.ugynokok.filter(a => !['monitoring', 'kapcsolattarto'].includes(a.id)).every(a => a.allapot === 'ures'));
+  assert.ok(data.ugynokok.filter(a => !['monitoring', 'kapcsolattarto', 'felkeszito', 'proaktiv'].includes(a.id)).every(a => a.allapot === 'ures'));
   assert.equal(data.ugynokok.find(a => a.id === 'kapcsolattarto').allapot, 'dolgozik');
   assert.ok(data.ugynokok.find(a => a.id === 'monitoring').olvasatlan >= 2); // szemle + riasztás
   assert.equal(data.mod.elo, false);
@@ -235,9 +235,9 @@ test('szüneteltetés kapcsolóval és utasítással; szünet alatt a Worker nem
   const d = (await o.call('GET', '/api/ugynok/monitoring')).data;
   assert.equal(d.allapot, 'szunetel');
   assert.equal(d.szunet_ig, '2026-11-05');
-  assert.equal((await o.call('PUT', '/api/ugynok/felkeszito/allapot', { aktiv: false })).status, 409);
-  assert.equal((await o.call('POST', '/api/ugynok/felkeszito/utasitas', { szoveg: 'Készíts háttéranyagot' })).status, 409);
-  assert.equal((await o.call('GET', '/api/ugynok/felkeszito')).data.allapot, 'ures');
+  assert.equal((await o.call('PUT', '/api/ugynok/esemenyszervezo/allapot', { aktiv: false })).status, 409);
+  assert.equal((await o.call('POST', '/api/ugynok/esemenyszervezo/utasitas', { szoveg: 'Szervezz eseményt' })).status, 409);
+  assert.equal((await o.call('GET', '/api/ugynok/esemenyszervezo')).data.allapot, 'ures');
 });
 
 test('az asztal Munka sávja: mai cikkek, hangnem, legutóbbi találatok', async () => {

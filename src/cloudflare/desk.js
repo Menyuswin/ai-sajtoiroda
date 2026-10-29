@@ -30,6 +30,9 @@ export function createDesk({ db, tenantId, now = () => new Date() }) {
       async markRead(id) {
         await db.prepare('UPDATE anyagok SET olvasott = 1 WHERE tenant_id = ? AND id = ?').bind(tenantId, id).run();
       },
+      async countSince(ugynok, tipus, iso) {
+        return (await db.prepare('SELECT COUNT(*) AS n FROM anyagok WHERE tenant_id = ? AND ugynok = ? AND tipus = ? AND ido >= ?').bind(tenantId, ugynok, tipus, iso).first()).n;
+      },
       async update(id, { szoveg, meta }) {
         await db.prepare('UPDATE anyagok SET szoveg = ?, meta_json = ?, olvasott = 0 WHERE tenant_id = ? AND id = ?').bind(szoveg, meta ? JSON.stringify(meta) : null, tenantId, id).run();
       },

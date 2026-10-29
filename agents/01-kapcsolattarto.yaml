@@ -1,0 +1,21 @@
+# Szerepkör-specifikáció (koncepció, még nem futtatható)
+nev: "Kommunikációs Kapcsolattartó Ügynök"
+munkanev: "Inbox & Call Agent"
+bevezetesi_szakasz: 1
+szerep: "A sajtóval való közvetlen, reaktív kapcsolatkezelés."
+bemenetek:
+  - "beérkező e-mailek"
+  - "telefonhívások (átirat vagy kézi jegyzet)"
+  - "Archívum: korábbi nyilatkozatok"
+  - "a vezető hangnem- és vörösvonal-szabályai"
+kimenetek:
+  - "osztályozás: téma, sürgősség, médium prioritása, hangnem"
+  - "választervezet: javasolt szöveg, kockázatok, opciók (nem válaszolunk / később / továbbítjuk)"
+  - "hívásjegyzőkönyv: összefoglaló, kérdések, visszahívási javaslat"
+  - "kapcsolattartási napló bejegyzés"
+eszkalacio_a_vezetohoz:
+  - "politikailag érzékeny kérdés"
+  - "jogi vonatkozás"
+  - "stratégiai döntést igénylő válasz"
+jovahagyas: "Minden kimenő válasz csak a vezető jóváhagyásával megy ki."
+naplozas: "Minden javaslat és a vezető döntése naplóba kerül (audit és tanulás)."

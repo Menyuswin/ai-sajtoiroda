@@ -1,0 +1,16 @@
+# Szerepkör-specifikáció (koncepció, még nem futtatható)
+nev: "Közösségimédia- és Digitális Narratíva Ügynök"
+munkanev: "Social & Digital Agent"
+bevezetesi_szakasz: "kiegészítő"
+szerep: "A közösségi platformokon zajló beszélgetések figyelése és posztjavaslatok."
+bemenetek:
+  - "platformok: X, LinkedIn, YouTube, TikTok stb."
+  - "a szervezet saját csatornái"
+kimenetek:
+  - "platformonkénti összefoglaló"
+  - "posztjavaslatok"
+  - "kommentmoderálási javaslatok"
+eszkalacio_a_vezetohoz:
+  - "gyorsan terjedő negatív tartalom"
+jovahagyas: "Poszt és moderálás csak a vezető jóváhagyásával."
+naplozas: "Minden javaslat és a vezető döntése naplóba kerül (audit és tanulás)."

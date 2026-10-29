@@ -1,0 +1,19 @@
+# Szerepkör-specifikáció (koncepció, még nem futtatható)
+nev: "Proaktív Kommunikációs Stratégia Ügynök"
+munkanev: "Agenda & Opportunity Agent"
+bevezetesi_szakasz: 2
+szerep: "Napirend-formálás és proaktív megszólalási lehetőségek azonosítása."
+bemenetek:
+  - "Monitoring jelzései"
+  - "külső események naptára"
+  - "a vezető naptára"
+  - "a szervezet narratívája"
+kimenetek:
+  - "megszólalási javaslat: mikor, milyen formában, milyen üzenettel"
+  - "opportunity map: lehetőségek és a hallgatás kockázatai"
+  - "üzenetstratégiai javaslat"
+  - "időzítési ajánlás"
+eszkalacio_a_vezetohoz:
+  - "olyan téma, ahol a hallgatás is kockázat"
+jovahagyas: "Javaslatot tesz; a megszólalásról a vezető dönt."
+naplozas: "Minden javaslat és a vezető döntése naplóba kerül (audit és tanulás)."

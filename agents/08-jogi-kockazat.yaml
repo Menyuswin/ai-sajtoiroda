@@ -1,0 +1,14 @@
+# Szerepkör-specifikáció (koncepció, még nem futtatható)
+nev: "Jogi- és Kockázatfigyelő Ügynök"
+munkanev: "Legal & Risk Agent"
+bevezetesi_szakasz: "kiegészítő"
+szerep: "Tervezett nyilatkozatok, posztok és események gyors jogi és reputációs kockázatvizsgálata."
+bemenetek:
+  - "bármely ügynök kimenő tervezete"
+kimenetek:
+  - "kockázati besorolás (alacsony / közepes / magas) indoklással"
+  - "konkrét kockázat megnevezése: rágalmazás, üzleti titok, adatvédelem, választási szabályok stb."
+eszkalacio_a_vezetohoz:
+  - "magas kockázat: a vezető és jogász azonnali bevonása"
+jovahagyas: "Jelez, de nem helyettesíti a jogászt."
+naplozas: "Minden javaslat és a vezető döntése naplóba kerül (audit és tanulás)."

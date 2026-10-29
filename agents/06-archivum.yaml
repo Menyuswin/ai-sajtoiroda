@@ -1,0 +1,16 @@
+# Szerepkör-specifikáció (koncepció, még nem futtatható)
+nev: "Archívum- és Tudásmenedzsment Ügynök"
+munkanev: "Archive & Knowledge Agent"
+bevezetesi_szakasz: "kiegészítő"
+szerep: "A korábbi nyilatkozatok, sajtóanyagok, interjúk és belső irányelvek visszakereshető tárolása."
+bemenetek:
+  - "minden kiküldött anyag"
+  - "interjúk"
+  - "belső irányelvek"
+kimenetek:
+  - "keresés témára, személyre, időszakra"
+  - "ellentmondás-jelzés egy új tervezet és egy korábbi álláspont között"
+eszkalacio_a_vezetohoz:
+  - "egy tervezet ellentmond egy korábbi nyilatkozatnak"
+jovahagyas: "Csak belső tudásbázis."
+naplozas: "Minden javaslat és a vezető döntése naplóba kerül (audit és tanulás)."

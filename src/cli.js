@@ -15,7 +15,7 @@ import { createLlm } from './core/llm.js';
 import { registerAgent, getAgent } from './core/registry.js';
 import { monitoringAgent } from './agents/monitoring/index.js';
 import { defaultFetchText } from './agents/monitoring/sources.js';
-import { profileToSql } from './cloudflare/d1.js';
+import { profileToSql, accessToSql, hostToSql } from './cloudflare/d1.js';
 
 registerAgent(monitoringAgent);
 
@@ -40,6 +40,8 @@ export async function buildContext({ profile, config, llmMode = 'mock', fetchTex
 async function main() {
   const { pos, flags } = parseArgs(process.argv.slice(2));
   const [agentId, command] = pos;
+  if (agentId === 'hozzaferes-sql' && flags.email && flags.ugyfel && flags.szerep) { console.log(accessToSql(flags.email, flags.ugyfel, flags.szerep)); return; }
+  if (agentId === 'domen-sql' && flags.domen && flags.ugyfel) { console.log(hostToSql(flags.domen, flags.ugyfel)); return; }
   if (agentId === 'profil-sql' && flags.profile) { // az első profil feltöltéséhez: wrangler d1 execute ... --command "$(…)"
     console.log(profileToSql(await loadProfile(flags.profile)));
     return;

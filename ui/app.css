@@ -1,0 +1,127 @@
+:root {
+  --bg: #f4f1ea; --padlo: #ece7dc; --lap: #fffdf8; --lap-2: #f8f5ee; --szoveg: #25221c; --halk: #6b6558; --vonal: #d8d1c2;
+  --akcent: #2d5d4b; --akcent-szoveg: #fff; --figy: #a8480f; --jo: #2d7a52; --rossz: #b3372f; --ures: #a39b88;
+  --arnyek: 0 1px 2px rgba(60,50,30,.12), 0 4px 14px rgba(60,50,30,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1814; --padlo: #211f1a; --lap: #2a2721; --lap-2: #24211c; --szoveg: #ece7da; --halk: #a8a190; --vonal: #413c31;
+    --akcent: #6fb79b; --akcent-szoveg: #10241c; --figy: #e59a62; --jo: #62c08d; --rossz: #ee7d73; --ures: #80796a;
+    --arnyek: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--szoveg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1, h2, h3 { line-height: 1.25; margin: 0 0 .5rem; font-family: Georgia, "Times New Roman", serif; font-weight: 600; }
+h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; } h3 { font-size: 1rem; }
+a { color: var(--akcent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
+.skip { position: absolute; left: -999px; top: 0; background: var(--lap); padding: .5rem 1rem; z-index: 50; }
+.skip:focus { left: 8px; top: 8px; }
+
+.fejlec { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; padding: .75rem 1rem; background: var(--lap); border-bottom: 1px solid var(--vonal); position: sticky; top: 0; z-index: 20; }
+.fejlec .cim { font: 600 1.15rem Georgia, serif; margin-right: .5rem; }
+.fejlec nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+.fejlec nav a { text-decoration: none; padding: .35rem .75rem; border-radius: 999px; color: var(--szoveg); }
+.fejlec nav a[aria-current="page"] { background: var(--akcent); color: var(--akcent-szoveg); }
+.fejlec .jobb { margin-left: auto; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; font-size: .9rem; color: var(--halk); }
+.jelveny { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .8rem; border: 1px solid var(--vonal); background: var(--lap-2); color: var(--szoveg); }
+.jelveny.figy { border-color: var(--figy); color: var(--figy); }
+.jelveny.jo { border-color: var(--jo); color: var(--jo); }
+
+main { max-width: 1280px; margin: 0 auto; padding: 1rem; outline: none; }
+.toltes { color: var(--halk); }
+
+/* ---- az iroda */
+.iroda-fej { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.iroda-fej p { margin: 0; color: var(--halk); max-width: 60ch; }
+.padlo { position: relative; min-height: 640px; background: var(--padlo); border: 1px solid var(--vonal); border-radius: 14px; overflow: hidden;
+  background-image: linear-gradient(var(--vonal) 1px, transparent 1px), linear-gradient(90deg, var(--vonal) 1px, transparent 1px); background-size: 32px 32px; background-position: -1px -1px; }
+.asztal { position: absolute; width: 230px; background: var(--lap); border: 1px solid var(--vonal); border-radius: 12px; box-shadow: var(--arnyek); touch-action: none; }
+.asztal .fogo { display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-bottom: 1px solid var(--vonal); cursor: grab; border-radius: 12px 12px 0 0; background: var(--lap-2); }
+.asztal.hozott .fogo { cursor: grabbing; }
+.asztal.hozott { box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--akcent); color: var(--akcent-szoveg); flex: none; }
+.asztal.ures-asztal .avatar { background: transparent; border: 2px dashed var(--ures); color: var(--ures); }
+.asztal { z-index: 2; }
+.asztal.ures-asztal { z-index: 1; border-style: dashed; background: transparent; box-shadow: none; }
+.asztal .nev { font-weight: 600; font-size: .92rem; line-height: 1.25; }
+.asztal .munkanev { font-size: .75rem; color: var(--halk); }
+.asztal .torzs { padding: .6rem .7rem .7rem; font-size: .85rem; display: grid; gap: .4rem; }
+.allapot { display: flex; align-items: center; gap: .45rem; font-weight: 600; }
+.fenyjel { width: .7rem; height: .7rem; border-radius: 50%; background: var(--ures); flex: none; }
+.fenyjel.dolgozik { background: var(--jo); box-shadow: 0 0 0 3px color-mix(in srgb, var(--jo) 25%, transparent); }
+.fenyjel.szunetel { background: var(--figy); }
+.utolso { color: var(--halk); font-size: .8rem; min-height: 2.4em; }
+.sor { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+.gomb { border: 1px solid var(--vonal); background: var(--lap); padding: .4rem .8rem; border-radius: 8px; cursor: pointer; text-decoration: none; color: var(--szoveg); display: inline-block; font-size: .9rem; }
+.gomb:hover { border-color: var(--akcent); }
+.gomb.fo { background: var(--akcent); color: var(--akcent-szoveg); border-color: var(--akcent); }
+.gomb.rossz { border-color: var(--rossz); color: var(--rossz); }
+.gomb[disabled] { opacity: .5; cursor: not-allowed; }
+.pont { background: var(--figy); color: #fff; border-radius: 999px; font-size: .72rem; padding: 0 .45rem; }
+.pont.kek { background: var(--akcent); color: var(--akcent-szoveg); }
+@media (max-width: 760px) {
+  .padlo { position: static; display: grid; gap: .75rem; padding: .75rem; min-height: 0; background-image: none; }
+  .asztal { position: static; width: auto; }
+  .asztal .fogo { cursor: default; }
+}
+
+/* ---- egy ügynök asztala */
+.asztal-fej { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; margin-bottom: 1rem; }
+.asztal-fej .vissza { text-decoration: none; }
+.harom { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 1050px) { .harom { grid-template-columns: 1fr; } }
+.sav { background: var(--lap); border: 1px solid var(--vonal); border-radius: 12px; box-shadow: var(--arnyek); padding: 1rem; min-width: 0; }
+.sav > h2 { display: flex; justify-content: space-between; align-items: center; }
+.uzenetek { display: grid; gap: .6rem; max-height: 440px; overflow: auto; padding-right: .25rem; margin-bottom: .75rem; }
+.buborek { padding: .55rem .75rem; border-radius: 12px; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.buborek.en { background: var(--akcent); color: var(--akcent-szoveg); justify-self: end; border-bottom-right-radius: 4px; }
+.buborek.ugynok { background: var(--lap-2); border: 1px solid var(--vonal); justify-self: start; border-bottom-left-radius: 4px; }
+.buborek .allapotcimke { display: block; font-size: .75rem; color: var(--halk); margin-top: .35rem; }
+.javaslat { border: 1px solid var(--figy); }
+.urlap-sor { display: grid; gap: .5rem; }
+textarea, input[type=text], input[type=time], input[type=email], select { width: 100%; padding: .5rem .65rem; border: 1px solid var(--vonal); border-radius: 8px; background: var(--lap); }
+textarea { min-height: 4.2rem; resize: vertical; }
+.tippek { display: flex; flex-wrap: wrap; gap: .35rem; }
+.tipp { border: 1px dashed var(--vonal); background: transparent; border-radius: 999px; padding: .2rem .65rem; font-size: .8rem; cursor: pointer; color: var(--halk); }
+.tipp:hover { color: var(--szoveg); border-color: var(--akcent); }
+.szamok { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; margin-bottom: .75rem; }
+.szamok b { display: block; font-size: 1.6rem; font-family: Georgia, serif; }
+.szamok span { font-size: .75rem; color: var(--halk); }
+.savos { display: flex; height: .7rem; border-radius: 999px; overflow: hidden; background: var(--vonal); margin-bottom: .25rem; }
+.savos i { display: block; height: 100%; }
+.savos .p { background: var(--jo); } .savos .s { background: var(--ures); } .savos .n { background: var(--rossz); }
+.lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.lista li { padding: .45rem .6rem; border: 1px solid var(--vonal); border-radius: 8px; background: var(--lap-2); font-size: .9rem; }
+.lista li.kattinthato { cursor: pointer; } .lista li.kattinthato:hover { border-color: var(--akcent); }
+.lista .meta { display: block; font-size: .75rem; color: var(--halk); }
+.olvasatlan { border-left: 4px solid var(--akcent); }
+.ures-szoveg { color: var(--halk); font-style: italic; }
+.sugo { font-size: .85rem; color: var(--halk); margin: .5rem 0 0; }
+.savos { margin-bottom: .75rem; }
+
+/* ---- nézegető (anyag) */
+.nezo { position: fixed; inset: 0; background: rgba(20,16,10,.5); display: grid; place-items: center; z-index: 40; padding: 1rem; }
+.nezo .lap { background: var(--lap); border-radius: 14px; max-width: 760px; width: 100%; max-height: 90vh; overflow: auto; padding: 1.25rem; box-shadow: var(--arnyek); }
+.nezo .tartalom h2 { margin-top: 1rem; } .nezo .tartalom p { margin: .35rem 0; } .nezo .tartalom ul, .nezo .tartalom ol { padding-left: 1.2rem; margin: .3rem 0; }
+.nezo .kerdesek { border-top: 1px solid var(--vonal); margin-top: 1rem; padding-top: 1rem; }
+
+/* ---- beállítások, napló */
+.kartya { background: var(--lap); border: 1px solid var(--vonal); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; box-shadow: var(--arnyek); }
+.mezo { display: grid; gap: .3rem; margin-bottom: .9rem; }
+.mezo > label, .mezo > .felirat { font-weight: 600; font-size: .9rem; }
+.mezo .sugo { font-size: .8rem; color: var(--halk); }
+.cimkek { display: flex; flex-wrap: wrap; gap: .35rem; padding: .4rem; border: 1px solid var(--vonal); border-radius: 8px; background: var(--lap); }
+.cimke { display: inline-flex; align-items: center; gap: .3rem; background: var(--lap-2); border: 1px solid var(--vonal); border-radius: 999px; padding: .1rem .2rem .1rem .65rem; font-size: .9rem; }
+.cimke button { border: 0; background: transparent; cursor: pointer; width: 1.4rem; height: 1.4rem; border-radius: 50%; color: var(--halk); }
+.cimke button:hover { background: var(--vonal); }
+.cimkek input { border: 0; flex: 1; min-width: 10rem; padding: .25rem; background: transparent; }
+.forras-sor { display: grid; grid-template-columns: 1fr 2fr auto; gap: .4rem; margin-bottom: .4rem; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--vonal); vertical-align: top; overflow-wrap: anywhere; }
+th { color: var(--halk); font-weight: 600; }
+.toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--szoveg); color: var(--bg); padding: .6rem 1rem; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; max-width: 90vw; }
+.toast.latszik { opacity: 1; } .toast.hiba { background: var(--rossz); color: #fff; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }

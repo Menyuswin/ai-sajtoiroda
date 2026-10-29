@@ -17,7 +17,7 @@ const MAX_CLASSIFY_PER_RUN = 80; // költségkorlát futásonként
 
 export async function run(ctx, { mode = 'digest' } = {}) {
   const { profile, log, store, outbox, llm, now, fetchText, prompts, models } = ctx;
-  if (!agentActive(profile, AGENT)) {
+  if (!agentActive(profile, AGENT, now())) {
     await log.append({ szereplo: 'rendszer', tipus: 'futas', tartalom: { mode, kimenet: 'kihagyva: az ügynök ki van kapcsolva' } });
     return { skipped: true };
   }
@@ -66,6 +66,7 @@ export async function run(ctx, { mode = 'digest' } = {}) {
     const text = `${alerts.map(a => `- ${a.line}`).join('\n')}\n\n${note}`;
     const html = `<body style="font-family:sans-serif"><h3>${escapeHtml(subject)}</h3><ul>${alerts.map(a => `<li>${escapeHtml(a.line)}</li>`).join('')}</ul><p><em>${escapeHtml(note)}</em></p></body>`;
     await outbox.send({ agent: AGENT, kind: 'riasztas', to: profile.vezeto.email, subject, text, html });
+    await ctx.anyagok?.add({ ugynok: AGENT, tipus: 'riasztas', cim: subject, szoveg: text, html, meta: { cikkek: classified.filter(x => x.cls.voros_vonal).map((a, i) => ({ n: i + 1, id: a.id, title: a.title, url: a.url, medium: a.medium, hangnem: a.cls.hangnem, indoklas: a.cls.indoklas })) } });
     for (const a of alerts) await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: a.key, tartalom: { sor: a.line } });
   }
 
@@ -92,6 +93,7 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   const rendered = renderDigest({ profile, dateLabel, items, stats, trends, synthesis: synth.synthesis, errors });
   const subject = `Sajtószemle – ${profile.megnevezes} – ${dateLabel}`;
   const sent = await outbox.send({ agent: AGENT, kind: 'belso_jelentes', to: profile.vezeto.email, subject, text: rendered.text, html: rendered.html });
+  await ctx.anyagok?.add({ ugynok: AGENT, tipus: 'szemle', cim: subject, szoveg: rendered.text, html: rendered.html, meta: { cikkek: items.map(a => ({ n: a.n, id: a.id, title: a.title, url: a.url, medium: a.medium, hangnem: a.cls.hangnem, indoklas: a.cls.indoklas })) } });
   const stamp = now().toISOString();
   await store.save(all.map(a => (a.reportedAt ? a : { ...a, reportedAt: stamp })));
   await log.append({ szereplo: WHO, tipus: 'szemle_elkuldve', hivatkozas: sent.id, tartalom: { cikkek: items.length, trendjelzesek: trends.filter(t => t.signal).length, ai_mod: llm.mode } });

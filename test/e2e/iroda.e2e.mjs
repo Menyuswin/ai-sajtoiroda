@@ -1,0 +1,102 @@
+// Böngészős végpontok közötti kipróbálás (Playwright + Chromium). Nem része az `npm test`-nek; kézzel futtatandó:
+//   node test/e2e/iroda.e2e.mjs      (a képernyőképek az out/e2e/ mappába kerülnek)
+import { createRequire } from 'node:module';
+import { mkdirSync } from 'node:fs';
+const require = createRequire(import.meta.url);
+const { chromium } = require('playwright');
+mkdirSync('out/e2e', { recursive: true });
+const { startServer } = await import('../../src/dev/serve.js');
+
+const server = await startServer({ port: 8799, user: process.argv[2] || 'vezeto@pelda.example' });
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1360, height: 900 } });
+const problems = [];
+page.on('console', m => { if (['error', 'warning'].includes(m.type())) problems.push(`console ${m.type()}: ${m.text()}`); });
+page.on('pageerror', e => problems.push(`pageerror: ${e.message}`));
+page.on('requestfailed', r => problems.push(`requestfailed: ${r.url()}`));
+await page.addInitScript(() => document.addEventListener('securitypolicyviolation', e => console.error('CSP: ' + e.violatedDirective + ' ' + e.blockedURI)));
+const shot = (n) => page.screenshot({ path: `out/e2e/${n}.png` });
+const BASE = 'http://127.0.0.1:8799/';
+const log = (...a) => console.log(...a);
+
+await page.goto(BASE);
+await page.waitForSelector('.asztal');
+log('asztalok:', await page.locator('.asztal').count(), '| üres asztalok:', await page.locator('.ures-asztal').count());
+log('fejléc:', (await page.locator('#fejlec').innerText()).replace(/\n/g, ' | '));
+await shot('01-iroda');
+
+// húzás: a Monitoring kártya áthelyezése
+const card = page.locator('.asztal[data-id="monitoring"]');
+const before = await card.boundingBox();
+const grip = card.locator('.fogo');
+const g = await grip.boundingBox();
+await page.mouse.move(g.x + 30, g.y + 15); await page.mouse.down(); await page.mouse.move(g.x + 330, g.y + 215, { steps: 8 }); await page.mouse.up();
+const after = await card.boundingBox();
+log('húzás: eltolódás', Math.round(after.x - before.x), Math.round(after.y - before.y));
+await page.waitForTimeout(700);
+await page.reload(); await page.waitForSelector('.asztal');
+const reloaded = await page.locator('.asztal[data-id="monitoring"]').boundingBox();
+log('újratöltés után megmaradt a hely:', Math.abs(reloaded.x - after.x) < 2 && Math.abs(reloaded.y - after.y) < 2);
+// billentyűs mozgatás
+await page.locator('.asztal[data-id="monitoring"] .fogo').focus(); const k0 = await page.locator('.asztal[data-id="monitoring"]').boundingBox();
+await page.keyboard.press('ArrowRight'); const k1 = await page.locator('.asztal[data-id="monitoring"]').boundingBox();
+log('billentyűs mozgatás:', Math.round(k1.x - k0.x));
+await shot('02-iroda-athuzva');
+
+// az asztalnál
+await page.locator('.asztal[data-id="monitoring"] a.gomb').click();
+await page.waitForSelector('.harom');
+log('asztal sávok:', (await page.locator('.harom h2').allInnerTexts()).join(', '));
+await shot('03-asztal');
+
+// módosító utasítás → javaslat → jóváhagyás
+await page.fill('#utasitas', 'Figyeld a sürgősségi ellátás témát is');
+await page.click('text=Küldés');
+await page.waitForSelector('.javaslat');
+log('javaslat:', (await page.locator('.javaslat').first().innerText()).replace(/\n/g, ' / '));
+await shot('04-javaslat');
+await page.click('text=Jóváhagyom');
+await page.waitForSelector('text=Végrehajtva', { timeout: 5000 });
+log('jóváhagyás után:', await page.locator('.allapotcimke').last().innerText());
+
+// olvasó utasítás → azonnali jelentés
+await page.fill('#utasitas', 'Mi történt a héten az ápolóhiány körül?');
+await page.keyboard.press('Control+Enter');
+await page.waitForSelector('text=Megnyitás');
+await page.click('text=Megnyitás');
+await page.waitForSelector('.nezo');
+log('jelentés cím:', await page.locator('.nezo h2').first().innerText());
+await shot('05-jelentes');
+await page.fill('.nezo textarea', 'Mit írtak az ápolóhiányról?');
+await page.click('text=Kérdés küldése');
+await page.waitForSelector('.nezo .buborek.ugynok');
+log('válasz a kérdésre:', (await page.locator('.nezo .buborek.ugynok').last().innerText()).split('\n')[0]);
+await shot('06-rakerdezes');
+await page.keyboard.press('Escape');
+
+// beállítások
+await page.click('nav >> text=Beállítások');
+await page.waitForSelector('#f-nev');
+log('témák a beállításban:', (await page.locator('.mezo:has-text("Témák") .cimke').allInnerTexts()).map(s => s.replace(/\s*×$/, '')).join(', '));
+await page.locator('.mezo:has-text("Témák") input').fill('oltás'); await page.keyboard.press('Enter');
+await page.click('text=Mentés'); await page.waitForSelector('.toast.latszik');
+log('mentés:', await page.locator('#toast').innerText());
+log('címzett szerkeszthető:', !(await page.locator('#f-email').getAttribute('readonly') !== null));
+await shot('07-beallitasok');
+
+// napló és jelentések
+await page.click('nav >> text=Napló'); await page.waitForSelector('table');
+log('naplósorok:', await page.locator('tbody tr').count());
+await shot('08-naplo');
+await page.click('nav >> text=Jelentések'); await page.waitForSelector('.lista');
+log('jelentések:', await page.locator('.lista li').count());
+
+// mobil nézet
+const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await mobile.goto(BASE); await mobile.waitForSelector('.asztal');
+await mobile.screenshot({ path: 'out/e2e/09-mobil.png', fullPage: true });
+const overflow = await mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+log('mobilon vízszintes görgetés:', overflow);
+
+log('problémák:', problems.length ? problems : 'nincs');
+await browser.close(); server.close();

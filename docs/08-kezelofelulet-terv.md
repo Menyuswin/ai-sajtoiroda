@@ -1,6 +1,6 @@
 # A kezelőfelület terve: az iroda és az ügynökök asztalai
 
-*Állapot: **jóváhagyásra vár** (2026-10-29, átdolgozva a tulajdonos második leírása után). Kód még nincs; a mögötte lévő Cloudflare-réteg (D1-tár, ütemező) kész.*
+*Állapot: **jóváhagyva az ajánlott beállításokkal (2026-10-29); az U1–U4 lépések megépültek és tesztelve vannak** (lásd a 8. fejezetet). A telepítés (U5) a tulajdonos Cloudflare-hozzáférésére vár.*
 
 ## 1. A cél
 
@@ -16,7 +16,7 @@ A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden
 | **2. Az ügynök asztala** | Három sáv egy oldalon: **Utasítás** (üzenetablak: ide ír az ügynöknek, itt látja az előzményeket), **Munka** (amin az ügynök épp dolgozik, a mai találatok, a trendek), **Jelentések** (a korábbi szemlék és riasztások listája, megnyitva ugyanúgy, ahogy a levélben megérkeztek). Az asztalhoz tartozik a **Beállítások** (kulcsszavak, források, vörös vonalak, időzítés, címzett) és az **ügynök naplója**. |
 | **3. Jelentések** (összesítő) | Az összes ügynök jelentése egy helyen, időrendben, szűrhetően; letölthető. Ez az, amit a vezető reggel átfut. |
 
-*Megjegyzés:* a tulajdonos leírásában szerepelt egy „három oldal” kifejezés, amelynek jelentése nem tisztázott. Ez a fejezet ezért egy javaslat az oldalak szétosztására (iroda, asztal, összesítő jelentések); a darabszám nem kötött, és bármikor módosítható. Ugyanígy nyitott, hogy a „mozgatni az ügynököket” az elrendezés húzogatását jelenti-e (ahogy fent leírtam).
+*Megjegyzés:* a tulajdonos leírásában szerepelt egy „három oldal” kifejezés, amelynek jelentése nem tisztázott. Ez a fejezet ezért egy javaslat az oldalak szétosztására; a darabszám nem kötött. A „mozgatni az ügynököket” pontosítása (2026-10-29): az **irányítást** jelenti: feladatot adni az ügynököknek, beszámoltatni őket, és rákérdezni egy adott anyagra (például egy sajtóválasz-tervezetre vagy egy esemény kommunikációs tervére). Ez az asztal alapműködése; az asztalkártyák húzogatása ezen felül kényelmi funkció.
 
 ## 3. Az utasítások működése (az alapszabályok szerint)
 
@@ -75,3 +75,29 @@ Az U1–U4 a mostani környezetben megépíthető és tesztelhető. Az U5-höz a
 5. **Megjelenés:** semleges, a névvel, logóval és színnel testreszabható (ajánlott), vagy a manyai.hu arculata?
 6. **Nyelv:** először csak magyar?
 7. **A domén:** van-e már kiválasztott doménje a nulladik ügyfélhez, vagy aldomént használjunk (például a manyai.hu alatt)?
+
+## 8. Mi készült el (2026-10-29)
+
+- **Az iroda:** nyolc asztal (a Monitoring dolgozik, a többi üres, a bevezetési sorrend szerint), húzható és billentyűvel mozgatható kártyák, felhasználónként mentett elrendezés; keskeny képernyőn lista.
+- **Az asztal:** Utasítás (üzenetablak), Munka (mai cikkek, hangnem, trendek, legutóbbi találatok), Jelentések (anyagok, olvasatlanság jelzéssel); szüneteltetés kapcsolóval.
+- **Feladat – anyag – rákérdezés:** az utasítás zárt műveletlistából fut (javaslat → jóváhagyás → végrehajtás → napló; az olvasó „jelentést kérek” művelet azonnal fut). Minden elkészült anyag megnyitható, és rá lehet kérdezni; a válasz csak az anyag cikkeiből jöhet, a nem létező hivatkozást a rendszer törli.
+- **Beállítások:** címkés kulcsszavak, források, vörös vonalak, időzítés; szerepek (vezető / üzemeltető), korlátok, csak `https://` forrás; a címzett és az AI-jelzés csak az üzemeltetőnek módosítható, minden változás naplózott.
+- **Napló:** szűrhető, CSV-ben letölthető (képletinjekció ellen védve).
+- **Belépés:** Cloudflare Access aláírásának ellenőrzése (tesztelve helyben generált kulccsal); zárt alapértelmezés: beállítás nélkül senki nem lép be. Külön domén: a `Host` alapján ügyfélhez rendelve.
+- **Biztonság:** szigorú tartalombiztonsági szabály (nincs beágyazott script), CSRF-védelem, ügyfél-elkülönítés tesztelve, minden szöveg `textContent`-tel kerül az oldalra.
+- **Ellenőrzés:** 51 automatikus teszt, plusz a böngészős végpontok közötti kipróbálás (`test/e2e/iroda.e2e.mjs`, Chromium): betöltés, húzás és mentés, utasítás, jóváhagyás, rákérdezés, beállítások mentése, napló, mobil nézet; konzolhiba és szabálysértés nélkül.
+- **Kipróbálható helyben:** `npm run iroda` (kitalált adatokkal, memóriában; `--uzemelteto` az üzemeltetői nézethez).
+
+**Őszinte korlátok:**
+- A bemutatóban az utasításértelmezés és a rákérdezés **szabályalapú**, nem AI; az AI-s ág (zárt műveletlistára kényszerítve, hamis API-val tesztelve) a Claude-kulcs megadása után kapcsolható be, és a valódi minőségét még nem mértük.
+- A többi hét ügynök asztala üres; az általános modell (anyag, állapot, rákérdezés) már kész, de a tervezet-típusú anyagok jóváhagyási folyamata (például választervezet) az adott ügynökkel együtt készül.
+- Az éles Cloudflare-telepítés és a Cloudflare Access bekötése nem történt meg (U5); a Worker csomagja szárazon összeáll.
+- A böngészőben a időmező a gép nyelvi beállítása szerint jelenik meg (például „AM/PM”).
+
+## 9. A telepítés lépései (U5, az Ön hozzáférésével)
+
+1. `wrangler d1 create ai-sajtoiroda`, az azonosítót a `wrangler.toml`-ba; `wrangler d1 migrations apply ai-sajtoiroda`.
+2. A nulladik ügyfél profilja és hozzáférése: `node src/cli.js profil-sql --profile monitoring/nulladik-ugyfel.yaml`, `node src/cli.js hozzaferes-sql --email … --ugyfel manyai-zoltan --szerep uzemelteto`; a kimenő SQL-ek futtatása `wrangler d1 execute`-tal.
+3. Cloudflare Access alkalmazás a doménre; a `ACCESS_TEAM_DOMAIN` és `ACCESS_AUD` értékét a `wrangler.toml`-ba.
+4. `wrangler deploy`. Az `SAJTOIRODA_DEV_AUTH` maradjon `0`.
+5. Külön domén esetén: `node src/cli.js domen-sql --domen … --ugyfel …`.

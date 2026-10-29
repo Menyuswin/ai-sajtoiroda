@@ -5,6 +5,10 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Óránként, a 30. percben (a szemle-időpontot a profil dönti el, időzónával).
+# A felület fájljait a telepítés előtt egy modulba csomagolja.
+[build]
+command = "node scripts/build-ui.mjs"
+
 [triggers]
 crons = ["30 * * * *"]
 
@@ -22,4 +26,7 @@ fallthrough = true
 
 [vars]
 SAJTOIRODA_LIVE = "0"    # 1 = éles küldés; amíg nincs levélküldő kiválasztva, ne állítsd át
+SAJTOIRODA_DEV_AUTH = "0"  # a próbabelépés kizárólag fejlesztéshez való; élesben mindig 0
+ACCESS_TEAM_DOMAIN = ""    # pl. csapatnev.cloudflareaccess.com (Cloudflare Access); üresen az oldal zárva marad
+ACCESS_AUD = ""            # az Access-alkalmazás „AUD” azonosítója
 SAJTOIRODA_LLM = "mock"  # "anthropic" = valódi AI (ANTHROPIC_API_KEY titokként: wrangler secret put ANTHROPIC_API_KEY)

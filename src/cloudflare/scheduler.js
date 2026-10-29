@@ -8,6 +8,7 @@ import { createLlm } from '../core/llm.js';
 import { createLiveMailer } from '../core/mailer.js';
 import { dayKey } from '../core/text.js';
 import { createD1Log, createD1Store, createD1DryMailer, createD1ProfileRepo } from './d1.js';
+import { createDesk } from './desk.js';
 import { monitoringAgent } from '../agents/monitoring/index.js';
 import { defaultFetchText } from '../agents/monitoring/sources.js';
 
@@ -31,7 +32,7 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
     const tenantId = profile.ugyfel_id;
     const log = createD1Log({ db: env.DB, tenantId, now });
     try {
-      if (!agentActive(profile, 'monitoring')) { summary.push({ tenantId, skipped: true }); continue; }
+      if (!agentActive(profile, 'monitoring', now())) { summary.push({ tenantId, skipped: true }); continue; }
       const store = createD1Store({ db: env.DB, tenantId });
       const mailer = config.live ? createLiveMailer(config.mailer) : createD1DryMailer({ db: env.DB, now });
       const outbox = createOutbox({ profile, mailer, log });
@@ -40,7 +41,7 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
       const sent = await log.query({ tipus: 'szemle_elkuldve' });
       const lastDigestDay = sent.length ? dayKey(sent[sent.length - 1].ido, profile.utemezes.idozona) : null;
       const mode = decideMode(profile, now(), lastDigestDay);
-      const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models }, { mode });
+      const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models, anyagok: createDesk({ db: env.DB, tenantId, now }).anyagok }, { mode });
       if (mode === 'digest' && profile.megorzes?.nyers_cikk_honap) {
         const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - profile.megorzes.nyers_cikk_honap);
         await store.purgeOlderThan(cutoff.toISOString());

@@ -1,11 +1,12 @@
-// D1-kompatibilis helyettesítő a teszteléshez: ugyanazt az API-t adja (prepare/bind/run/all/first/batch),
+// D1-kompatibilis helyettesítő a teszteléshez és a helyi kipróbáláshoz: ugyanazt az API-t adja (prepare/bind/run/all/first/batch),
 // de node:sqlite fölött fut, így a migrations/*.sql séma és az SQL valóban lefut.
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 export function createD1Shim() {
   const sqlite = new DatabaseSync(':memory:');
-  sqlite.exec(readFileSync(new URL('../migrations/0001_init.sql', import.meta.url), 'utf8'));
+  const dir = new URL('../../migrations/', import.meta.url);
+  for (const f of readdirSync(dir).filter(n => n.endsWith('.sql')).sort()) sqlite.exec(readFileSync(new URL(f, dir), 'utf8'));
   const norm = (a) => a.map(x => (x === undefined ? null : x));
   const wrap = (sql, args = []) => ({
     bind: (...a) => wrap(sql, norm(a)),

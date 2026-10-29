@@ -8,7 +8,12 @@ import { buildContext } from '../src/cli.js';
 const here = dirname(fileURLToPath(import.meta.url));
 export const fixture = (n) => join(here, 'fixtures', n);
 export const promptDir = join(here, '..', 'monitoring', 'prompts');
-export const readPrompts = async () => ({ classify: await readFile(join(promptDir, 'cikk-besorolas.md'), 'utf8'), synthesize: await readFile(join(promptDir, 'napi-szemle.md'), 'utf8') });
+export const readPrompts = async () => ({
+  classify: await readFile(join(promptDir, 'cikk-besorolas.md'), 'utf8'),
+  synthesize: await readFile(join(promptDir, 'napi-szemle.md'), 'utf8'),
+  instruct: await readFile(join(promptDir, 'utasitas-ertelmezes.md'), 'utf8'),
+  qa: await readFile(join(promptDir, 'kerdes-valasz.md'), 'utf8'),
+});
 
 export async function makeCtx({ now = new Date('2026-10-29T06:30:00Z'), fetchText, llmMode = 'mock', profileMod, llmFetch } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'sajto-'));

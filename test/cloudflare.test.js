@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createD1Shim } from './d1-shim.js';
-import { createD1Log, createD1Store, createD1ProfileRepo, profileToSql } from '../src/cloudflare/d1.js';
+import { createD1Shim } from '../src/dev/d1-shim.js';
+import { createD1Log, createD1Store, createD1ProfileRepo, profileToSql, accessToSql, hostToSql } from '../src/cloudflare/d1.js';
+import { createAccessRepo } from '../src/cloudflare/desk.js';
 import { decideMode, localTime, runScheduled } from '../src/cloudflare/scheduler.js';
 import { loadProfile } from '../src/core/profile.js';
 import { fixture, readPrompts } from './helpers.js';
@@ -112,4 +113,18 @@ test('Worker-futás: egy ügyfél hibája nem állítja le a másikat; kikapcsol
   assert.match(live.find(s => s.tenantId === p.ugyfel_id).error, /Éles levélküldő nincs bekötve/);
   const errs = await createD1Log({ db, tenantId: p.ugyfel_id }).query({ tipus: 'hiba' });
   assert.ok(errs.some(e => /Éles levélküldő/.test(e.tartalom.hiba)));
+});
+
+test('hozzáférés- és doménkiosztás SQL-je: érvényes beírható, érvénytelen és idézőjeles bemenet biztonságos', async () => {
+  const db = createD1Shim();
+  db.raw.exec(accessToSql('Vezeto@Pelda.example', 'pelda', 'vezeto'));
+  db.raw.exec(hostToSql('Sajtoiroda.Pelda.example', 'pelda'));
+  const access = createAccessRepo({ db });
+  assert.deepEqual(await access.rolesFor('vezeto@pelda.example'), [{ tenantId: 'pelda', szerep: 'vezeto' }]);
+  assert.equal(await access.tenantForHost('sajtoiroda.pelda.example'), 'pelda');
+  assert.throws(() => accessToSql('nem-email', 'pelda', 'vezeto'), /e-mail/);
+  assert.throws(() => accessToSql('a@b.hu', 'pelda', 'admin'), /szerep/);
+  assert.throws(() => hostToSql("x'; DROP TABLE domenek;--", 'pelda'), /domén/);
+  db.raw.exec(accessToSql('a@b.hu', "o'brien", 'vezeto'));
+  assert.deepEqual(await access.rolesFor('a@b.hu'), [{ tenantId: "o'brien", szerep: 'vezeto' }]);
 });

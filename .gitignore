@@ -3,3 +3,4 @@ data/
 out/
 profiles/
 .env
+src/worker/ui-assets.js

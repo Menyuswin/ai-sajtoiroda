@@ -4,7 +4,8 @@ import { EVENT_TYPES } from '../core/log.js';
 import { validateProfile } from '../core/profile.js';
 
 const LOG_FILTER_COLUMNS = new Set(['tipus', 'hivatkozas', 'szereplo', 'dontes_ref']);
-const rand = () => crypto.randomUUID().slice(0, 8);
+let seq = 0;
+const rand = () => `${String(++seq % 1000000).padStart(6, '0')}-${crypto.randomUUID().slice(0, 6)}`;
 
 export function createD1Log({ db, tenantId, now = () => new Date() }) {
   return {
@@ -15,6 +16,12 @@ export function createD1Log({ db, tenantId, now = () => new Date() }) {
       await db.prepare('INSERT INTO naplo (id, tenant_id, ido, szereplo, tipus, hivatkozas, tartalom_json, dontes_ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(entry.id, tenantId, ido, szereplo, tipus, hivatkozas, tartalom == null ? null : JSON.stringify(tartalom), dontes_ref).run();
       return entry;
+    },
+    async recent({ tipus = null, limit = 100 } = {}) {
+      const n = Math.min(500, Math.max(1, Math.round(limit)));
+      const q = tipus ? 'SELECT * FROM naplo WHERE tenant_id = ? AND tipus = ? ORDER BY ido DESC, id DESC LIMIT ?' : 'SELECT * FROM naplo WHERE tenant_id = ? ORDER BY ido DESC, id DESC LIMIT ?';
+      const { results } = await db.prepare(q).bind(...(tipus ? [tenantId, tipus, n] : [tenantId, n])).all();
+      return results.map(r => ({ id: r.id, ido: r.ido, szereplo: r.szereplo, tipus: r.tipus, hivatkozas: r.hivatkozas, tartalom: r.tartalom_json ? JSON.parse(r.tartalom_json) : null }));
     },
     async query(filter = {}) {
       const keys = Object.keys(filter);
@@ -89,4 +96,20 @@ export function profileToSql(rawProfile, now = new Date()) {
   const p = validateProfile(rawProfile);
   const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
   return `INSERT OR REPLACE INTO profiles (tenant_id, profile_json, version, updated_at) VALUES (${q(p.ugyfel_id)}, ${q(JSON.stringify(p))}, 1, ${q(now.toISOString())});`;
+}
+
+const sqlStr = (s) => `'${String(s).replace(/'/g, "''")}'`;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// SQL a hozzáférés kiosztásához: ki melyik ügyfél irodáját láthatja, milyen szerepben.
+export function accessToSql(email, tenantId, szerep) {
+  if (!EMAIL_RE.test(email)) throw new Error('Érvénytelen e-mail-cím');
+  if (!['vezeto', 'uzemelteto'].includes(szerep)) throw new Error('A szerep „vezeto” vagy „uzemelteto” lehet');
+  return `INSERT OR REPLACE INTO felhasznalok (email, tenant_id, szerep) VALUES (${sqlStr(email.toLowerCase())}, ${sqlStr(tenantId)}, ${sqlStr(szerep)});`;
+}
+
+// SQL egy külön domén hozzárendeléséhez egy ügyfélhez.
+export function hostToSql(host, tenantId) {
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host)) throw new Error('Érvénytelen domén');
+  return `INSERT OR REPLACE INTO domenek (host, tenant_id) VALUES (${sqlStr(host.toLowerCase())}, ${sqlStr(tenantId)});`;
 }

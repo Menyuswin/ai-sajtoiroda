@@ -40,7 +40,25 @@ export async function loadProfile(path) {
   return validateProfile(parse(await readFile(path, 'utf8')));
 }
 
-// A vezető bármikor kikapcsolhat egy ügynököt a profilban: ugynokok.<id>.aktiv: false
-export function agentActive(profile, agentId) {
-  return profile.ugynokok?.[agentId]?.aktiv !== false;
+// A vezető bármikor kikapcsolhat vagy szüneteltethet egy ügynököt a profilban:
+//   ugynokok.<id>.aktiv: false            – kikapcsolva, amíg vissza nem kapcsolják
+//   ugynokok.<id>.szunet_ig: "ÉÉÉÉ-HH-NN" – szünet a megadott nap végéig
+export function agentActive(profile, agentId, now = new Date()) {
+  const a = profile.ugynokok?.[agentId];
+  if (a?.aktiv === false) return false;
+  if (a?.szunet_ig && now.getTime() <= Date.parse(`${a.szunet_ig}T23:59:59Z`)) return false;
+  return true;
+}
+
+// Korlátok (költségvédelem és visszaélés elleni védelem): a kezelőfelületen át történő módosításra érvényesek.
+export const LIMITS = { kifejezes: 100, forras: 30 };
+
+export function checkLimits(profile) {
+  const k = profile.kulcsszavak;
+  const n = k.szervezet.length + k.szemelyek.length + k.temak.length + k.kizaro.length;
+  if (n > LIMITS.kifejezes) throw new Error(`Legfeljebb ${LIMITS.kifejezes} kulcsszó adható meg (most: ${n})`);
+  const sources = [...profile.forrasok.rss, ...profile.forrasok.sajat];
+  if (sources.length + profile.forrasok.hirkereso.length > LIMITS.forras) throw new Error(`Legfeljebb ${LIMITS.forras} forrás adható meg`);
+  for (const s of sources) if (!/^https:\/\//.test(s.url)) throw new Error(`Csak https:// forráscím adható meg: ${s.url}`);
+  return profile;
 }

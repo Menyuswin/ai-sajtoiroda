@@ -20,7 +20,11 @@ src/
   cloudflare/
     d1.js               D1-illesztők: napló, cikktár, profiltár, próbalevelek
     scheduler.js        ütemezés és ügyfelenkénti futtatás
+  api/                  az iroda API-ja (router, belépés, ügynök-katalógus)
   worker/index.js       Cloudflare Worker belépő (vékony)
+  dev/                  helyi bemutató (D1-helyettesítő, kiszolgáló)
+ui/                     az iroda felülete (egy HTML, egy JS, egy CSS)
+scripts/build-ui.mjs    a felületet a Worker számára csomagolja
   agents/
     monitoring/         az első ügynök
   cli.js                parancssori belépő
@@ -40,7 +44,7 @@ test/                   automatikus tesztek (hálózat nélkül futnak)
 
 ```bash
 npm install
-npm test                                  # 29 automatikus teszt
+npm test                                  # 51 automatikus teszt
 node src/cli.js monitoring run \
   --profile test/fixtures/profil.yaml \
   --offline-feed test/fixtures/feed.xml   # a kimenet: out/pelda-korhazak/
@@ -57,7 +61,8 @@ Száraz módban a levelek az `out/` mappába kerülnek, nem mennek ki sehová, �
 | Besorolás, trendjelzés, riasztás, napi szemle | Az **AI valódi minősége**: a Claude-hívás hamis API-val tesztelt; a magyar hangnembesorolás pontosságát 30 cikkes kézi ellenőrzéssel kell megmérni (docs/06, 2. mérföldkő) |
 | Hibatűrés (rossz forrás, AI-hiba nem állítja le a futást) | **Éles levélküldő**: a szolgáltatás kiválasztása nyitott döntés; addig az éles mód szándékosan megáll |
 | Hallucináció-védelem (a cikklistát és a számokat a program írja, a narratíva csak létező cikkszámra hivatkozhat) | **A telepítés és az első futás Cloudflare-en**: a fiók, az adatbázis létrehozása és az ütemezés bekapcsolása az Ön hozzáférésével és jóváhagyásával lehetséges. A Worker éles futását nem próbáltuk; a csomag szárazon összeállt |
-| Cloudflare-réteg: D1-séma (módosíthatatlan napló), ügyfél-elkülönített tár, óránkénti ütemező (a szemle-időpont ügyfelenként, nyári/téli idővel), próbalevelek | **A kezelőfelület (HTML oldal)**: a terve jóváhagyásra vár (docs/08) |
+| Cloudflare-réteg: D1-séma (módosíthatatlan napló), ügyfél-elkülönített tár, óránkénti ütemező (a szemle-időpont ügyfelenként, nyári/téli idővel), próbalevelek | **Az AI valódi használata** az utasításértelmezésben és a rákérdezésben (hamis API-val tesztelt) |
+| Az iroda: API, felület, szerepek, belépés-ellenőrzés, utasítás → javaslat → jóváhagyás, anyagok és rákérdezés (docs/08) | **A többi ügynök** asztala üres; az éles Access-belépés bekötése |
 | | Válaszlevél feldolgozása (vezetői visszajelzés e-mailben): a 4. mérföldkő része |
 | | Trendjelzés új szereplők / szempontok felismerésére (csak a figyelt kifejezések említésszámát követi) |
 

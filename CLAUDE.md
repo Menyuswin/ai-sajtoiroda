@@ -68,6 +68,26 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 3. A következő ügynök a bevezetési sorrend szerint: Eseményszervező (terv kész: `docs/13`, jóváhagyásra vár, a 8. fejezet hat pontjával); a kiegészítők (Archívum, Közösségi média, Jogi és kockázat) igény szerint. A Jogi asztal már kap belső kérdéseket (red flag, jogi gyanú), amelyek az érkezéséig várnak.
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
+## Hol tartunk, és hol folytassuk (2026-10-29 estéjén)
+
+**Holnap ott kezdjük:** az Eseményszervező terve kész (`docs/13`), a tulajdonos a 8. fejezet hat pontját még nem hagyta jóvá. Jóváhagyás után építés (E1–E5). Közben bármikor előkerülhet a **levélküldő szolgáltató** kiválasztása (rövid összehasonlítás kell), az **éles telepítés** és a **telefon (ElevenLabs, a legvégén)**.
+
+**A mai munkamenet döntései és eredményei** (mind fel van töltve, a `main` naprakész, 113 teszt zöld):
+- Postafiók: nulladik ügyfél iCloud (levélhíddal), Gmail és Exchange beállítható; először csak olvasás és tervezet; külön „Sajtó” mappa; 90 napos levélmegőrzés. Kész: `docs/11`.
+- Felkészítő és Proaktív: űrlapok, kézi naptár, csak átadásra és kérésre fut, napi 10 csomag és 5 javaslat, egy csomag öt szakasszal, a csomagkérést a felület ajánlja fel. Kész: `docs/12`.
+- Telefonhívások: ElevenLabs, a legvégén (`docs/11`, 10. fejezet).
+
+**Az architektúra, amit érdemes tudni (hogy ne kelljen újra felfedezni):**
+- Minden ügynök közös környezete: `src/cloudflare/agentctx.js` (`buildAgentCtx`): napló, asztal, átadások, kimenő kapu, AI, levéltár, dokumentumtár, naptár. Az ütemező, az API és a levélhíd-fogadó is ezt használja. Az **átadás-feldolgozók** (melyik ügynök mit csinál egy neki küldött átadással) is itt vannak, ügyfélenként; a `handoffHandlers` map csak a tesztek felülírására való.
+- Új ügynök: katalógus (`src/api/catalogue.js`, `elerheto: true`) + ügynök-mappa (`src/agents/<id>/`) + feldolgozó az `agentctx.js`-ben + API-végpontok a `src/api/router.js`-ben + asztal a `ui/app.js`-ben (a `viewAsztal` a `munka.tipus` alapján dönt) + prompt(ok) a `monitoring/prompts/`-ban.
+- **Promptok:** a `prompts` objektum kulcsai: `classify`, `synthesize`, `instruct`, `qa`, `docqa`, `keywords`, `letterClassify`, `letterReply`, `briefing`, `proposal`. Új prompt három helyre kell: `src/worker/index.js` (import), `src/dev/serve.js`, `test/helpers.js` (`readPrompts`). Ha valahol hiányzik, a hívás csendben tartalékra esik, ezért teszt kell hozzá.
+- **Közös védelmek, amelyeket minden új ügynöknek át kell vennie:** napi korlát (a `countSince` mintára), a tartalmat csak a vezető látja (az üzemeltető csak darabszámot), a forrásjelölés-ellenőrzés (`src/agents/common/sources.js`: `stripInvalidRefs`), `[KITÖLTENDŐ]` a nem alátámasztott részre, a „nem küldhető AI-nak” szűrés a dokumentumkeresésnél, a bemenet adat és nem utasítás (zárt műveletlista), minden döntés a naplóba.
+- **Migrációk:** `migrations/0001`–`0006` (init, iroda, átadások, dokumentumok, levelek, proaktív). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
+- **Tesztelés:** `npm test` (113, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a két új ügynökre; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
+- **Felhőmunkamenet apróságai:** a Playwright előre telepített (helyi `npm install playwright` elrontja, nem kell); `tools/levelhid` külön csomag (saját `npm install`); a Playwrightnál a `has-text` kis-nagybetű-független részszövegre illeszt (pl. „Felvétel” a „felvétele” gombra is): pontos illesztéshez `:text-is(...)`.
+
+**Mi nincs még kipróbálva élesben (összefoglalva):** valódi hírforrások, valódi AI-minőség, Cloudflare Worker/D1/Access/R2 élesben, valódi iCloud/Gmail/Exchange, levélküldés, telefon. A részletek a „Korlátok” szakaszban.
+
 ## Korlátok (őszintén)
 
 - A **valódi hírforrásokat** (RSS, Google News keresés) a fejlesztői környezetből nem tudtuk lekérni; az értelmező csak mintaadaton van kipróbálva (alapja a manyai.hu-n működő `press.js`). Az első éles futás előtt valódi csatornákon ellenőrizni kell, és a Google News RSS felhasználási feltételeit is.

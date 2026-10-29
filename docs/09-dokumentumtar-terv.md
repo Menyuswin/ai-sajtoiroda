@@ -1,0 +1,77 @@
+# A dokumentumtár terve
+
+*Állapot: **jóváhagyásra vár** (2026-10-29). Kód még nincs.*
+
+## 1. A cél
+
+A megrendelő dokumentumokat tölt fel (sajtóanyagok, korábbi nyilatkozatok, belső irányelvek, háttéranyagok, kérdés-válasz listák, eseménytervek), és **az ügynökök ezekből dolgoznak**. Példák:
+
+- A Kapcsolattartó választervezetet ír, és figyel rá, hogy ne mondjon ellent a korábbi nyilatkozatoknak.
+- A Felkészítő háttéranyagot és kérdés-válasz listát készít a feltöltött anyagokból.
+- A Monitoring a szervezet saját dokumentumaiból javaslatot tesz a figyelt kulcsszavakra (a vezető jóváhagyja).
+- Bármelyik ügynöknél rá lehet kérdezni: „Mit mond a sajtóirányelvünk erről?”
+
+Ez lényegében az **Archívum- és Tudásmenedzsment Ügynök** alapja (`agents/06-archivum.yaml`), de közös szolgáltatásként épül meg: az Archívum ügynök később erre ül rá, a többi ügynök pedig már most használhatja.
+
+## 2. Hogyan néz ki a felületen
+
+- **Új menüpont: „Dokumentumtár”** az irodában (az iratszekrény). Fájl behúzásával vagy kiválasztásával tölthető fel. A lista kereshető; minden dokumentumnál látszik a cím, a kategória, a feltöltő, a dátum és hogy mely ügynökök használhatják.
+- **Kategóriák:** korábbi nyilatkozat, belső irányelv, háttéranyag, sajtóanyag, kérdés-válasz, egyéb.
+- **Hatókör:** dokumentumonként megadható, mely ügynökök használhatják (alapértelmezés: mindegyik).
+- **„Nem küldhető AI-nak” jelölés:** az ilyen dokumentumot a rendszer csak tárolja és kereshetővé teszi, de a tartalmát nem adja át AI-szolgáltatónak.
+- **Az asztalnál:** az utasításhoz dokumentum csatolható („A *sajtóirányelv* alapján…”), és minden elkészült anyag alatt látszik, mely dokumentumok részleteire támaszkodott, hivatkozással a pontos helyre.
+
+## 3. Felépítés
+
+| Elem | Javaslat |
+|------|----------|
+| Eredeti fájl tárolása | Cloudflare R2 (objektumtár), ügyfél-azonosítóval kezdődő kulccsal; letöltéskor mindig „csatolmányként”, soha nem a felületen belül megnyitva |
+| Szöveg kinyerése | Első ütemben: txt, md, csv, **docx** és **szöveges PDF**. Később: beolvasott (szkennelt) PDF és képek (felismerés AI-val), xlsx, pptx |
+| Keresés | Első ütemben: szó alapú keresés a D1 beépített szövegindexével (ékezet-független, ragozott alakot is találó előtagkereséssel). Később: jelentés szerinti keresés (vektorindex), mert a magyar ragozás ott jobban kezelhető |
+| Darabolás | A szöveg ~500 szavas, szakaszcímekhez kötött részekre (chunk) bomlik; minden rész tudja, melyik dokumentum hányadik szakasza |
+| Használat az ügynököknél | Az ügynök a kérdéshez a legrelevánsabb részeket kapja meg, és **minden állítás mellé hivatkozást tesz** (például [D3, 2. szakasz]). A hivatkozásokat a program ellenőrzi, nem létezőt töröl (ugyanúgy, ahogy a cikkszámoknál) |
+
+## 4. Biztonság és adatvédelem
+
+A feltöltött dokumentumok bizalmas, személyes adatot is tartalmazhatnak, ezért:
+
+1. **Ügyfél-elkülönítés:** minden tárolt elem és lekérdezés az ügyfél-azonosítóval szűr; egy ügyfél dokumentuma semmilyen módon nem kerülhet másik ügyfél ügynökéhez (külön teszt).
+2. **A dokumentum adat, nem utasítás.** A feltöltött szövegben szereplő „utasításokat” az ügynök nem követi. Ezt a promptok kimondják, de a valódi védelem szerkezeti: az ügynökök csak a zárt műveletlistából tudnak cselekedni, és kifelé semmi nem megy jóváhagyás nélkül, így egy rosszindulatú dokumentum sem tud mellékhatást kiváltani.
+3. **Fájlellenőrzés:** csak engedélyezett típus (a tartalom első bájtjai szerint ellenőrizve, nem csak a kiterjesztés), méretkorlát, és a fájl soha nem fut le, csak szövegként feldolgozódik.
+4. **Korlátok:** javaslat: legfeljebb 10 MB / fájl, 200 dokumentum és 100 MB / ügyfél (költségvédelem).
+5. **Törlés:** a dokumentum törlése az eredetit, a szövegrészeket és a keresési indexet is törli; a törlés és a feltöltés naplózódik (ki, mikor, mit).
+6. **Jogosultság:** feltölteni és törölni a vezető és az üzemeltető tud.
+7. **AI-szolgáltató felé küldött részletek:** a felületen jelezni kell, hogy a dokumentumrészletek az AI-szolgáltatóhoz kerülhetnek (kivéve a „Nem küldhető AI-nak” jelölésűeket). Ez az adatkezelési tájékoztató és az adatfeldolgozói megállapodás része, jogász átnézése javasolt (docs/05, 7–8. kérdés).
+8. **Megőrzés:** a dokumentumokat az ügyfél törli, vagy a szerződés megszűnésekor az üzemeltető; a megőrzési szabály a profilban rögzített.
+
+## 5. Mit kapnak az ügynökök az első ütemben
+
+Mivel jelenleg a Monitoring az egyetlen működő ügynök, az első ütem három dolgot tesz lehetővé:
+
+1. **Feltöltés, böngészés, keresés, törlés** a Dokumentumtárban.
+2. **Kérdés a dokumentumokhoz** (a Monitoring asztalán és a Dokumentumtárban): a válasz csak a feltöltött anyagokból származik, hivatkozással; ami nincs bennük, azt kimondja.
+3. **Kulcsszójavaslat dokumentumból:** „Javasolj kulcsszavakat a feltöltött sajtóanyagok alapján” → a Monitoring javaslatot tesz (szervezetnevek, személyek, témák), a vezető tételenként jóváhagyja. Ez a meglévő javaslat → jóváhagyás menetet használja.
+
+A többi ügynök (Felkészítő, Kapcsolattartó, …) az érkezésükkor kapják meg ugyanezt a szolgáltatást.
+
+## 6. Ütemezés
+
+| # | Lépés | Ellenőrizhető eredmény |
+|---|-------|------------------------|
+| D1 | Adatmodell, feltöltés-fogadás, típus- és méretellenőrzés, szövegkinyerés (txt, md, csv, docx, szöveges PDF), darabolás, keresés | Tesztek: ügyfélelkülönítés, hibás vagy túl nagy fájl elutasítva, törlés mindent töröl |
+| D2 | Felület: Dokumentumtár menüpont, feltöltés, lista, keresés, törlés, hatókör és AI-jelölés | Böngészős kipróbálás képernyőképpel |
+| D3 | Kérdés a dokumentumokhoz hivatkozásokkal; kulcsszójavaslat dokumentumból | Tesztek: hivatkozás-ellenőrzés, „nem küldhető AI-nak” jelölés betartva |
+| D4 | Telepítés az Ön Cloudflare-fiókjában (R2 bekapcsolása) | Az Ön hozzáférésével és jóváhagyásával |
+| D5 | (későbbi) beolvasott PDF és képek, xlsx, pptx, jelentés szerinti keresés | |
+
+D1–D3 itt megépíthető és tesztelhető, a D4-hez az Ön Cloudflare-fiókja kell (az objektumtár bekapcsolása).
+
+## 7. Amit jóvá kell hagynia
+
+1. **Első ütem típusai:** txt, md, csv, docx, szöveges PDF (a beolvasott PDF és a képek később)? (Ajánlott.)
+2. **Az eredeti fájl is megmaradjon** a szöveg mellett (R2-ben), hogy letölthető legyen? (Ajánlott; ehhez az R2-t be kell kapcsolni.)
+3. **Keresés:** először szó alapú, jelentés szerinti később? (Ajánlott.)
+4. **Korlátok:** 10 MB / fájl, 200 dokumentum, 100 MB / ügyfél?
+5. **A „Nem küldhető AI-nak” jelölés** legyen meg az első ütemben?
+6. **A kategóriák** rendben vannak, vagy kell más?
+7. **Az Archívum ügynök** később erre a közös szolgáltatásra épüljön (ahogy az 1. fejezet írja)?

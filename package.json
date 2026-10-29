@@ -1,0 +1,15 @@
+{
+  "name": "ai-sajtoiroda",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-sajtóiroda: közös mag és ügynökök (első: Monitoring). Alapértelmezésben szárazon (dry-run) fut.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "monitoring": "node src/cli.js monitoring"
+  },
+  "dependencies": {
+    "yaml": "^2.5.0"
+  }
+}

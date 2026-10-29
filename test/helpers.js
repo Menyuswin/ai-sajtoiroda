@@ -1,0 +1,24 @@
+import { mkdtemp, readFile, readdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadProfile } from '../src/core/profile.js';
+import { buildContext } from '../src/cli.js';
+
+const here = dirname(fileURLToPath(import.meta.url));
+export const fixture = (n) => join(here, 'fixtures', n);
+export const promptDir = join(here, '..', 'monitoring', 'prompts');
+
+export async function makeCtx({ now = new Date('2026-10-29T06:30:00Z'), fetchText, llmMode = 'mock', profileMod, llmFetch } = {}) {
+  const dir = await mkdtemp(join(tmpdir(), 'sajto-'));
+  let profile = await loadProfile(fixture('profil.yaml'));
+  if (profileMod) profile = profileMod(profile);
+  const feed = await readFile(fixture('feed.xml'), 'utf8');
+  const config = { live: false, dataDir: join(dir, 'data'), outDir: join(dir, 'out'), anthropicKey: 'teszt', models: { classify: 'm-c', synthesize: 'm-s' } };
+  const ctx = await buildContext({ profile, config, llmMode, fetchText: fetchText || (async () => feed), now: () => now, promptDir });
+  if (llmFetch) {
+    const { createLlm } = await import('../src/core/llm.js');
+    ctx.llm = createLlm({ mode: 'anthropic', key: 'teszt', models: config.models, fetchImpl: llmFetch });
+  }
+  return { ctx, dir, config, outFiles: async () => readdir(join(config.outDir, profile.ugyfel_id)).catch(() => []) };
+}

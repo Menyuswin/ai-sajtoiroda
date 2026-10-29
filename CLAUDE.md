@@ -4,7 +4,7 @@ Egy AI-ügynökökre épülő, emberi vezető által irányított általános sa
 
 ## Állapot
 
-Koncepció. A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve), az `agents/*.yaml` ügynökönként egy szerepkör-specifikáció. Futtatható kód még nincs. Az alapdöntések megvannak (lent); a következő lépés a Monitoring Ügynök prototípusának terve. A `docs/05-nyitott-kerdesek.md` 4–9. kérdése a terv része.
+A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve), az `agents/*.yaml` ügynökönként egy szerepkör-specifikáció. 2026-10-29-től van futtatható kód: a `src/core/` közös mag és a `src/agents/monitoring/` (Node 22, `npm test`, 21 teszt), **csak száraz módban**: nem küld levelet, fizetős szolgáltatást nem használ. Éles üzemhez a tulajdonos döntése kell (platform, levélküldő, AI-kulcs, jogi kérdések); ezek a `docs/06` 7. fejezetében és a `docs/07`-ben vannak. A kód leírása: `docs/07-rendszer-felepites.md`.
 
 ## Döntések (2026-10-29)
 
@@ -12,7 +12,7 @@ Koncepció. A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve
 - **Felület:** a vezető csevegőfelületen ad utasítást és hagy jóvá; emellett e-mailben is tudjon dolgozni vele (összefoglaló érkezik, válaszban jóváhagy vagy utasít).
 - **Első lépés:** a Monitoring Ügynök prototípusa. A többi ügynök később, a bevezetési sorrend szerint.
 
-A prototípus tervét (mielőtt bármi épül) a következő munkamenet készíti el, és a tulajdonos hagyja jóvá.
+A prototípus terve: `docs/06-monitoring-prototipus-terv.md`. A tulajdonos 2026-10-29-én az építést elindította, de a Make fizetős csomagja és az éles üzem egyelőre nincs beállítva: a rendszert úgy kell tartani, hogy egy döntéssel elindítható legyen.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 

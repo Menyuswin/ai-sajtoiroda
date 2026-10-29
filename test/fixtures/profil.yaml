@@ -1,0 +1,23 @@
+schema_verzio: 1
+ugyfel_id: pelda-korhazak
+megnevezes: "Példa Kórházak Zrt."
+nyelv: hu
+vezeto:
+  nev: "Példa Vezető"
+  email: "vezeto@pelda.example"
+kulcsszavak:
+  szervezet: ["Példa Kórházak"]
+  szemelyek: ["Kiss Géza"]
+  temak: ["ápolóhiány", "várólista"]
+  kizaro: ["álláshirdetés"]
+forrasok:
+  rss:
+    - { nev: "Próba Hírportál", url: "https://proba.example/rss" }
+vorosvonalak:
+  - "hatósági eljárás említése"
+trend:
+  alapido_nap: 14
+  szoras_szorzo: 2
+  minimum_emlites: 3
+utemezes:
+  idozona: "Europe/Budapest"

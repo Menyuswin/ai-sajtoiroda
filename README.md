@@ -14,7 +14,7 @@ A végső felelősség, a stratégiai döntés és a humán kontroll a vezető k
 
 ## Állapot
 
-**Koncepció.** A repó jelenleg a modell leírását és az ügynökök szerepkör-specifikációit tartalmazza. Futtatható kód még nincs: a megvalósítás terve a következő lépés (lásd [docs/05-nyitott-kerdesek.md](docs/05-nyitott-kerdesek.md)).
+**Koncepció + első ügynök (szárazon).** A repó a modell leírását, az ügynökök szerepkör-specifikációit és a közös magot tartalmazza, rajta a Monitoring Ügynökkel, amely száraz módban (küldés és fizetős szolgáltatás nélkül) működik. Éles üzembe helyezés nincs. A felépítés: [docs/07-rendszer-felepites.md](docs/07-rendszer-felepites.md); a terv: [docs/06-monitoring-prototipus-terv.md](docs/06-monitoring-prototipus-terv.md); a nyitott kérdések: [docs/05-nyitott-kerdesek.md](docs/05-nyitott-kerdesek.md).
 
 ## Az ügynökök
 
@@ -36,6 +36,9 @@ A végső felelősség, a stratégiai döntés és a humán kontroll a vezető k
 - [docs/03-mukodesi-modell.md](docs/03-mukodesi-modell.md): napi ciklus, együttműködés, emberi kontrollpontok, heti és havi ritmus
 - [docs/04-bevezetes.md](docs/04-bevezetes.md): fokozatos bevezetés és összegző megfontolások
 - [docs/05-nyitott-kerdesek.md](docs/05-nyitott-kerdesek.md): a megvalósítás előtt eldöntendő kérdések
+- [docs/06-monitoring-prototipus-terv.md](docs/06-monitoring-prototipus-terv.md): a Monitoring Ügynök prototípusának terve
+- [docs/07-rendszer-felepites.md](docs/07-rendszer-felepites.md): a kód felépítése, kipróbálás, új ügynök hozzáadása
+- `src/`, `monitoring/`, `test/`: a közös mag, a Monitoring Ügynök, a profilsablon és promptok, a tesztek
 - [agents/](agents/): ügynökönként egy szerepkör-specifikáció (bemenet, kimenet, eszkaláció, jóváhagyás)
 
 ## Alapelv

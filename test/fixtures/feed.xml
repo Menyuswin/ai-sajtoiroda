@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Próba</title>
+<item><title>Súlyos ápolóhiány a Példa Kórházaknál</title><link>https://proba.example/a1?utm_source=fb</link><description><![CDATA[<p>Az <b>ápolóhiány</b> miatt osztályokat zárnak be.</p>]]></description><pubDate>Thu, 29 Oct 2026 06:10:00 +0100</pubDate></item>
+<item><title>Súlyos ápolóhiány a Példa Kórházaknál</title><link>https://proba.example/a1</link><description>Ugyanaz a cikk, tracking nélkül.</description><pubDate>Thu, 29 Oct 2026 06:11:00 +0100</pubDate></item>
+<item><title>Rövidül a várólista: díjat kapott Kiss Géza</title><link>https://proba.example/a2</link><description>A fejlesztés sikere elismerés.</description><pubDate>Thu, 29 Oct 2026 07:00:00 +0100</pubDate></item>
+<item><title>Hatósági eljárás indult a Példa Kórházak ellen</title><link>https://proba.example/a3</link><description>Vizsgálat kezdődött.</description><pubDate>Thu, 29 Oct 2026 08:00:00 +0100</pubDate></item>
+<item><title>Álláshirdetés: ápolóhiány miatt keresünk kollégát</title><link>https://proba.example/a4</link><description>Jelentkezz!</description><pubDate>Thu, 29 Oct 2026 08:30:00 +0100</pubDate></item>
+<item><title>Időjárás: hidegfront érkezik</title><link>https://proba.example/a5</link><description>Semmi köze.</description><pubDate>Thu, 29 Oct 2026 09:00:00 +0100</pubDate></item>
+</channel></rss>

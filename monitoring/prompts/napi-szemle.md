@@ -17,13 +17,18 @@ Szigorú szabályok:
 - Trendadatok: témánként a mai szám, a {{alapido_nap}} napos átlag és szórás, a jelzés (igen/nem)
 - Vörös vonalas találatok listája
 
-## Kimenet szerkezete (magyarul, ebben a sorrendben)
+## Kimenet (JSON)
 
-1. **Egy bekezdéses összkép**: hány cikk, mi a domináns téma, milyen a hangnem. Szám csak a statisztikából.
-2. **Figyelem** (csak ha van trend- vagy vörösvonal-jelzés): mi, mióta, mekkora az eltérés az átlagtól.
-3. **Narratívák**: 2–4 pont, mindegyik egy-két mondat, cikkszámokkal.
-4. **Cikklista**: szám, cím, médium, hangnem, egymondatos indoklás, hivatkozás; fontosság szerint csökkenő sorrendben.
-5. **Mire érdemes figyelni / lehetőség**: legfeljebb három mondat, csak ha a cikkek alátámasztják.
-6. **Zárósor**: {{ai_jelzes}}
+Csak az értelmező részeket te írod. A számokat (darabszám, hangnem-megoszlás), a figyelmeztetéseket, a cikklistát és a zárósort a program állítja elő, ezért ne ismételd meg a számokat, és ne írj cikklistát.
 
-Ha aznap nincs releváns cikk, ezt egy mondatban mondd ki; ne tölts ki üres szemlét.
+```json
+{
+  "osszkep": "egy bekezdés: mi a domináns téma, milyen irányba mozdult a megjelenés",
+  "narrativak": [
+    { "szoveg": "egy-két mondat egy narratíváról", "cikkek": [1, 4] }
+  ],
+  "figyelni": "legfeljebb három mondat, vagy null, ha a cikkek nem támasztanak alá semmit"
+}
+```
+
+Szabályok: 2–4 narratíva; minden narratívához legalább egy cikkszám tartozik, és csak olyan szám szerepelhet, amely a bemenetben van; ha aznap nincs releváns cikk, `osszkep` ezt mondja ki egy mondatban, a többi üres.

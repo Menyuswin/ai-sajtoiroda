@@ -1,0 +1,52 @@
+# Nulladik ügyfél: a tulajdonos maga. ELŐZETES profil – a kulcsszavak javaslatok, a pilot elején egyeztetendők.
+# Figyelem: a „mesterséges intelligencia” téma nagyon sok cikket hoz; a pilot első napjaiban szűkíteni kell.
+schema_verzio: 1
+ugyfel_id: manyai-zoltan
+megnevezes: "Mányai Zoltán"
+nyelv: hu
+foldrajzi_hatokor: [HU]
+
+vezeto:
+  nev: "Mányai Zoltán"
+  email: "zoltan.manyai@icloud.com"   # ellenőrizendő: ide érkeznek a jelentések
+
+kulcsszavak:
+  szervezet: ["manyai.hu"]
+  szemelyek: ["Mányai Zoltán"]
+  temak: ["médiafigyelés", "sajtófigyelés", "AI sajtóiroda", "mesterséges intelligencia a kommunikációban", "mesterséges intelligencia"]
+  kizaro: []
+
+versenytarsak: []
+
+forrasok:
+  rss:
+    - { nev: "Index",         url: "https://index.hu/24ora/rss/" }
+    - { nev: "Telex",         url: "https://telex.hu/rss" }
+    - { nev: "24.hu",         url: "https://24.hu/feed/" }
+    - { nev: "Portfolio",     url: "https://www.portfolio.hu/rss/all.xml" }
+    - { nev: "Magyar Nemzet", url: "https://magyarnemzet.hu/feed" }
+    - { nev: "Infostart",     url: "https://infostart.hu/rss" }
+  hirkereso:
+    - '"Mányai Zoltán"'
+    - '"AI-alapú médiafigyelés"'
+  sajat: []
+
+vorosvonalak:
+  - "a személyére vagy cégére vonatkozó valótlan állítás"
+  - "jogi eljárás vagy hatósági megkeresés említése"
+
+trend:
+  alapido_nap: 14
+  szoras_szorzo: 2
+  minimum_emlites: 5
+
+utemezes:
+  szemle: "07:30"
+  idozona: "Europe/Budapest"
+  trendellenorzes: "óránként"
+
+megorzes:
+  nyers_cikk_honap: 12
+  naplo_honap: 36
+
+ai_jelzes: "Ezt a szemlét mesterséges intelligencia készítette elő; a hivatkozott cikkek ellenőrzése a vezető feladata."

@@ -59,7 +59,7 @@ Száraz módban a levelek az `out/` mappába kerülnek, nem mennek ki sehová, �
 A Make Free csomagja (2 forgatókönyv, havi 1000 művelet) mind a két helyét a meglévő automatizmusok foglalják, és a Monitoring műveletigénye is meghaladná, ezért **a Make-ben nem hoztunk létre semmit**. A rendszer ettől még indításra kész, mert a motor nem a Make-hez van kötve:
 
 - A kód, a profilsablon, a promptok és a naplóséma a repóban van, platformfüggetlenül (docs/06, 4.8).
-- Az **indítás helye** egyetlen, szándékosan szűk illesztési pont: egy időzített (ütemezett) hívás, amely lefuttatja a `monitoring run`-t. Ennek két megvalósítási útja van, és a döntés az Öné: (a) Cloudflare Workers időzítő + D1 tár, (b) Make-forgatókönyv, amely időzítve meghívja a motort (fizetős csomaggal).
+- Az **indítás helye** egyetlen, szándékosan szűk illesztési pont: egy időzített (ütemezett) hívás, amely lefuttatja a `monitoring run`-t. A döntés (2026-10-29): **vegyes**. A motor Cloudflare Workers időzítőn és D1 tárban fut majd (ez a következő építési lépés: a Worker-belépő és a D1-illesztők még nincsenek meg), a Make pedig opcionális marad levélrétegnek vagy leválasztott ügyfélpéldánynak, fizetős csomaggal.
 - Az éles mód három feltétele: `SAJTOIRODA_LIVE=1`, a kiválasztott levélküldő beállítása (`SAJTOIRODA_MAILER` és az ahhoz tartozó kulcs), valamint az AI-kulcs (`ANTHROPIC_API_KEY`). Amíg ezek nincsenek meg, a rendszer nem küld ki és nem fogyaszt semmit.
 
 ## Új ügynök hozzáadása

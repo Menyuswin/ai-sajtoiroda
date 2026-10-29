@@ -12,6 +12,8 @@ A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve), az `agent
 - **Felület:** a vezető csevegőfelületen ad utasítást és hagy jóvá; emellett e-mailben is tudjon dolgozni vele (összefoglaló érkezik, válaszban jóváhagy vagy utasít).
 - **Első lépés:** a Monitoring Ügynök prototípusa. A többi ügynök később, a bevezetési sorrend szerint.
 
+**Platform (2026-10-29): vegyes.** A motor Cloudflare-en fut majd, a Make-lehetőség megmarad (levélréteg / leválasztott ügyfélpéldány). **Nulladik ügyfél:** a tulajdonos maga (`monitoring/nulladik-ugyfel.yaml`).
+
 A prototípus terve: `docs/06-monitoring-prototipus-terv.md`. A tulajdonos 2026-10-29-én az építést elindította, de a Make fizetős csomagja és az éles üzem egyelőre nincs beállítva: a rendszert úgy kell tartani, hogy egy döntéssel elindítható legyen.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
@@ -27,4 +29,4 @@ A prototípus terve: `docs/06-monitoring-prototipus-terv.md`. A tulajdonos 2026-
 
 ## Git
 
-Commit a `Menyuswin` azonossággal (`git -c user.name=... -c user.email=...`). Push a tulajdonos jóváhagyásával.
+Commit a `ClaudeMZ <noreply@anthropic.com>` azonossággal (2026-10-29-i döntés; a repó-szintű `git config user.name/user.email` ezt adja). A korábbi, már pusholt commitok `Menyuswin` szerzővel maradnak (az átírásukhoz erőltetett push kellene). Push a tulajdonos jóváhagyásával.

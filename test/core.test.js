@@ -58,3 +58,8 @@ test('extractJson kiszedi a JSON-t a körítésből', () => {
   assert.deepEqual(extractJson('Íme:\n```json\n{"a":1}\n```'), { a: 1 });
   assert.throws(() => extractJson('nincs'));
 });
+
+test('a nulladik ügyfél profilja érvényes', async () => {
+  const p = await loadProfile('monitoring/nulladik-ugyfel.yaml');
+  assert.equal(p.ugyfel_id, 'manyai-zoltan');
+});

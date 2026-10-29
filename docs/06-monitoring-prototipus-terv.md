@@ -160,13 +160,13 @@ Mindegyik végén van egy konkrét, ellenőrizhető eredmény, és ott megállun
 
 **A próba mérőszámai:** (1) a releváns cikkek aránya a jelzettek között, Ön megjelölései alapján; (2) hány fontos cikk maradt ki (Ön által kézzel talált, de a szemlében nem szereplő); (3) a hangnembesorolás egyezése az Ön ítéletével, mintavételen; (4) mennyi idő megy el a szemle elolvasására; (5) a trendjelzések közül hány volt indokolt; (6) a futás költsége naponta.
 
-## 7. Amit jóvá kell hagynia
+## 7. Döntések (2026-10-29)
 
-1. **Technológia (a Make-fiók vizsgálata után módosult):** a Make-fiók Free csomagon van (2 forgatókönyv, havi 1000 művelet, ebből 267 maradt; mindkét forgatókönyv-hely foglalt). A választási lehetőségek: (A) fizetős Make-csomag, a motor Make-ben; (B) Cloudflare Workers + D1 + Claude API; (C) vegyes: motor Cloudflare-en, Make csak a levélréteg. **Eldöntetlen.**
-2. **Nulladik ügyfél:** Ön maga (ajánlott), vagy egy kiválasztott leendő ügyfél.
-3. **Mérföldkő-sorrend:** a fenti 0–6, a megállási pontokkal.
-4. **A kezdő forráskör:** a hat hírportál plusz kulcsszavas hírkereső-csatorna.
-5. **E-mail:** a levélküldő szolgáltatás kiválasztása a 3. mérföldkő előtt (javaslatot a 0. mérföldkőben hozok).
+1. **Technológia: vegyes (C).** A motor Cloudflare-en fut; a Make-lehetőség megmarad levélrétegnek, illetve leválasztott ügyfélpéldánynak. A Make Free csomagja (2 forgatókönyv, havi 1000 művelet, mindkét hely foglalt) önmagában kevés.
+2. **Nulladik ügyfél:** a tulajdonos maga. Az előzetes profil: `monitoring/nulladik-ugyfel.yaml` (a kulcsszavak javaslatok, a pilot elején egyeztetendők).
+3. **Mérföldkő-sorrend és kezdő forráskör:** jóváhagyva a javasolt formában (a hat hírportál plusz kulcsszavas hírkereső-csatorna).
+4. **Commit-azonosság:** `ClaudeMZ <noreply@anthropic.com>`.
+5. **Még nyitott:** a levélküldő szolgáltatás kiválasztása; az éles Cloudflare-telepítés (fiók, D1, ütemezés); a jogi kérdések (adatfeldolgozói megállapodás, AI Act, felhasználási jog szerződése).
 
 ## 8. Kockázatok és ellenszerük
 

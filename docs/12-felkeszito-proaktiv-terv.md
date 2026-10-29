@@ -1,6 +1,6 @@
 # A Sajtófelkészítő és a Proaktív Stratégia ügynök terve
 
-*Állapot: **terv, jóváhagyásra vár** (2026-10-29). Bevezetési sorrend szerint ez a második szakasz (`docs/04`); az átadások (`docs/10`) és a Dokumentumtár (`docs/09`) már készek, erre épülnek.*
+*Állapot: **jóváhagyva (2026-10-29), megépítve és tesztelve** (lásd a 9. fejezetet). Bevezetési sorrend szerint ez a második szakasz (`docs/04`); az átadások (`docs/10`) és a Dokumentumtár (`docs/09`) már készek, erre épülnek.*
 
 ## 1. A cél, egy példával
 
@@ -86,3 +86,21 @@ Mind itt megépíthető és tesztelhető. Ami nem: az AI valódi minősége (kul
 4. **Napi korlát:** 10 csomag és 5 javaslat ügyfelenként?
 5. **Egy csomag, öt szakasz** (háttér, Q&A, üzenetkeretek, red flag, talking points), vagy külön anyagként kérné őket?
 6. Az **elfogadott javaslat után a felület felajánlja** a Felkészítő-kérelmet (nem indul magától)? (Ajánlott.)
+
+## 9. Mi készült el (2026-10-29)
+
+A tulajdonos mind a hat pontot elfogadta (űrlapok, kézi naptár, csak átadásra és kérésre fut, 10 csomag és 5 javaslat napi korlát, egy csomag öt szakasszal, a csomagkérést a felület ajánlja fel).
+
+- **Közös forrásgyűjtés** (`src/agents/common/sources.js`): a témához tartozó, tárolt cikkek (30 nap) és Dokumentumtár-részletek, sorszámozva ([1], [D1 §2]); a hatókör és a „nem küldhető AI-nak” jelölés érvényes. A forrásjelölés-ellenőrző a nem létezőt törli.
+- **Felkészítő** (`src/agents/felkeszito/`): egy csomag, öt szakasz; a szerkezetet és a forráslistákat a program írja, az AI csak a szöveges részeket adja, zárt kategóriákkal és hosszkorlátokkal. Red flag esetén belső kérdés a Jogi asztalnak. Napi korlát: 10.
+- **Proaktív** (`src/agents/proaktiv/`): megszólalási javaslat (lehetőség, forma, **időzítés**, üzenet, a hallgatás kockázata, alternatívák; mindig szerepel a „most nem szólalunk meg”). Az időzítési ajánlást a **program számolja** a naptárból (a következő munkanap, a vezetői vagy saját eseménnyel foglalt napot és a hétvégét kihagyja), az AI ezt kapja meg. Napi korlát: 5. Döntés: elfogadom / elvetem / később döntök; elfogadásnál, ha kéri, kérelem megy a Felkészítőnek (a döntés előtt semmi nem indul).
+- **Naptár:** kézi felvitel (külső, saját, vezetői), ellenőrzött dátum, 300 bejegyzés korlát, megőrzés `megorzes.naptar_honap` (alapértelmezés 12 hónap), minden módosítás naplózott. A bejegyzés szövege adat, nem utasítás.
+- **Átadás-feldolgozók** (`src/cloudflare/agentctx.js`): a Monitoring jelzése megérkezéskor javaslatot indít; a Felkészítőnek szóló kérelem csomagot készít. A korábban várakozó jelzések a következő futáskor kézbesülnek. A lánc mélysége ≤ 3 (tesztelve).
+- **Felület:** a Felkészítő asztala (űrlap, csomaglista), a Proaktív asztala (javaslatok döntési gombokkal, javaslat kérése, naptár), Beállítások (időzítési szabályok szabad szövegként), az irodakártyán a nyitott javaslatok száma. A tartalmat csak a vezető látja.
+- **Szabályalapú tartalék** AI nélkül: a csomag váza (talált források, általános kérdéssablonok, `[KITÖLTENDŐ]` részek), a javaslat alapértelmezett formával és a program által számolt időzítéssel.
+
+**Korlátok (őszintén):**
+- Az **AI valódi minősége nem mért** (hamis API-val tesztelt); AI nélkül a csomag és a javaslat csak váz. A „kellemetlen kérdések” minősége különösen csak éles AI-val ítélhető meg.
+- A források a **tárolt** cikkek; a keresés szó alapú (ragozás-tűrő), nem jelentés szerinti, ezért a témához szokatlan szóval kapcsolódó cikk kimaradhat.
+- A naptár kézi: az iCal-import (Google Naptár, Outlook) későbbi lépés. A Proaktív nem pásztáz önállóan (csak átadásra és kérésre).
+- A `Továbbított levél` kérelemből a Felkészítő a levél tárgyát veszi témának; ez egyszerű, a vezető a csomagkérést a Proaktív javaslatán át pontosabban adhatja meg.

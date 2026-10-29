@@ -93,13 +93,12 @@ log('jelentések:', await page.locator('.lista li').count());
 
 // átadások: a Monitoring riasztásából átadás született a Proaktív (üres) asztalának
 await page.goto(BASE); await page.waitForSelector('.asztal');
-log('iroda jelzés az üres asztalon:', await page.locator('.asztal[data-id="proaktiv"] .pont').allInnerTexts());
+log('iroda jelzés a Proaktív kártyán:', await page.locator('.asztal[data-id="proaktiv"] .pont').allInnerTexts());
 await page.click('nav >> text=Átadások'); await page.waitForSelector('.lista li');
 log('átadások száma:', await page.locator('.lista li').count(), '|', (await page.locator('.lista li').first().innerText()).replace(/\n/g, ' / ').slice(0, 160));
 await shot('10-atadasok');
-await page.goto(BASE + '#/asztal/proaktiv'); await page.waitForSelector('text=Átadások');
-await page.click('button:has-text("Megállít")'); await page.waitForSelector('text=Megállítva');
-log('megállítás után:', (await page.locator('.lista li .meta').first().innerText()).slice(0, 80));
+await page.goto(BASE + '#/asztal/esemenyszervezo'); await page.waitForSelector('text=Ennél az asztalnál még nem ül senki');
+log('üres asztal:', (await page.locator('.kartya').first().innerText()).slice(0, 60));
 await shot('11-ures-asztal-atadassal');
 
 // dokumentumtár: feltöltés (jó és hamis fájl), kérdés, keresés, megnyitás, kulcsszójavaslat jóváhagyása, törlés
@@ -167,6 +166,29 @@ await shot('18-kapcsolattarto-asztal');
 await page.goto(BASE + '#/beallitasok'); await page.waitForSelector('#f-alairas');
 await page.fill('#f-alairas', 'Üdvözlettel:\nSzabó Anna'); await page.click('text=Mentés'); await page.waitForSelector('.toast.latszik');
 log('aláírás mentve:', await page.locator('#toast').innerText());
+
+// Felkészítő és Proaktív: javaslat döntése, csomag kérése, naptár, új csomag
+await page.goto(BASE); await page.waitForSelector('.asztal');
+log('Proaktív kártyája:', (await page.locator('.asztal[data-id="proaktiv"]').innerText()).replace(/\n/g, ' / ').slice(0, 150));
+await page.goto(BASE + '#/asztal/proaktiv'); await page.waitForSelector('#nt-datum');
+log('Proaktív sávjai:', (await page.locator('.harom h2').allInnerTexts()).join(', '));
+await shot('19-proaktiv');
+await page.fill('#nt-datum', '2026-10-30'); await page.fill('#nt-cim', 'Igazgatósági ülés'); await page.selectOption('#nt-tipus', 'vezetoi');
+await page.click('button:has-text("+ Felvétel")'); await page.waitForSelector('li:has-text("Igazgatósági ülés")');
+await page.fill('#pj-tema', 'várólista: megszólaljunk-e?'); await page.click('button:has-text("Javaslat készítése")'); await page.waitForSelector('.nezo');
+log('javaslat időzítése:', (await page.locator('.nezo p:has-text("Mikor")').first().innerText()).slice(0, 140));
+await shot('20-javaslat');
+await page.keyboard.press('Escape');
+await page.locator('li:has-text("Felerősödő"), li:has-text("Vörös vonalba") >> nth=0').locator('button:has-text("Elfogadom")').click();
+await page.waitForSelector('.toast.latszik:has-text("Felkészítő")');
+log('elfogadás:', await page.locator('#toast').innerText());
+await page.goto(BASE + '#/asztal/felkeszito'); await page.waitForSelector('#fk-tema');
+log('Felkészítő csomagjai:', await page.locator('.sav:has(h2:has-text("Csomagok")) li').count());
+await page.fill('#fk-tema', 'sürgősségi ellátás'); await page.selectOption('#fk-alkalom', 'sajtotajekoztato');
+await page.click('button:has-text("Csomag készítése")'); await page.waitForSelector('.nezo h2');
+log('csomag címe:', await page.locator('.nezo h2').first().innerText());
+await shot('21-csomag');
+await page.keyboard.press('Escape');
 
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');

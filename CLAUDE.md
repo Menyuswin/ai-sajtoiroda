@@ -27,9 +27,10 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 | Dokumentumtár (`docs/09`, `src/docs/`) | kész, tesztelt (valódi docx/PDF fájlokon); R2 (az eredeti fájlok tárolása) nincs bekapcsolva |
 | Kapcsolattartó Ügynök (`docs/11`, `src/agents/kapcsolattarto/`, `src/mail/`) | kész, tesztelt: levelek fogadása (Gmail API, Exchange/Graph, levélhíd az iCloudhoz, kézi felvitel), besorolás, választervezet, vezetői döntés a kimenő kapun át; a levélküldés (P6) és a telefon (ElevenLabs) hátra van |
 | Levélhíd (`tools/levelhid/`) | kész, a logikája tesztelt; **valódi iCloud-kapcsolattal nem próbáltuk** |
-| A többi 6 ügynök | csak specifikáció; az asztaluk az irodában üres |
+| Felkészítő és Proaktív Ügynök (`docs/12`, `src/agents/felkeszito/`, `src/agents/proaktiv/`) | kész, tesztelt: felkészítő csomag (háttér, Q&A, üzenetkeretek, red flagek, talking points), megszólalási javaslat (időzítést a program számolja, a naptár alapján), vezetői döntés, kézi naptár; a lánc Monitoring → Proaktív → Felkészítő működik; AI nélkül csak váz (`[KITÖLTENDŐ]`) |
+| A többi 4 ügynök | csak specifikáció; az asztaluk az irodában üres (Eseményszervező, Archívum, Közösségi média, Jogi) |
 
-100 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
+113 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 
@@ -64,7 +65,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 1. **Levélküldő szolgáltató kiválasztása** (P6): ezzel a jóváhagyott válaszok ténylegesen elmehetnek; addig a kimenő mappába kerülnek. Rövid összehasonlítás kell hozzá (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről).
 2. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), az iCloud-híd első valódi próbája (`tools/levelhid/README.md`), AI-kulcs és a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
-3. A következő ügynökök a bevezetési sorrend szerint: Felkészítő + Proaktív (terv: `docs/12`, jóváhagyásra vár; az átadások már készek: a Monitoring jelzése a Proaktív asztalán vár), majd Eseményszervező; a kiegészítők igény szerint.
+3. A következő ügynök a bevezetési sorrend szerint: Eseményszervező (terv előbb); a kiegészítők (Archívum, Közösségi média, Jogi és kockázat) igény szerint. A Jogi asztal már kap belső kérdéseket (red flag, jogi gyanú), amelyek az érkezéséig várnak.
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
 ## Korlátok (őszintén)
@@ -74,6 +75,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - A Cloudflare **Worker éles futását** nem próbáltuk; D1-ből csak egy `node:sqlite`-alapú, D1-kompatibilis helyettesítővel teszteltünk.
 - A **PDF-kinyerés** (`unpdf`) helyben, valódi PDF-en működik, a Cloudflare Workerben nem futtattuk; beolvasott (szkennelt) PDF és kép felismerése még nincs (a rendszer megmondja, hogy nincs szöveg). Az R2 (eredeti fájlok) kötése a `wrangler.toml`-ban kikommentezve; nélküle csak a kinyert szöveg marad meg.
 - A **postafiókok** (iCloud, Gmail, Exchange) valódi fiókkal nem kipróbáltak: a Gmail/Graph illesztők és a levélhíd fogadója hamis szerverrel tesztelt, a híd IMAP-része (`tools/levelhid/levelhid.mjs`) csak szintaktikailag és a hibaágon. A levélküldés nincs bekötve. Részletek: `docs/11`, 9. fejezet.
+- A **Felkészítő és a Proaktív** AI nélkül csak vázat ad (a tartalmi részek `[KITÖLTENDŐ]`); az AI-ág hamis API-val tesztelt, a minősége nem mért. A naptár kézi (iCal-import nincs). Részletek: `docs/12`, 9. fejezet.
 - A **Cloudflare Access** aláírás-ellenőrzése helyben generált kulccsal tesztelt, valódi Access-szel nem.
 - Cloudflare ingyenes csomagján a külső kérések száma (invokációnként) szűk lehet; több hírforrásnál fizetős Workers ajánlott.
 
@@ -89,7 +91,7 @@ git config user.name ClaudeMZ && git config user.email noreply@anthropic.com
 
 # 3. Függőségek és tesztek
 npm install
-npm test                      # 100 teszt, hálózat nélkül
+npm test                      # 113 teszt, hálózat nélkül
 
 # 4. Az iroda kipróbálása a böngészőben (kitalált adatokkal, memóriában)
 npm run iroda                 # http://127.0.0.1:8787/ ;  --uzemelteto: üzemeltetői nézet
@@ -120,7 +122,7 @@ docs/08                   az iroda (felület) terve, mi készült el, telepíté
 docs/09                   a dokumentumtár terve és állapota (kész)
 docs/10                   az ügynökök közötti átadások terve és felelősségi mátrixa (kész)
 docs/11                   a postafiók-réteg és a Kapcsolattartó Ügynök terve és állapota (kész, telefon nélkül)
-docs/12                   a Felkészítő és a Proaktív ügynök terve (jóváhagyásra vár)
+docs/12                   a Felkészítő és a Proaktív ügynök terve és állapota (kész)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

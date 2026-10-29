@@ -179,6 +179,8 @@
       return;
     }
     if (d.munka?.tipus === 'kapcsolattarto') { mainSet(my, head, kapcsolattartoAsztal(d, id)); return; }
+    if (d.munka?.tipus === 'felkeszito') { mainSet(my, head, felkeszitoAsztal(d, id)); return; }
+    if (d.munka?.tipus === 'proaktiv') { mainSet(my, head, proaktivAsztal(d, id)); return; }
     const input = h('textarea', { id: 'utasitas', 'aria-label': 'Utasítás az ügynöknek', maxlength: '500', placeholder: 'Írja le magyarul, mit szeretne… (Ctrl+Enter: küldés)' });
     const send = guard(async () => {
       const szoveg = input.value.trim(); if (!szoveg) return;
@@ -235,7 +237,7 @@
         }), text: 'A kijelölteket jóváhagyom' }),
         h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'elvetve' }); toast('Elvetve.'); await viewAsztal(agentId); }), text: 'Mindet elvetem' })));
   }
-  const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés', valasz_tervezet: 'Választervezet' };
+  const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés', valasz_tervezet: 'Választervezet', felkeszito_csomag: 'Felkészítő csomag', megszolalasi_javaslat: 'Megszólalási javaslat' };
   const AT_TIPUS = { jelzes: 'Jelzés', kerelem: 'Kérelem', anyag_atadas: 'Anyag-átadás', kerdes: 'Kérdés' };
   const AT_ALLAPOT = { varakozik: 'Vár a címzettre', kezbesitve: 'Kézbesítve', feldolgozva: 'Feldolgozva', lezarva: 'Lezárva', megallitva: 'Megállítva', lejart: 'Lejárt' };
   const rovid = (id) => (state.iroda.ugynokok.find(a => a.id === id)?.nev || id).replace(/ Ügynök$/, '');
@@ -288,6 +290,75 @@
     closeBtn.focus();
   });
 
+
+
+  // ---------- Felkészítő és Proaktív asztal
+  const JAV_ALLAPOT = { nyitott: 'Döntésre vár', halasztva: 'Később dönt', elfogadva: 'Elfogadva', elvetve: 'Elvetve' };
+  const FELK_ALKALOM = (d) => d.munka.alkalmak;
+
+  function felkeszitoAsztal(d, agentId) {
+    const m = d.munka;
+    const tema = h('input', { type: 'text', id: 'fk-tema', maxlength: '300', placeholder: 'Pl.: ápolóhiány a megyei kórházakban', ...(m.tartalom_lathato ? {} : { disabled: true }) });
+    const alk = h('select', { id: 'fk-alkalom' }, Object.entries(FELK_ALKALOM(d)).map(([k, v]) => h('option', { value: k, text: v })));
+    const ido = h('input', { type: 'text', id: 'fk-ido', maxlength: '60', placeholder: 'Pl.: csütörtök 10:00 (nem kötelező)' });
+    const mego = h('input', { type: 'text', id: 'fk-mego', maxlength: '120', placeholder: 'Pl.: a főigazgató (nem kötelező)' });
+    const keszit = guard(async () => {
+      if (!tema.value.trim()) { toast('Adja meg a témát.', true); return; }
+      const r = await api('POST', '/api/felkeszito/csomag', { tema: tema.value, alkalom: alk.value, idopont: ido.value, megszolalo: mego.value });
+      toast(r.red_flag ? 'Elkészült a csomag. Figyelem: red flag van benne, a Jogi asztal kérdést kapott.' : 'Elkészült a csomag.'); await viewAsztal(agentId);
+      openAnyag(r.anyag_id);
+    });
+    const urlap = h('section', { class: 'sav', 'aria-labelledby': 'h-fk' }, h('h2', { id: 'h-fk', text: 'Új felkészítő csomag' }),
+      m.tartalom_lathato ? null : h('p', { class: 'sugo', text: 'A csomagokat csak a vezető kérheti és olvashatja.' }),
+      h('div', { class: 'mezo' }, h('label', { for: 'fk-tema', text: 'Téma' }), tema), h('div', { class: 'mezo' }, h('label', { for: 'fk-alkalom', text: 'Alkalom' }), alk),
+      h('div', { class: 'mezo' }, h('label', { for: 'fk-ido', text: 'Időpont' }), ido), h('div', { class: 'mezo' }, h('label', { for: 'fk-mego', text: 'Megszólaló' }), mego),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: keszit, text: 'Csomag készítése' }), h('span', { class: 'meta', text: `Ma: ${m.csomag_ma}/${m.korlat} csomag` })),
+      h('p', { class: 'sugo', text: 'A csomag a tárolt sajtócikkekből és a Dokumentumtárból épül, minden állítás forrásjelöléssel. Ami nincs forrással alátámasztva, azt [KITÖLTENDŐ] jelöli. Az anyag belső; külső használat előtt Ön átnézi.' }));
+    const lista = h('section', { class: 'sav', 'aria-labelledby': 'h-cs' }, h('h2', { id: 'h-cs', text: 'Csomagok' }),
+      d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs csomag.' }));
+    const info = h('section', { class: 'sav', 'aria-labelledby': 'h-ho' }, h('h2', { id: 'h-ho', text: 'Mit tartalmaz egy csomag?' }),
+      h('ol', { class: 'lista' }, ['Háttér és helyzetkép, idővonal, érintettek, források', 'Kérdés-válasz lista: legvalószínűbb, legkellemetlenebb, legstratégiaibb', 'Üzenetkeretek: fő, másodlagos, kerülendő', 'Red flagek (jogi és vörös vonalas pontok)', 'Talking points, legfeljebb egy oldal'].map(t => h('li', { text: t }))),
+      h('p', { class: 'sugo', text: 'Red flag esetén az iroda belső kérdést küld a Jogi asztalnak. A Proaktív ügynök elfogadott javaslatából is érkezhet kérelem ide.' }));
+    return [h('div', { class: 'harom' }, urlap, lista, info),
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+  }
+
+  function proaktivAsztal(d, agentId) {
+    const m = d.munka;
+    const javSav = h('section', { class: 'sav', 'aria-labelledby': 'h-jv' }, h('h2', { id: 'h-jv', text: 'Megszólalási javaslatok' }),
+      !m.tartalom_lathato ? h('p', { class: 'sugo', text: `A javaslatok tartalmát csak a vezető látja. Döntésre váró: ${m.nyitott_db}.` })
+        : m.javaslatok.length ? h('ul', { class: 'lista' }, m.javaslatok.map(j => {
+          const csomag = h('input', { type: 'checkbox', id: `cs-${j.id}`, checked: true });
+          const dont = (dontes) => guard(async () => { const r = await api('POST', `/api/javaslatok/${encodeURIComponent(j.id)}/dontes`, { dontes, csomag: csomag.checked }); toast(dontes === 'elfogad' ? (r.csomag_atadas && !r.csomag_atadas.hiba ? 'Elfogadva; a Felkészítő csomagot készít.' : 'Elfogadva.') : 'Rögzítve.'); await viewAsztal(agentId); });
+          return h('li', {}, h('strong', { text: j.tema }), h('span', { class: 'meta', text: `${JAV_ALLAPOT[j.allapot]} · ${when(j.ido)}` }),
+            h('div', { class: 'sor' }, j.anyag_id ? h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(j.anyag_id), text: 'Megnyitás' }) : null),
+            ['nyitott', 'halasztva'].includes(j.allapot) ? h('div', {},
+              h('label', { class: 'cimke', for: `cs-${j.id}` }, csomag, ' Elfogadás esetén kérem a felkészítő csomagot is'),
+              h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: dont('elfogad'), text: 'Elfogadom' }), h('button', { class: 'gomb rossz', type: 'button', onclick: dont('elvet'), text: 'Elvetem' }), j.allapot === 'nyitott' ? h('button', { class: 'gomb', type: 'button', onclick: dont('halaszt'), text: 'Később döntök' }) : null)) : null);
+        })) : h('p', { class: 'ures-szoveg', text: 'Még nincs javaslat. A Monitoring jelzéséből automatikusan készül, vagy kérhet egyet.' }));
+    const tema = h('input', { type: 'text', id: 'pj-tema', maxlength: '300', placeholder: 'Pl.: ápolóhiány: érdemes-e megszólalnunk?', ...(m.tartalom_lathato ? {} : { disabled: true }) });
+    const jelzes = h('textarea', { id: 'pj-jelzes', rows: '3', maxlength: '800', placeholder: 'Háttér, ha van (nem kötelező)', ...(m.tartalom_lathato ? {} : { disabled: true }) });
+    const kerPont = h('section', { class: 'sav', 'aria-labelledby': 'h-pk' }, h('h2', { id: 'h-pk', text: 'Javaslat kérése' }),
+      h('div', { class: 'mezo' }, h('label', { for: 'pj-tema', text: 'Téma' }), tema), h('div', { class: 'mezo' }, h('label', { for: 'pj-jelzes', text: 'Háttér' }), jelzes),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: guard(async () => {
+        if (!tema.value.trim()) { toast('Adja meg a témát.', true); return; }
+        const r = await api('POST', '/api/proaktiv/javaslat', { tema: tema.value, jelzes: jelzes.value }); toast('Elkészült a javaslat.'); await viewAsztal(agentId); openAnyag(r.anyag_id);
+      }), text: 'Javaslat készítése' }), h('span', { class: 'meta', text: `Ma: ${m.javaslat_ma}/${m.korlat} javaslat` })),
+      h('p', { class: 'sugo', text: 'Az ügynök javaslatot tesz: mikor, milyen formában, milyen üzenettel, és mi a hallgatás kockázata. A döntés az Öné, a döntés előtt semmi nem indul el.' }),
+      h('p', { class: 'sugo', text: m.szabalyok ? `A szervezet időzítési szabályai: ${m.szabalyok}` : 'Időzítési szabályokat (pl. „pénteken délután nem szólalunk meg”) a Beállításokban adhat meg.' }));
+    // naptár
+    const datum = h('input', { type: 'date', id: 'nt-datum' }), cim = h('input', { type: 'text', id: 'nt-cim', maxlength: '200', placeholder: 'Esemény neve' });
+    const tip = h('select', { id: 'nt-tipus' }, Object.entries(m.naptar_tipusok).map(([k, v]) => h('option', { value: k, text: v })));
+    const naptarSav = h('section', { class: 'sav', 'aria-labelledby': 'h-nt' }, h('h2', { id: 'h-nt', text: 'Naptár' }),
+      m.tartalom_lathato ? [m.naptar.length ? h('ul', { class: 'lista' }, m.naptar.map(e => h('li', {}, h('strong', { text: `${e.datum}: ${e.cim}` }), h('span', { class: 'meta', text: m.naptar_tipusok[e.tipus] }),
+        h('div', { class: 'sor' }, h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('DELETE', `/api/naptar/${encodeURIComponent(e.id)}`); await viewAsztal(agentId); }), 'aria-label': `${e.cim} törlése`, text: 'Töröl' }))))) : h('p', { class: 'ures-szoveg', text: 'Nincs közelgő bejegyzés.' }),
+        h('div', { class: 'mezo' }, h('label', { for: 'nt-datum', text: 'Dátum' }), datum), h('div', { class: 'mezo' }, h('label', { for: 'nt-cim', text: 'Esemény' }), cim), h('div', { class: 'mezo' }, h('label', { for: 'nt-tipus', text: 'Fajta' }), tip),
+        h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { await api('POST', '/api/naptar', { datum: datum.value, cim: cim.value, tipus: tip.value }); toast('Felvéve.'); await viewAsztal(agentId); }), text: '+ Felvétel' })),
+        h('p', { class: 'sugo', text: 'A „vezetői” és „saját” bejegyzés foglalt napnak számít az időzítési ajánlásnál; a külső esemény csak támpont.' })] : h('p', { class: 'sugo', text: 'A naptárat csak a vezető látja.' }));
+    const anyagSav = h('section', { class: 'sav teljes', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Elkészült anyagok' }), d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
+    return [h('div', { class: 'harom' }, javSav, kerPont, naptarSav), anyagSav,
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+  }
 
   // ---------- Kapcsolattartó: az asztal és a Bejövő nézet
   const LEVEL_ALLAPOT = { uj: 'Feldolgozásra vár', tervezet_kesz: 'Tervezet kész', jovahagyva: 'Jóváhagyva', elvetve: 'Elvetve', halasztva: 'Később dönt', tovabbitva: 'Továbbítva', hiba: 'Feldolgozás sikertelen' };
@@ -609,12 +680,14 @@
     ai.value = p.ai_jelzes;
     const alairas = h('textarea', { id: 'f-alairas', rows: '4', maxlength: '400', placeholder: 'Pl.: Üdvözlettel:\nSzabó Anna, sajtófőnök' }); alairas.value = p.kapcsolattarto?.alairas || '';
     const hangnem = h('textarea', { id: 'f-hangnem', rows: '3', maxlength: '300', placeholder: 'Pl.: udvarias, tárgyilagos, tömör; nem védekező' }); hangnem.value = p.kapcsolattarto?.hangnem || '';
+    const szab = h('textarea', { id: 'f-szab', rows: '3', maxlength: '600', placeholder: 'Pl.: Pénteken délután nem szólalunk meg. Hétvégén csak vörös vonalnál.' }); szab.value = p.proaktiv?.szabalyok || '';
     const pfs = p.postafiok || {};
     const pf = { szolg: h('select', { id: 'f-pf-szolg' }, h('option', { value: '', text: 'Nincs (kézi felvitel)' }), Object.entries(SZOLG).map(([k, v]) => h('option', { value: k, text: v, ...(pfs.szolgaltato === k ? { selected: true } : {}) }))),
       cim: h('input', { type: 'email', id: 'f-pf-cim', value: pfs.cim || '', maxlength: '200' }), mappa: h('input', { type: 'text', id: 'f-pf-mappa', value: pfs.mappa || 'Sajtó', maxlength: '100' }), titok: h('input', { type: 'text', id: 'f-pf-titok', value: pfs.titok || '', maxlength: '64', placeholder: 'Pl.: POSTAFIOK_NULLADIK' }) };
     const mentes = guard(async () => {
       const patch = { megnevezes: nev.value, kulcsszavak: { szervezet: kw.szervezet.get(), szemelyek: kw.szemelyek.get(), temak: kw.temak.get(), kizaro: kw.kizaro.get() }, forrasok: { rss, hirkereso: keres.get() }, vorosvonalak: voros.get(), utemezes: { szemle: ido.value } };
       patch.kapcsolattarto = { alairas: alairas.value, hangnem: hangnem.value };
+      patch.proaktiv = { szabalyok: szab.value };
       if (op) {
         patch.vezeto = { email: email.value.trim() }; patch.ai_jelzes = ai.value;
         patch.postafiok = pf.szolg.value ? { szolgaltato: pf.szolg.value, cim: pf.cim.value.trim(), mappa: pf.mappa.value.trim() || 'Sajtó', ...(pf.szolg.value === 'proba' ? {} : { titok: pf.titok.value.trim() }) } : null;
@@ -634,6 +707,8 @@
       h('div', { class: 'kartya' }, h('h2', { text: 'Kapcsolattartó: a válaszok hangja' }),
         h('div', { class: 'mezo' }, h('label', { for: 'f-alairas', text: 'Aláírás a válaszok végén' }), alairas, h('span', { class: 'sugo', text: 'Üresen hagyva a vezető neve és a szervezet neve kerül a tervezet aljára.' })),
         h('div', { class: 'mezo' }, h('label', { for: 'f-hangnem', text: 'A válaszok hangneme' }), hangnem, h('span', { class: 'sugo', text: 'Az AI ezt követi a tervezeteknél. A tervezet minden esetben csak javaslat.' }))),
+      h('div', { class: 'kartya' }, h('h2', { text: 'Proaktív: időzítési szabályok' }),
+        h('div', { class: 'mezo' }, h('label', { for: 'f-szab', text: 'Szabályok az időzítéshez' }), szab, h('span', { class: 'sugo', text: 'Szabad szöveg: az AI ezt veszi figyelembe a megszólalási javaslatoknál.' }))),
       h('div', { class: 'kartya' }, h('h2', { text: 'Postafiók' }),
         op ? [h('div', { class: 'mezo' }, h('label', { for: 'f-pf-szolg', text: 'Szolgáltató' }), pf.szolg), h('div', { class: 'mezo' }, h('label', { for: 'f-pf-cim', text: 'A sajtós postafiók címe' }), pf.cim),
           h('div', { class: 'mezo' }, h('label', { for: 'f-pf-mappa', text: 'Mappa vagy címke, amelyet az iroda olvas' }), pf.mappa, h('span', { class: 'sugo', text: 'Csak ezt a mappát olvassa, a postafiók többi része nem kerül be a rendszerbe.' })),

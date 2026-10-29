@@ -73,6 +73,37 @@ export function createDesk({ db, tenantId, now = () => new Date() }) {
         return Object.fromEntries(results.map(r => [r.ugynok, r.n]));
       },
     },
+    atadasok: {
+      async add({ tipus, honnan, hova, targy, szoveg, anyag_id = null, szulo_id = null, melyseg = 0, allapot }) {
+        const id = newId();
+        await db.prepare('INSERT INTO atadasok (id, tenant_id, tipus, honnan, hova, targy, szoveg, anyag_id, szulo_id, melyseg, allapot, ido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(id, tenantId, tipus, honnan, hova, targy, szoveg, anyag_id, szulo_id, melyseg, allapot, now().toISOString()).run();
+        return id;
+      },
+      async get(id) { const r = await db.prepare('SELECT * FROM atadasok WHERE tenant_id = ? AND id = ?').bind(tenantId, id).first(); return r || null; },
+      async list({ ugynok = null, allapot = null, limit = 100 } = {}) {
+        const where = ['tenant_id = ?'], args = [tenantId];
+        if (ugynok) { where.push('(honnan = ? OR hova = ?)'); args.push(ugynok, ugynok); }
+        if (allapot) { where.push('allapot = ?'); args.push(allapot); }
+        const { results } = await db.prepare(`SELECT * FROM atadasok WHERE ${where.join(' AND ')} ORDER BY ido DESC, id DESC LIMIT ?`).bind(...args, Math.min(500, limit)).all();
+        return results.map(r => ({ ...r }));
+      },
+      async setState(id, { allapot, valasz = null, kezbesitve = null, lezarva = null }) {
+        await db.prepare('UPDATE atadasok SET allapot = ?, valasz = COALESCE(?, valasz), kezbesitve = COALESCE(?, kezbesitve), lezarva = COALESCE(?, lezarva) WHERE tenant_id = ? AND id = ?')
+          .bind(allapot, valasz, kezbesitve, lezarva, tenantId, id).run();
+      },
+      async countSince(iso) { const r = await db.prepare('SELECT COUNT(*) AS n FROM atadasok WHERE tenant_id = ? AND ido >= ?').bind(tenantId, iso).first(); return r.n; },
+      async expireBefore(iso, stamp) {
+        const r = await db.prepare("UPDATE atadasok SET allapot = 'lejart', lezarva = ? WHERE tenant_id = ? AND allapot IN ('varakozik', 'kezbesitve') AND ido < ?").bind(stamp, tenantId, iso).run();
+        return r.meta?.changes ?? 0;
+      },
+      async openCounts() {
+        const { results } = await db.prepare("SELECT hova, allapot, COUNT(*) AS n FROM atadasok WHERE tenant_id = ? AND allapot IN ('varakozik', 'kezbesitve') GROUP BY hova, allapot").bind(tenantId).all();
+        const out = {};
+        for (const r of results) { out[r.hova] ||= { varakozik: 0, kezbesitve: 0 }; out[r.hova][r.allapot] = r.n; }
+        return out;
+      },
+    },
     layout: {
       async get(email) {
         const r = await db.prepare('SELECT json FROM elrendezes WHERE email = ? AND tenant_id = ?').bind(email, tenantId).first();

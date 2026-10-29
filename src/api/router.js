@@ -10,6 +10,8 @@ import { interpret, describeOperation, applyOperation, READ_ONLY } from '../agen
 import { buildReport } from '../agents/monitoring/report.js';
 import { answerQuestion } from '../agents/monitoring/qa.js';
 import { computeTrends } from '../agents/monitoring/trend.js';
+import { createHandoffs } from '../core/handoff.js';
+import { handoffHandlers } from '../cloudflare/scheduler.js';
 import { dayKey } from '../core/text.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
@@ -114,20 +116,22 @@ async function route(request, env, deps) {
   try { llm = createLlm({ mode: env.SAJTOIRODA_LLM === 'anthropic' ? 'anthropic' : 'mock', key: config.anthropicKey, models: config.models, ...(deps.llmFetch ? { fetchImpl: deps.llmFetch } : {}) }); }
   catch { llm = createLlm({ mode: 'mock' }); }
   const prompts = deps.prompts;
+  const handoffs = createHandoffs({ repo: desk.atadasok, log, agentIds: AGENTS.map(a => a.id), handlers: handoffHandlers, now, isAvailable: (id) => !!agentById(id)?.elerheto && agentActive(profile, id, now()) });
+  const mapHandoff = (h) => ({ id: h.id, tipus: h.tipus, honnan: h.honnan, hova: h.hova, targy: h.targy, szoveg: h.szoveg, anyag_id: h.anyag_id, melyseg: h.melyseg, allapot: h.allapot, ido: h.ido, valasz: h.valasz });
   const actor = `ember:${who.email}`;
   const p = url.pathname;
   let m;
 
   // ---- Iroda
   if (method === 'GET' && p === '/api/iroda') {
-    const [unread, pending, layout] = await Promise.all([desk.anyagok.unreadCounts(), desk.utasitasok.pendingCounts(), desk.layout.get(who.email)]);
+    const [unread, pending, layout, open] = await Promise.all([desk.anyagok.unreadCounts(), desk.utasitasok.pendingCounts(), desk.layout.get(who.email), desk.atadasok.openCounts()]);
     const agents = [];
     for (const a of AGENTS) {
       const last = a.elerheto ? (await desk.anyagok.list({ ugynok: a.id, limit: 1 }))[0] : null;
       const aktiv = a.elerheto && agentActive(profile, a.id, now());
       agents.push({ id: a.id, nev: a.nev, munkanev: a.munkanev, szakasz: a.szakasz, elerheto: a.elerheto,
         allapot: !a.elerheto ? 'ures' : aktiv ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: unread[a.id] || 0, jovahagyasra_var: pending[a.id] || 0 });
+        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: unread[a.id] || 0, jovahagyasra_var: pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
       mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
@@ -150,7 +154,8 @@ async function route(request, env, deps) {
   if (method === 'GET' && (m = p.match(/^\/api\/ugynok\/([a-z]+)$/))) {
     const a = agentById(m[1]);
     if (!a) throw new HttpError(404, 'Ismeretlen ügynök.');
-    if (!a.elerheto) return json({ ugynok: a, allapot: 'ures', utasitasok: [], anyagok: [], munka: null });
+    const atadasok = (await desk.atadasok.list({ ugynok: a.id, limit: 50 })).map(mapHandoff);
+    if (!a.elerheto) return json({ ugynok: a, allapot: 'ures', utasitasok: [], anyagok: [], munka: null, atadasok });
     const articles = await store.load();
     const today = dayKey(now(), profile.utemezes.idozona);
     const todays = articles.filter(x => dayKey(x.published || x.fetchedAt, profile.utemezes.idozona) === today);
@@ -159,7 +164,7 @@ async function route(request, env, deps) {
     const trendek = computeTrends({ articles, profile, now: now() }).slice(0, 6);
     return json({
       ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-      utasitasok: await desk.utasitasok.list(a.id), anyagok: await desk.anyagok.list({ ugynok: a.id, limit: 30 }),
+      utasitasok: await desk.utasitasok.list(a.id), anyagok: await desk.anyagok.list({ ugynok: a.id, limit: 30 }), atadasok,
       munka: { ma: todays.length, hangnem, trendek, legutobbi: [...articles].sort((x, y) => String(y.published || y.fetchedAt).localeCompare(String(x.published || x.fetchedAt))).slice(0, 8).map(x => ({ cim: x.title, medium: x.medium, hangnem: x.cls.hangnem, url: x.url })) },
     });
   }
@@ -242,6 +247,18 @@ async function route(request, env, deps) {
     return json({ uzenetek: await desk.uzenetek.list(anyag.id) });
   }
   if (method === 'GET' && p === '/api/jelentesek') return json({ anyagok: await desk.anyagok.list({ limit: 100 }) });
+
+  // ---- Átadások az ügynökök között
+  if (method === 'GET' && p === '/api/atadasok') {
+    const list = await desk.atadasok.list({ ugynok: url.searchParams.get('ugynok'), allapot: url.searchParams.get('allapot'), limit: 200 });
+    return json({ atadasok: list.map(mapHandoff) });
+  }
+  if (method === 'POST' && (m = p.match(/^\/api\/atadasok\/([^/]+)\/(megallit|lezar)$/))) {
+    const id = decodeURIComponent(m[1]);
+    const r = m[2] === 'megallit' ? await handoffs.stop(id, actor) : await handoffs.close(id, actor);
+    if (!r.ok) throw new HttpError(r.ok_reason.startsWith('nincs') ? 404 : 409, r.ok_reason.charAt(0).toUpperCase() + r.ok_reason.slice(1) + '.');
+    return json({ ok: true });
+  }
 
   // ---- Beállítások
   if (method === 'GET' && p === '/api/profil') {

@@ -71,6 +71,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 1rem; outline: none; }
 /* ---- egy ügynök asztala */
 .asztal-fej { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; margin-bottom: 1rem; }
 .asztal-fej .vissza { text-decoration: none; }
+.teljes { margin-top: 1rem; }
 .harom { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 1rem; align-items: start; }
 @media (max-width: 1050px) { .harom { grid-template-columns: 1fr; } }
 .sav { background: var(--lap); border: 1px solid var(--vonal); border-radius: 12px; box-shadow: var(--arnyek); padding: 1rem; min-width: 0; }

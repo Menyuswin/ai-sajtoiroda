@@ -9,6 +9,8 @@ import { createLiveMailer } from '../core/mailer.js';
 import { dayKey } from '../core/text.js';
 import { createD1Log, createD1Store, createD1DryMailer, createD1ProfileRepo } from './d1.js';
 import { createDesk } from './desk.js';
+import { createHandoffs } from '../core/handoff.js';
+import { AGENTS } from '../api/catalogue.js';
 import { monitoringAgent } from '../agents/monitoring/index.js';
 import { defaultFetchText } from '../agents/monitoring/sources.js';
 
@@ -24,7 +26,10 @@ export function decideMode(profile, now, lastDigestDay) {
   return localTime(now, tz) >= due && lastDigestDay !== dayKey(now, tz) ? 'digest' : 'check';
 }
 
-export async function runScheduled(env, { now = () => new Date(), fetchText = defaultFetchText, prompts, llmFetch } = {}) {
+// Az ügynök-azonosító → feldolgozó függvény térkép: az újabb ügynökök érkezésekor itt iratkoznak fel (docs/10).
+export const handoffHandlers = new Map();
+
+export async function runScheduled(env, { now = () => new Date(), fetchText = defaultFetchText, prompts, llmFetch, handlers = handoffHandlers } = {}) {
   const config = getConfig(env);
   const repo = createD1ProfileRepo({ db: env.DB, now });
   const summary = [];
@@ -36,12 +41,15 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
       const store = createD1Store({ db: env.DB, tenantId });
       const mailer = config.live ? createLiveMailer(config.mailer) : createD1DryMailer({ db: env.DB, now });
       const outbox = createOutbox({ profile, mailer, log });
+      const desk = createDesk({ db: env.DB, tenantId, now });
+      const handoffs = createHandoffs({ repo: desk.atadasok, log, agentIds: AGENTS.map(a => a.id), handlers, now, isAvailable: (id) => !!AGENTS.find(a => a.id === id)?.elerheto && agentActive(profile, id, now()) });
+      await handoffs.flush(); // a megérkezett asztaloknak kézbesít, a lejártakat lezárja
       const wantAi = env.SAJTOIRODA_LLM === 'anthropic';
       const llm = createLlm({ mode: wantAi ? 'anthropic' : 'mock', key: config.anthropicKey, models: config.models, ...(llmFetch ? { fetchImpl: llmFetch } : {}) });
       const sent = await log.query({ tipus: 'szemle_elkuldve' });
       const lastDigestDay = sent.length ? dayKey(sent[sent.length - 1].ido, profile.utemezes.idozona) : null;
       const mode = decideMode(profile, now(), lastDigestDay);
-      const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models, anyagok: createDesk({ db: env.DB, tenantId, now }).anyagok }, { mode });
+      const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models, anyagok: desk.anyagok, atadasok: handoffs }, { mode });
       if (mode === 'digest' && profile.megorzes?.nyers_cikk_honap) {
         const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - profile.megorzes.nyers_cikk_honap);
         await store.purgeOlderThan(cutoff.toISOString());

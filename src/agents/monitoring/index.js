@@ -54,11 +54,11 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   const alerts = [];
   for (const a of classified.filter(x => x.cls.voros_vonal)) {
     const key = `voros:${a.id}`;
-    if (!sentAlerts.has(key)) alerts.push({ key, line: `Vörös vonalba eső cikk: ${a.title} (${a.medium}) – ${a.url}` });
+    if (!sentAlerts.has(key)) alerts.push({ key, targy: 'Vörös vonalba eső cikk', line: `Vörös vonalba eső cikk: ${a.title} (${a.medium}) – ${a.url}` });
   }
   for (const t of trends.filter(x => x.signal)) {
     const key = `trend:${t.term}:${t.day}`;
-    if (!sentAlerts.has(key)) alerts.push({ key, line: `Hirtelen felerősödő téma: „${t.term}” – ma ${t.today} említés, az előző napok átlaga ${t.mean}.` });
+    if (!sentAlerts.has(key)) alerts.push({ key, targy: `Felerősödő téma: ${t.term}`, line: `Hirtelen felerősödő téma: „${t.term}” – ma ${t.today} említés, az előző napok átlaga ${t.mean}.` });
   }
   if (alerts.length) {
     const subject = `Riasztás – ${profile.megnevezes}`;
@@ -66,8 +66,12 @@ export async function run(ctx, { mode = 'digest' } = {}) {
     const text = `${alerts.map(a => `- ${a.line}`).join('\n')}\n\n${note}`;
     const html = `<body style="font-family:sans-serif"><h3>${escapeHtml(subject)}</h3><ul>${alerts.map(a => `<li>${escapeHtml(a.line)}</li>`).join('')}</ul><p><em>${escapeHtml(note)}</em></p></body>`;
     await outbox.send({ agent: AGENT, kind: 'riasztas', to: profile.vezeto.email, subject, text, html });
-    await ctx.anyagok?.add({ ugynok: AGENT, tipus: 'riasztas', cim: subject, szoveg: text, html, meta: { cikkek: classified.filter(x => x.cls.voros_vonal).map((a, i) => ({ n: i + 1, id: a.id, title: a.title, url: a.url, medium: a.medium, hangnem: a.cls.hangnem, indoklas: a.cls.indoklas })) } });
-    for (const a of alerts) await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: a.key, tartalom: { sor: a.line } });
+    const alertMaterialId = await ctx.anyagok?.add({ ugynok: AGENT, tipus: 'riasztas', cim: subject, szoveg: text, html, meta: { cikkek: classified.filter(x => x.cls.voros_vonal).map((a, i) => ({ n: i + 1, id: a.id, title: a.title, url: a.url, medium: a.medium, hangnem: a.cls.hangnem, indoklas: a.cls.indoklas })) } });
+    for (const a of alerts) {
+      await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: a.key, tartalom: { sor: a.line } });
+      // Belső átadás a Proaktív asztalnak: a megszólalási javaslat alapja. Kifelé nem megy semmi.
+      await ctx.atadasok?.send({ from: AGENT, to: 'proaktiv', tipus: 'jelzes', targy: a.targy, szoveg: a.line, anyagId: alertMaterialId || null });
+    }
   }
 
   const result = { fetched: fetched.length, fresh: fresh.length, classified: classified.length, alerts: alerts.length, errors: errors.length, digest: false };

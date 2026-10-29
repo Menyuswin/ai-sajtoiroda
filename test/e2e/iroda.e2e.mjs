@@ -91,6 +91,17 @@ await shot('08-naplo');
 await page.click('nav >> text=Jelentések'); await page.waitForSelector('.lista');
 log('jelentések:', await page.locator('.lista li').count());
 
+// átadások: a Monitoring riasztásából átadás született a Proaktív (üres) asztalának
+await page.goto(BASE); await page.waitForSelector('.asztal');
+log('iroda jelzés az üres asztalon:', await page.locator('.asztal[data-id="proaktiv"] .pont').allInnerTexts());
+await page.click('nav >> text=Átadások'); await page.waitForSelector('.lista li');
+log('átadások száma:', await page.locator('.lista li').count(), '|', (await page.locator('.lista li').first().innerText()).replace(/\n/g, ' / ').slice(0, 160));
+await shot('10-atadasok');
+await page.goto(BASE + '#/asztal/proaktiv'); await page.waitForSelector('text=Átadások');
+await page.click('button:has-text("Megállít")'); await page.waitForSelector('text=Megállítva');
+log('megállítás után:', (await page.locator('.lista li .meta').first().innerText()).slice(0, 80));
+await shot('11-ures-asztal-atadassal');
+
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');
 await page.evaluate(() => navigator.serviceWorker.ready);

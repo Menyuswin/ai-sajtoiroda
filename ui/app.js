@@ -66,7 +66,7 @@
   }
 
   // ---------- fejléc és útválasztás
-  const NAV = [['#/', 'Iroda'], ['#/jelentesek', 'Jelentések'], ['#/naplo', 'Napló'], ['#/beallitasok', 'Beállítások']];
+  const NAV = [['#/', 'Iroda'], ['#/jelentesek', 'Jelentések'], ['#/atadasok', 'Átadások'], ['#/naplo', 'Napló'], ['#/beallitasok', 'Beállítások']];
   function renderHeader(route) {
     const i = state.iroda;
     $head.replaceChildren(
@@ -98,6 +98,7 @@
     if (r === '') await viewIroda();
     else if ((m = r.match(/^asztal\/([a-z]+)$/))) await viewAsztal(m[1]);
     else if (r === 'jelentesek') await viewJelentesek();
+    else if (r === 'atadasok') await viewAtadasok();
     else if (r === 'naplo') await viewNaplo();
     else if (r === 'beallitasok') await viewBeallitasok();
     else location.hash = '#/';
@@ -130,7 +131,8 @@
         a.elerheto ? h('div', { class: 'sor' },
           h('a', { class: 'gomb fo', href: `#/asztal/${a.id}`, text: 'Az asztalhoz' }),
           a.olvasatlan ? h('span', { class: 'pont kek', title: 'Olvasatlan jelentés', text: `${a.olvasatlan} új` }) : null,
-          a.jovahagyasra_var ? h('span', { class: 'pont', title: 'Jóváhagyásra váró javaslat', text: `${a.jovahagyasra_var} jóváhagyásra vár` }) : null) : null);
+          a.jovahagyasra_var ? h('span', { class: 'pont', title: 'Jóváhagyásra váró javaslat', text: `${a.jovahagyasra_var} jóváhagyásra vár` }) : null,
+          a.atadas_nyitott ? h('a', { class: 'pont kek', href: `#/asztal/${a.id}`, title: 'Más ügynöktől érkezett átadás', text: `${a.atadas_nyitott} átadás` }) : null) : (a.atadas_nyitott ? h('a', { class: 'pont kek', href: `#/asztal/${a.id}`, title: 'Az átadás várja, hogy az ügynök megérkezzen', text: `${a.atadas_nyitott} átadás vár az érkezésére` }) : null));
       const card = h('article', { class: `asztal${a.elerheto ? '' : ' ures-asztal'}`, 'data-id': a.id }, fogo, body);
       card.style.left = `${pos.x}px`; card.style.top = `${pos.y}px`;
       floor.append(card);
@@ -170,7 +172,8 @@
       h('span', { class: 'allapot' }, h('span', { class: `fenyjel ${d.allapot}` }), ALLAPOT[d.allapot] + (d.szunet_ig ? ` (${d.szunet_ig}-ig)` : '')),
       a.elerheto ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { await api('PUT', `/api/ugynok/${id}/allapot`, { aktiv: d.allapot !== 'dolgozik' }); toast(d.allapot === 'dolgozik' ? 'Az ügynök szünetel.' : 'Az ügynök újra dolgozik.'); await viewAsztal(id); renderHeader(`asztal/${id}`); }), text: d.allapot === 'dolgozik' ? 'Szünet' : 'Munka újraindítása' }) : null);
     if (!a.elerheto) {
-      mainSet(my, head, h('div', { class: 'kartya' }, h('p', { text: 'Ennél az asztalnál még nem ül senki. Az ügynök a bevezetési sorrend szerint kerül sorra; addig az asztal üres.' })));
+      mainSet(my, head, h('div', { class: 'kartya' }, h('p', { text: 'Ennél az asztalnál még nem ül senki. Az ügynök a bevezetési sorrend szerint kerül sorra; addig az asztal üres, de a többi ügynök már küldhet ide átadást: az várakozik, és az ügynök megérkezésekor kézbesül.' })),
+        h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások' }), atadasLista(d.atadasok, id, () => viewAsztal(id))));
       return;
     }
     const input = h('textarea', { id: 'utasitas', 'aria-label': 'Utasítás az ügynöknek', maxlength: '500', placeholder: 'Írja le magyarul, mit szeretne… (Ctrl+Enter: küldés)' });
@@ -209,10 +212,34 @@
 
     const anyagSav = h('section', { class: 'sav', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Jelentések' }),
       d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
-    mainSet(my, head, h('div', { class: 'harom' }, utasitasSav, munkaSav, anyagSav));
+    mainSet(my, head, h('div', { class: 'harom' }, utasitasSav, munkaSav, anyagSav),
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, id, () => viewAsztal(id))));
     szal.scrollTop = szal.scrollHeight;
   }
   const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés' };
+  const AT_TIPUS = { jelzes: 'Jelzés', kerelem: 'Kérelem', anyag_atadas: 'Anyag-átadás', kerdes: 'Kérdés' };
+  const AT_ALLAPOT = { varakozik: 'Vár a címzettre', kezbesitve: 'Kézbesítve', feldolgozva: 'Feldolgozva', lezarva: 'Lezárva', megallitva: 'Megállítva', lejart: 'Lejárt' };
+  const rovid = (id) => (state.iroda.ugynokok.find(a => a.id === id)?.nev || id).replace(/ Ügynök$/, '');
+  // Átadások listája. `self`: melyik asztalnál nézzük (irány jelzéséhez); nélküle az összes.
+  function atadasLista(items, self, refresh) {
+    if (!items.length) return h('p', { class: 'ures-szoveg', text: 'Még nem volt átadás.' });
+    return h('ul', { class: 'lista' }, items.map(x => h('li', {},
+      h('strong', { text: x.targy }),
+      h('span', { class: 'meta', text: `${AT_TIPUS[x.tipus] || x.tipus} · ${self ? (x.hova === self ? `← ${rovid(x.honnan)}` : `→ ${rovid(x.hova)}`) : `${rovid(x.honnan)} → ${rovid(x.hova)}`} · ${AT_ALLAPOT[x.allapot] || x.allapot} · ${when(x.ido)}` }),
+      h('span', { text: x.szoveg }),
+      x.valasz ? h('span', { class: 'meta', text: `Válasz: ${x.valasz}` }) : null,
+      h('div', { class: 'sor' },
+        x.anyag_id ? h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(x.anyag_id), text: 'Az anyag megnyitása' }) : null,
+        ['varakozik', 'kezbesitve'].includes(x.allapot) ? h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('POST', `/api/atadasok/${encodeURIComponent(x.id)}/megallit`, {}); toast('Az átadás megállítva.'); await refresh(); }), text: 'Megállít' }) : null))));
+  }
+  async function viewAtadasok(my = routeToken) {
+    const filter = h('select', { 'aria-label': 'Állapot' }, h('option', { value: '', text: 'Minden átadás' }), Object.entries(AT_ALLAPOT).map(([k, v]) => h('option', { value: k, text: v })));
+    const holder = h('div', { class: 'kartya' });
+    const load = guard(async () => { const { atadasok } = await api('GET', `/api/atadasok${filter.value ? `?allapot=${filter.value}` : ''}`); holder.replaceChildren(atadasLista(atadasok, null, load)); });
+    filter.addEventListener('change', load);
+    mainSet(my, h('h1', { text: 'Átadások' }), h('p', { class: 'sugo', text: 'Így dolgoznak együtt az ügynökök: egymásnak jelzést, kérelmet, anyagot vagy kérdést adnak át. Minden átadás itt látszik, bármelyiket megállíthatja. Kifelé semmi nem megy, az átadás csak belső.' }), h('div', { class: 'sor' }, filter), holder);
+    await load();
+  }
   function anyagLista(anyagok) {
     return h('ul', { class: 'lista' }, anyagok.map(a => h('li', { class: `kattinthato${a.olvasott ? '' : ' olvasatlan'}`, tabindex: '0', role: 'button', onclick: () => openAnyag(a.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAnyag(a.id); } } },
       h('strong', { text: a.cim }), h('span', { class: 'meta', text: `${TIPUS[a.tipus] || a.tipus} · ${when(a.ido)}${a.olvasott ? '' : ' · új'}` }))));

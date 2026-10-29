@@ -13,6 +13,6 @@ A napló hozzáfűzős: sor nem módosítható és nem törölhető (kivéve a m
 | `tartalom` | a javaslat vagy a döntés rövid szövege / JSON | `{"hangnem":"negativ",...}` |
 | `dontes_ref` | ha ez egy döntés, melyik javaslatra vonatkozik | `...-0007` |
 
-**Esemény-típusok:** `cikk_besorolas`, `trendjelzes`, `voros_vonal_jelzes`, `szemle_elkuldve`, `vezeto_visszajelzes`, `utasitas`, `javaslat`, `dontes`, `kerdes`, `profil_modositas`, `ugynok_ki_be_kapcsolas`, `hiba`.
+**Esemény-típusok:** `cikk_besorolas`, `trendjelzes`, `voros_vonal_jelzes`, `szemle_elkuldve`, `vezeto_visszajelzes`, `utasitas`, `javaslat`, `atadas`, `dontes`, `kerdes`, `profil_modositas`, `ugynok_ki_be_kapcsolas`, `hiba`.
 
 **Szabály:** a `tenant_id` minden lekérdezésben kötelező szűrő; a naplót ügyfelenként külön exportálni is lehessen (ez a leválasztás egyik feltétele).

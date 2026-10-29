@@ -4,6 +4,8 @@ A modell leírása kész. Mielőtt bármi futtatható készül, ezeket kell eld�
 
 ## Alapdöntések
 
+> **Eldöntve 2026-10-29:** ügyfeleknek készül, a szakmai területet az ügyfél adja meg; a vezető csevegőfelületen és e-mailben dolgozik a rendszerrel; az első lépés a Monitoring Ügynök prototípusa.
+
 1. **Szakmai terület.** Egyelőre általános. A specializáció a promptokat, a forráslistát és a prioritási szabályokat érinti.
 2. **Ki a felhasználó?** Saját használatra készül (a vezető Ön), vagy ügyfeleknek kínált szolgáltatás alapja lesz? Ez dönti el, hány szervezet adatait kell egymástól elválasztani.
 3. **Felület.** Hol dolgozik a vezető a rendszerrel: e-mailben kapott összefoglalókkal, egy webes irányítópulton, vagy egy csevegőfelületen?

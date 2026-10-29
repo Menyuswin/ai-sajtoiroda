@@ -4,7 +4,15 @@ Egy AI-ügynökökre épülő, emberi vezető által irányított általános sa
 
 ## Állapot
 
-Koncepció. A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve), az `agents/*.yaml` ügynökönként egy szerepkör-specifikáció. Futtatható kód még nincs. A következő lépés a `docs/05-nyitott-kerdesek.md` kérdéseinek eldöntése, utána a Monitoring Ügynök prototípusa.
+Koncepció. A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve), az `agents/*.yaml` ügynökönként egy szerepkör-specifikáció. Futtatható kód még nincs. Az alapdöntések megvannak (lent); a következő lépés a Monitoring Ügynök prototípusának terve. A `docs/05-nyitott-kerdesek.md` 4–9. kérdése a terv része.
+
+## Döntések (2026-10-29)
+
+- **Kinek:** ügyfeleknek készül. A tulajdonos felkészíti őket a rendszer működtetésére; a szakmai területet az ügyfél határozza meg. Ezért a rendszernek több, egymástól elválasztott ügyfelet (szervezetet) kell kezelnie, saját paraméterekkel és forrásokkal.
+- **Felület:** a vezető csevegőfelületen ad utasítást és hagy jóvá; emellett e-mailben is tudjon dolgozni vele (összefoglaló érkezik, válaszban jóváhagy vagy utasít).
+- **Első lépés:** a Monitoring Ügynök prototípusa. A többi ügynök később, a bevezetési sorrend szerint.
+
+A prototípus tervét (mielőtt bármi épül) a következő munkamenet készíti el, és a tulajdonos hagyja jóvá.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 

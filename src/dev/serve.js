@@ -10,6 +10,7 @@ import { createAccessRepo } from '../cloudflare/desk.js';
 import { runScheduled } from '../cloudflare/scheduler.js';
 import { handleRequest } from '../api/router.js';
 import { loadProfile } from '../core/profile.js';
+import { buildAssets } from '../api/assets.js';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -29,11 +30,8 @@ export async function createDemo({ user = 'vezeto@pelda.example', now = () => DE
   const feed = read('test/fixtures/feed.xml');
   const env = { DB: db, SAJTOIRODA_DEV_AUTH: '1', SAJTOIRODA_DEV_USER: user };
   await runScheduled(env, { now, fetchText: async () => feed, prompts }); // első szemle a tesztcikkekből
-  const assets = {
-    '/index.html': { type: 'html', body: read('ui/index.html') },
-    '/app.js': { type: 'js', body: read('ui/app.js') },
-    '/app.css': { type: 'css', body: read('ui/app.css') },
-  };
+  const ui = (f) => new URL(`ui/${f}`, root);
+  const assets = buildAssets((f) => readFileSync(ui(f), 'utf8'), (f) => readFileSync(ui(f)));
   return { env, deps: { assets, prompts, now } };
 }
 

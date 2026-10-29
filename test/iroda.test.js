@@ -322,3 +322,30 @@ test('utasítás-értelmező: gyakori magyar fordulatok, és ami nem illik, az �
   assert.equal(t('Küldj egy közleményt a médiának').muvelet, 'ismeretlen');
   assert.throws(() => validateOperation({ muvelet: 'szunet', parameterek: { ig: 'holnap' } }), /ÉÉÉÉ-HH-NN/);
 });
+
+test('telepíthető weboldal (PWA): manifest, service worker, ikonok; a service worker az API-t nem tárolja', async () => {
+  const { buildAssets } = await import('../src/api/assets.js');
+  const { readFileSync } = await import('node:fs');
+  const ui = (f) => new URL(`../ui/${f}`, import.meta.url);
+  const assets = buildAssets((f) => readFileSync(ui(f), 'utf8'), (f) => readFileSync(ui(f)));
+  const get = (path) => handleRequest(new Request(`https://x${path}`), {}, { assets });
+
+  const m = await get('/manifest.webmanifest');
+  assert.equal(m.headers.get('Content-Type'), 'application/manifest+json');
+  const manifest = await m.json();
+  assert.equal(manifest.display, 'standalone');
+  assert.ok(manifest.icons.some(i => i.sizes === '512x512' && i.purpose === 'maskable'));
+  for (const icon of manifest.icons) { // minden megadott ikon valóban elérhető és PNG
+    const r = await get(icon.src);
+    assert.equal(r.status, 200, icon.src);
+    assert.equal(r.headers.get('Content-Type'), 'image/png');
+    assert.deepEqual([...new Uint8Array(await r.arrayBuffer()).slice(1, 4)], [80, 78, 71], icon.src);
+  }
+  const sw = await (await get('/sw.js')).text();
+  assert.doesNotMatch(sw, /__VERSION__/); // a gyorsítótár-verzió beíródott
+  assert.match(sw, /pathname\.startsWith\('\/api\/'\)\) return/); // az API-t nem kezeli
+  const csp = (await get('/')).headers.get('Content-Security-Policy');
+  assert.match(csp, /manifest-src 'self'/);
+  assert.match(csp, /worker-src 'self'/);
+  assert.match(await (await get('/')).text(), /rel="manifest"/);
+});

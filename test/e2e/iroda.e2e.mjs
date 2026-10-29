@@ -91,6 +91,23 @@ await shot('08-naplo');
 await page.click('nav >> text=Jelentések'); await page.waitForSelector('.lista');
 log('jelentések:', await page.locator('.lista li').count());
 
+// telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
+await page.goto(BASE); await page.waitForSelector('.asztal');
+await page.evaluate(() => navigator.serviceWorker.ready);
+await page.reload(); await page.waitForSelector('.asztal');
+log('service worker irányít:', await page.evaluate(() => !!navigator.serviceWorker.controller));
+const cached = await page.evaluate(async () => { const out = []; for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) out.push(new URL(r.url).pathname); return out; });
+log('gyorsítótárban:', cached.join(' '));
+log('API a gyorsítótárban:', cached.some(p => p.startsWith('/api/')));
+const mf = await page.evaluate(async () => (await (await fetch('/manifest.webmanifest')).json()).name);
+log('manifest neve:', mf);
+const beforeOffline = problems.length;
+await page.context().setOffline(true);
+await page.reload(); await page.waitForSelector('#fo');
+log('kapcsolat nélkül a héj megnyílik:', (await page.title()).length > 0, '| üzenet:', (await page.locator('#fo').innerText()).slice(0, 60).replace(/\n/g, ' '));
+await page.context().setOffline(false);
+problems.splice(beforeOffline); // a kapcsolat nélküli próba hibái várt jelenségek
+
 // mobil nézet
 const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 await mobile.goto(BASE); await mobile.waitForSelector('.asztal');

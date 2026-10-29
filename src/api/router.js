@@ -12,9 +12,10 @@ import { answerQuestion } from '../agents/monitoring/qa.js';
 import { computeTrends } from '../agents/monitoring/trend.js';
 import { dayKey } from '../core/text.js';
 
-const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const SECURITY = { 'Content-Security-Policy': CSP, 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' };
-const TYPES = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8' };
+const TYPES = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml' };
+const fromBase64 = (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...SECURITY, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
@@ -73,7 +74,7 @@ async function route(request, env, deps) {
   if (method === 'GET' && !url.pathname.startsWith('/api/')) {
     const asset = deps.assets?.[url.pathname === '/' ? '/index.html' : url.pathname];
     if (!asset) return new Response('Nem található.', { status: 404, headers: SECURITY });
-    return new Response(asset.body, { headers: { ...SECURITY, 'Content-Type': TYPES[asset.type], 'Cache-Control': 'no-cache' } });
+    return new Response(asset.base64 ? fromBase64(asset.body) : asset.body, { headers: { ...SECURITY, 'Content-Type': TYPES[asset.type], 'Cache-Control': asset.type === 'png' ? 'public, max-age=86400' : 'no-cache' } });
   }
   if (!url.pathname.startsWith('/api/')) return json({ hiba: 'Nem található.' }, 404);
 

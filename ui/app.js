@@ -31,7 +31,9 @@
   async function api(method, path, body) {
     const sep = path.includes('?') ? '&' : '?';
     const url = state.tenant && (state.iroda?.ugyfelek || []).length > 1 ? `${path}${sep}ugyfel=${encodeURIComponent(state.tenant)}` : path;
-    const res = await fetch(url, { method, headers: { 'X-Requested-With': 'iroda', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined });
+    let res;
+    try { res = await fetch(url, { method, headers: { 'X-Requested-With': 'iroda', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined }); }
+    catch { throw new Error('Nincs kapcsolat a szerverrel. A bizalmas adatok miatt az iroda kapcsolat nélkül nem mutat tartalmat; az oldal a kapcsolat visszatértével újratölthető.'); }
     const ct = res.headers.get('Content-Type') || '';
     const data = ct.includes('json') ? await res.json() : await res.text();
     if (!res.ok) throw new Error((data && data.hiba) || `Hiba (${res.status})`);
@@ -74,6 +76,7 @@
         i.mod.elo ? h('span', { class: 'jelveny jo', text: 'Éles üzem' }) : h('span', { class: 'jelveny figy', text: 'Próbaüzem: levél nem megy ki' }),
         i.mod.ai === 'mock' ? h('span', { class: 'jelveny', title: 'Az AI-kapcsolat nincs bekapcsolva; szabályalapú elemzés fut.', text: 'AI nélkül (szabályalapú)' }) : null,
         i.ugyfelek.length > 1 ? h('select', { 'aria-label': 'Ügyfél', onchange: (e) => { state.tenant = e.target.value; boot(); } }, i.ugyfelek.map(u => h('option', { value: u, ...(u === i.ugyfel.id ? { selected: true } : {}), text: u }))) : null,
+        installEvent ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { installEvent.prompt(); await installEvent.userChoice; installEvent = null; renderHeader((location.hash || '#/').slice(2)); }), text: 'Telepítés a gépre' }) : null,
         h('span', { text: `${i.felhasznalo.email} (${i.felhasznalo.szerep === 'uzemelteto' ? 'üzemeltető' : 'vezető'})` })));
   }
   const isCurrent = (href, route) => (href === '#/' ? route === '' || route.startsWith('asztal') : route.startsWith(href.slice(2)));
@@ -315,6 +318,12 @@
         h('div', { class: 'mezo' }, h('label', { for: 'f-ai', text: 'AI-jelzés a jelentések alján' }), ai, h('span', { class: 'sugo', text: op ? 'Az átláthatóság miatt nem hagyható el.' : 'Az átláthatóság miatt rögzített szöveg.' }))),
       h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: mentes, text: 'Mentés' })));
   }
+
+  // ---------- telepíthetőség (PWA)
+  let installEvent = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvent = e; if (state.iroda) renderHeader((location.hash || '#/').slice(2)); });
+  window.addEventListener('appinstalled', () => { installEvent = null; toast('Az iroda telepítve van.'); if (state.iroda) renderHeader((location.hash || '#/').slice(2)); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
   boot();
 })();

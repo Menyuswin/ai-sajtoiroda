@@ -54,7 +54,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 2. ~~Átadás-modell~~ **Jóváhagyva és megépítve** (`docs/10`).
 3. ~~Dokumentumtár~~ **Jóváhagyva az ajánlott beállításokkal** (`docs/09`): txt/md/csv/docx/szöveges PDF; az eredeti is megmarad (R2); szó alapú keresés; 10 MB / fájl, 200 dokumentum, 100 MB / ügyfél; „Nem küldhető AI-nak” jelölés; az Archívum erre épül.
 4. **Levélküldő szolgáltatás kiválasztása** (nincs javaslat; szempontok: költség, adatkezelés, magyar levelek). Nélküle az éles mód szándékosan megáll.
-5. **Postafiók** a Kapcsolattartó ügynöknek (`docs/05`, 5. kérdés), **telefonhívások kezelése** (6.), **GDPR** (7.), **EU AI Act** (8.), **napló tárolása és hozzáférése** (9.), **felhasználási jog szerződése** és a Make felhasználási feltételei az átadásra: jogász bevonásával.
+5. ~~Postafiók~~ **Eldőlt (2026-10-29):** nulladik ügyfél = iCloud; Gmail és céges Exchange ügyfelenként beállítható. A terv (`docs/11`) jóváhagyásra vár. Nyitott még: **telefonhívások kezelése** (6.), **GDPR** (7.), **EU AI Act** (8.), **napló tárolása és hozzáférése** (9.), **felhasználási jog szerződése** és a Make felhasználási feltételei az átadásra: jogász bevonásával.
 6. **Cloudflare-telepítés** a tulajdonos fiókjában, **domén**, **AI-kulcs** (`ANTHROPIC_API_KEY`).
 7. **Push-szabály:** a push jelenleg minden alkalommal a tulajdonos jóváhagyásával megy. Ha ezt tartósan megengedi, ide kell írni.
 
@@ -114,6 +114,7 @@ docs/07                   a kód felépítése, kipróbálás, új ügynök hozz
 docs/08                   az iroda (felület) terve, mi készült el, telepítés lépései
 docs/09                   a dokumentumtár terve és állapota (kész)
 docs/10                   az ügynökök közötti átadások terve és felelősségi mátrixa (kész)
+docs/11                   a postafiók-réteg és a Kapcsolattartó Ügynök terve (jóváhagyásra vár)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

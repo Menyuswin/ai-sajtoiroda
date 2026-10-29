@@ -8,6 +8,8 @@ A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden
 
 ## 2. A nézetek (javaslat)
 
+*Az „asztal” képletes (a tulajdonos pontosítása): minden AI-munkatárs egy-egy asztalnál „ül”, ott végzi a feladatát. A felületen ez az ügynök saját munkaterülete: ide ad utasítást a vezető, itt látja a munkát és a jelentéseket.*
+
 | Nézet | Mit lát és mit tud tenni |
 |-------|--------------------------|
 | **1. Az iroda** (főoldal) | Az ügynökök kártyákként egy irodai alaprajzon. Állapotjelző fény (dolgozik / vár / szünetel / kikapcsolva), az utolsó tevékenység egy sorban, és egy ki-be kapcsoló. A kártyákat **húzással mozgathatja** és elrendezheti; az elrendezés mentődik. A még nem bevezetett ügynökök (Kapcsolattartó, Felkészítő, …) halványan, „zárt asztalként” látszanak, a bevezetési sorrend szerint. |

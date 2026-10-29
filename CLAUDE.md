@@ -12,7 +12,7 @@ A `docs/` a modell leírása (a tulajdonos szövegéből szerkesztve), az `agent
 - **Felület:** a vezető csevegőfelületen ad utasítást és hagy jóvá; emellett e-mailben is tudjon dolgozni vele (összefoglaló érkezik, válaszban jóváhagy vagy utasít).
 - **Első lépés:** a Monitoring Ügynök prototípusa. A többi ügynök később, a bevezetési sorrend szerint.
 
-**Platform (2026-10-29): vegyes.** A motor Cloudflare-en fut majd, a Make-lehetőség megmarad (levélréteg / leválasztott ügyfélpéldány). **Nulladik ügyfél:** a tulajdonos maga (`monitoring/nulladik-ugyfel.yaml`). **Kezelőfelület:** a megrendelő egy HTML oldalon, számítógépen kezeli a profilt; terve: `docs/08-kezelofelulet-terv.md` (jóváhagyásra vár, kód még nincs).
+**Platform (2026-10-29): vegyes.** A motor Cloudflare-en fut majd, a Make-lehetőség megmarad (levélréteg / leválasztott ügyfélpéldány). **Nulladik ügyfél:** a tulajdonos maga (`monitoring/nulladik-ugyfel.yaml`). **Kezelőfelület:** a megrendelő egy HTML oldalon, számítógépen kezeli a profilt; terve: `docs/08-kezelofelulet-terv.md` (iroda ügynök-asztalokkal, utasítás → javaslat → jóváhagyás; jóváhagyásra vár, kód még nincs).
 
 A prototípus terve: `docs/06-monitoring-prototipus-terv.md`. A tulajdonos 2026-10-29-én az építést elindította, de a Make fizetős csomagja és az éles üzem egyelőre nincs beállítva: a rendszert úgy kell tartani, hogy egy döntéssel elindítható legyen.
 

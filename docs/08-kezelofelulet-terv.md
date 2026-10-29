@@ -1,61 +1,75 @@
-# A megrendelői kezelőfelület terve (HTML oldal)
+# A kezelőfelület terve: az iroda és az ügynökök asztalai
 
-*Állapot: **jóváhagyásra vár** (2026-10-29). Kód még nincs; a mögötte lévő Cloudflare-réteg (D1-tár, ütemező) kész, a Worker `fetch` belépője pedig erre vár.*
+*Állapot: **jóváhagyásra vár** (2026-10-29, átdolgozva a tulajdonos második leírása után). Kód még nincs; a mögötte lévő Cloudflare-réteg (D1-tár, ütemező) kész.*
 
 ## 1. A cél
 
-A megrendelő egy böngészőben, számítógépen, egy HTML oldalon kezelje a saját sajtófigyelőjét, **programozói tudás nélkül**: állítsa be a kulcsszavakat, a forrásokat, a címzettet és az időzítést, lássa, mit küldött a rendszer, és kapcsolhassa ki-be. Ez az, amit az értékesítéskor az ügyfél kap a kezébe.
+A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden ügynöknek saját asztala van. Az asztalnál utasítást ad az ügynöknek, megnézi az elkészített munkáját, és elolvassa a jelentéseit, programozói tudás nélkül. A felület egy külön domént (például `sajtoiroda.ugyfel.hu`) kaphat, és később önálló alkalmazás is épülhet rá.
 
-## 2. Hogyan néz ki, mit lát az ügyfél
+## 2. A három nézet (az én értelmezésem, kérem, ellenőrizze)
 
-Egy oldal, négy fül, magyar nyelven:
+| Nézet | Mit lát és mit tud tenni |
+|-------|--------------------------|
+| **1. Az iroda** (főoldal) | Az ügynökök kártyákként egy irodai alaprajzon. Állapotjelző fény (dolgozik / vár / szünetel / kikapcsolva), az utolsó tevékenység egy sorban, és egy ki-be kapcsoló. A kártyákat **húzással mozgathatja** és elrendezheti; az elrendezés mentődik. A még nem bevezetett ügynökök (Kapcsolattartó, Felkészítő, …) halványan, „zárt asztalként” látszanak, a bevezetési sorrend szerint. |
+| **2. Az ügynök asztala** | Három sáv egy oldalon: **Utasítás** (üzenetablak: ide ír az ügynöknek, itt látja az előzményeket), **Munka** (amin az ügynök épp dolgozik, a mai találatok, a trendek), **Jelentések** (a korábbi szemlék és riasztások listája, megnyitva ugyanúgy, ahogy a levélben megérkeztek). Az asztalhoz tartozik a **Beállítások** (kulcsszavak, források, vörös vonalak, időzítés, címzett) és az **ügynök naplója**. |
+| **3. Jelentések** (összesítő) | Az összes ügynök jelentése egy helyen, időrendben, szűrhetően; letölthető. Ez az, amit a vezető reggel átfut. |
 
-| Fül | Tartalom | Példa |
-|-----|----------|-------|
-| **Áttekintés** | Az ügynök állapota (fut / szünetel), az utolsó szemle ideje, a nyitott riasztások száma, és egy jól látható sáv, ha **próbaüzem** van („levél nem megy ki”). Egy „Szünet” kapcsoló. | „Utolsó szemle: ma 07:30, 14 cikk, 1 riasztás.” |
-| **Beállítások** | Szervezet neve; kulcsszavak három csoportban (szervezet, személyek, témák) és kizáró szavak; források (hírportálok, kulcsszavas keresések); vörös vonalak; szemle időpontja; a jelentések címzettje. Címkés (tag) beviteli mezők, nem szövegfájl. | A „várólista” szó beírása Entert nyom, és megjelenik címkeként. |
-| **Szemlék** | A korábbi szemlék és riasztások listája, megnyitva ugyanúgy, ahogy a levélben megérkeztek. Próbaüzemben itt olvasható, mit küldött volna a rendszer. | „2026-10-29 – Sajtószemle – 14 cikk” |
-| **Napló** | Ki mit javasolt és mit döntött (az ügynök javaslatai, az ügyfél módosításai), szűrhetően, CSV-ként letölthetően. | „10-29 09:12 – profil módosítva: kulcsszavak” |
+*Két pontot kérek megerősíteni:* (a) a „három oldal” ez a három nézet-e, vagy más a három? (b) a „mozgatni az ügynököket” az elrendezés húzogatását jelenti-e (ahogy leírtam), vagy azt, hogy ügynököket lehet áthelyezni, például csoportokba, csapatokba?
 
-A második ütemben (nem része az elsőnek): **mentés előtti előnézet** („ezekkel a szavakkal ma ennyi cikket találna”), és cikkenkénti **visszajelzés** („releváns / nem releváns”), amely a besorolást javítja.
+## 3. Az utasítások működése (az alapszabályok szerint)
 
-## 3. Hogyan épül fel
+Az üzenetablakba természetes magyar nyelven lehet írni. Az ügynök **nem hajt végre közvetlenül semmit**, hanem javaslatot készít, amit a vezető jóváhagy:
 
-- **Egy Worker szolgálja ki** az oldalt és egy kis API-t (`/api/profil`, `/api/szemlek`, `/api/naplo`). Ugyanaz a Worker, amely az ütemezett futást végzi; külön tárhely vagy szerver nem kell.
-- **Az oldal egyetlen HTML + egy JS-fájl**, építési lépés és külső könyvtár nélkül, a manyai.hu-n használt szigorú tartalombiztonsági szabállyal (nincs beágyazott script, minden kimenet `textContent`-tel kerül az oldalra).
-- **A beállítás ugyanazon a profilon dolgozik**, amit a motor olvas (`src/cloudflare/d1.js`, `createD1ProfileRepo`). Mentéskor a szerver újra ellenőriz, verziót emel, és naplóz. Érvénytelen profil nem menthető.
-- **Leválasztható:** az oldal és az API a csomag része. Ha az ügyfél leválik, a saját Cloudflare-fiókjába telepíti, saját belépéssel.
-- **Megjelenés:** semleges, letisztult; a név és az akcentusszín a profilból jön (`megjelenes` blokk), így az ügyfél a saját arculatára igazíthatja.
+1. A vezető ír: *„Figyeld a várólista témát is, és a péntek esti szemlét hagyd ki.”*
+2. Az ügynök értelmezi, és **javaslatot** mutat: „Hozzáadom a »várólista« témát a figyelt kifejezésekhez; a péntek esti szemle kimarad. Jóváhagyod?”
+3. A vezető jóváhagy vagy elvet; az eredmény **naplóba** kerül (javaslat + döntés).
 
-## 4. Belépés és jogosultság (a legfontosabb döntés)
+Az utasítások **csak egy zárt, ellenőrzött műveletlistából** hajthatók végre: kifejezés hozzáadása / elvétele, forrás hozzáadása / elvétele, szünet kezdete és vége, időpont módosítása, „készíts jelentést erről az időszakról / témáról” (csak olvasó művelet a tárolt cikkeken). Amit az ügynök nem ért, arra visszakérdez; amit nem tud (például levelet küldeni valakinek), azt megmondja. Kifelé szóló üzenet ezen a csatornán **nem** küldhető: azt a kimenő kapu és a jóváhagyás védi.
 
-Ez az oldal dönti el, **kihez megy a jelentés**, tehát aki bejut, az a sajtófigyelés tartalmához fér hozzá. Ezért:
+Példák a Monitoring asztalán:
+- *„Mi történt a héten az ápolóhiány körül?”* → olvasó jelentés a tárolt cikkekből, hivatkozásokkal.
+- *„A Magyar Nemzetet ne figyeld.”* → javaslat: forrás elvétele.
+- *„Szóljon azonnal, ha a vezérigazgató nevét említik.”* → javaslat: vörös vonal felvétele.
 
-1. **Belépés: Cloudflare Access** (e-mailben kapott egyszeri kód, jelszó nélkül). A Worker a kérésben érkező aláírt azonosítót ellenőrzi, és egy `felhasznalok` táblából (e-mail → ügyfél, szerep) dönti el, ki melyik ügyfél adatát látja. Ügyfél csak a sajátját láthatja. (Saját belépési rendszert nem javaslok építeni: a hozzá kellő levélküldő még nincs kiválasztva, és a hibalehetőség sok.)
-2. **Két szerep:**
-   - *Vezető* (az ügyfél): szerkeszti a kulcsszavakat, forrásokat, vörös vonalakat, időzítést, szüneteltet.
-   - *Üzemeltető* (Ön): ezen felül a címzett-listát, a korlátokat, az AI-módot, és több ügyfelet lát.
-3. **Ami az ügyfélnek nem szerkeszthető:** az AI-jelzés törlése (az átláthatóság miatt; legfeljebb kiegészíthető), a promptok, a modellek és a megőrzési szabályok. Ezeket az Ön üzemeltetői szerepe állítja.
-4. **A jelentés címzettjének módosítása védett:** a változás naplózódik, a **régi címre értesítés** megy, és az új cím csak megerősítés után lép életbe. (Amíg nincs éles levélküldő, a címzettet csak az üzemeltető szerepkör módosíthatja.)
-5. **Korlátok:** legfeljebb 100 kulcsszó és 30 forrás ügyfelenként, csak `https://` forrás-cím. A korlát költségvédelem (minden cikk AI-hívás), és véd a visszaélés ellen, hiszen a Worker az ügyfél által megadott címeket kérdezi le.
-6. **Biztonsági minimum:** szerveroldali ellenőrzés minden mentésnél, a kérés eredetének ellenőrzése (CSRF), a bejövő szövegek kimenetkori escape-elése.
+## 4. Felépítés: API az alapja, a felület csak egy kliens
 
-## 5. Ütemezés (mérföldkövek)
+- **Minden funkció egy API-n át érhető el** (`/api/...`: iroda, ügynökök, utasítások, javaslatok, jelentések, napló). A HTML oldal ennek az egyik kliense. Ezért később külön alkalmazás ugyanazt az API-t használhatja változtatás nélkül.
+- **Az alkalmazás útja:** először a HTML oldal telepíthető alkalmazásként (PWA) viselkedik, ez további fejlesztés nélkül adja az „app” érzetet; a natív mobilalkalmazás később ugyanerre az API-ra épül.
+- **Külön domén:** az oldal és az API ugyanabból a Workerből szolgálódik ki, ezért az ügyfél saját doménje egyszerűen rámutat. A kérés `Host` fejléce alapján dől el, melyik ügyfél irodáját látja (`domenek` tábla: domén → ügyfél). Az Access-szabály doménenként külön. *Ellenőrizendő a megvalósításkor:* a Cloudflare saját doménhez csatolás feltételei (a domén DNS-e jellemzően a Cloudflare-nél kell legyen).
+- **Az oldal egyetlen HTML + JS, építési lépés nélkül**, szigorú tartalombiztonsági szabállyal (nincs beágyazott script, minden kimenet `textContent`-tel kerül az oldalra). Az irodai elrendezés egyszerű CSS-rács, a húzás a böngésző beépített képességeivel (külső könyvtár nélkül) működik.
+- **Megjelenés:** semleges; a név, a logó és az akcentusszín a profil `megjelenes` blokkjából jön, hogy az ügyfél a saját arculatára igazíthassa.
+- **Leválasztható:** az oldal, az API és a Worker a kiadható csomag része (docs/06, 4.8).
+
+## 5. Belépés és jogosultság
+
+Az oldal dönti el, kihez megy a jelentés, tehát aki bejut, az a sajtófigyelés tartalmához fér hozzá.
+
+1. **Belépés: Cloudflare Access** (e-mailben kapott egyszeri kód, jelszó nélkül). A Worker az aláírt azonosítót ellenőrzi, és a `felhasznalok` táblából (e-mail → ügyfél, szerep) dönti el, ki mit lát. Ügyfél csak a sajátját láthatja.
+2. **Két szerep:** *Vezető* (az ügyfél): utasít, jóváhagy, beállít, szüneteltet. *Üzemeltető* (Ön): ezen felül a címzett-listát, a korlátokat, az AI-módot állítja, és több ügyfelet lát.
+3. **Az ügyfélnek nem szerkeszthető:** az AI-jelzés törlése (az átláthatóság miatt legfeljebb kiegészíthető), a promptok, a modellek, a megőrzési szabályok.
+4. **A jelentések címzettjének módosítása védett:** naplózódik, a régi címre értesítés megy, az új cím megerősítés után lép életbe. (Amíg nincs éles levélküldő, csak az üzemeltető módosíthatja.)
+5. **Korlátok:** legfeljebb 100 kulcsszó és 30 forrás ügyfelenként, csak `https://` forráscím. Költségvédelem és visszaélés elleni védelem.
+6. **Biztonsági minimum:** szerveroldali ellenőrzés minden mentésnél, a kérés eredetének ellenőrzése (CSRF), a bejövő szövegek escape-elése, az utasítások csak a zárt műveletlistára képezhetők le.
+
+## 6. Ütemezés (mérföldkövek)
 
 | # | Lépés | Ellenőrizhető eredmény |
 |---|-------|------------------------|
-| U1 | API a profilra, szerepekkel és korlátokkal | Tesztek: ügyfél csak a sajátját látja, érvénytelen mentés elutasítva, a címzett-váltás védett |
-| U2 | Az oldal: Beállítások és Áttekintés fül | Böngészőben (automatikus képernyőfelvétellel is ellenőrizve) szerkeszthető és menthető a nulladik ügyfél profilja |
-| U3 | Szemlék és Napló fül | A próbalevelek olvashatók, a napló szűrhető és exportálható |
-| U4 | Cloudflare Access bekötése és első telepítés | **Az Ön Cloudflare-fiókjában**, az Ön jóváhagyásával; élő oldal próbaüzemben |
-| U5 | (második ütem) előnézet és cikk-visszajelzés | |
+| U1 | API: iroda, ügynökök, profil, jelentések, napló, szerepek, korlátok | Tesztek: ügyfél csak a sajátját látja, érvénytelen mentés elutasítva, címzett-váltás védett |
+| U2 | Az iroda és a Monitoring asztala: Munka, Jelentések, Beállítások (utasítás még nélkül) | Böngészőben (automatikus képernyőfelvétellel is ellenőrizve) a nulladik ügyfél irodája, mozgatható kártyákkal, olvasható szemlékkel |
+| U3 | Az utasítás-üzenetablak: javaslat → jóváhagyás → végrehajtás → napló, a zárt műveletlistával | Tesztek: minden műveletre javaslat, jóváhagyás nélkül nincs változás, ismeretlen utasításra visszakérdezés |
+| U4 | Összesítő jelentések nézet, napló-export | |
+| U5 | Cloudflare Access, első telepítés, külön domén | **Az Ön Cloudflare-fiókjában**, az Ön jóváhagyásával; élő iroda próbaüzemben |
+| U6 | (későbbi) telepíthető alkalmazás (PWA), majd natív app | Ugyanazon az API-n |
 
-Az U1–U3 a mostani környezetben megépíthető és tesztelhető. Az U4-hez az Ön Cloudflare-hozzáférése kell.
+Az U1–U4 a mostani környezetben megépíthető és tesztelhető. Az U5-höz az Ön Cloudflare-hozzáférése és a domén kell.
 
-## 6. Amit jóvá kell hagynia
+## 7. Amit jóvá kell hagynia
 
-1. **Belépés:** Cloudflare Access (ajánlott), vagy saját belépés később.
-2. **Szerepek és ami az ügyfélnek nem szerkeszthető:** a 4. pont szerint? (Különösen: az AI-jelzés nem törölhető, és a címzett-váltás védett.)
-3. **A négy fül és az első ütem tartalma:** elég az Áttekintés, Beállítások, Szemlék, Napló; az előnézet és a visszajelzés a második ütemben jön?
-4. **Megjelenés:** semleges, a névvel és színnel testreszabható (ajánlott), vagy a manyai.hu arculata?
-5. **Nyelv:** először csak magyar?
+1. **A három nézet értelmezése** (2. fejezet), és hogy a „mozgatás” az elrendezés húzogatása-e.
+2. **Az utasítások modellje:** javaslat → vezetői jóváhagyás → végrehajtás, zárt műveletlistával (3. fejezet). Ez egyben a korábbi „csevegőfelület” döntésnek a megvalósítása.
+3. **Belépés:** Cloudflare Access (ajánlott).
+4. **Szerepek és a nem szerkeszthető elemek** (5. fejezet), különösen: az AI-jelzés nem törölhető, és a címzett-váltás védett.
+5. **Megjelenés:** semleges, a névvel, logóval és színnel testreszabható (ajánlott), vagy a manyai.hu arculata?
+6. **Nyelv:** először csak magyar?
+7. **A domén:** van-e már kiválasztott doménje a nulladik ügyfélhez, vagy aldomént használjunk (például a manyai.hu alatt)?

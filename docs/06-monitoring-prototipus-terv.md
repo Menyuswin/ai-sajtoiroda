@@ -50,7 +50,7 @@ Ezt követi a cikkek rövid listája (cím, médium, hangnem, egymondatos indokl
 
 ### 4.1 Javasolt technológia
 
-Az irány: **Cloudflare Workers + D1 adatbázis + Claude API**.
+Az irány (az eredeti javaslat; a végleges választás a 7. fejezet 1. pontja szerint eldöntetlen, a 4.8 szabályai bármelyik esetén érvényesek): **Cloudflare Workers + D1 adatbázis + Claude API**.
 
 - A manyai.hu már Cloudflare-en fut, a sajtófigyelő kódja (`functions/api/press.js`) pedig ugyanilyen környezetre készült. A feed-lekérő és -értelmező részei (`load`, `loadAny`, `parse`, `decode`) átemelhetők.
 - Az időzítést (reggeli futás, óránkénti trendellenőrzés) a Cloudflare saját ütemezője végzi; külön szerver nem kell.
@@ -112,6 +112,23 @@ Minden esemény egy sor, tenant-azonosítóval, időbélyeggel és szereplővel:
 
 A tervezés elejétől minden táblában ott a `tenant_id`, minden lekérdezés ezzel szűr, és az AI-nak soha nem kerül két ügyfél adata ugyanabba a kéréshez. Az 5. mérföldkő külön tesztel erre: egy második, szándékosan átfedő kulcsszavú ügyféllel ellenőrizzük, hogy semmi nem szivárog át.
 
+### 4.8 Leválaszthatóság: motor, profil, kiadható csomag
+
+*A tulajdonos 2026-10-29-i kérése: a megoldás bármikor csatolható legyen egy új (például az ügyfél saját) Make-hozzáféréshez, ha az ügyfél felhasználási jogot kap, a saját területéhez igazíthatja, és leválasztható.*
+
+Ez a tervezési szabály **a platformtól független**, ezért érvényes akár Make, akár Cloudflare lesz a motor:
+
+1. **A motor általános.** Nincs benne ügyfélre, szakterületre vagy személyre utaló szó.
+2. **Minden ügyfélfüggő dolog a profilban van** (`monitoring/profil-sablon.yaml`): kulcsszavak, források, vörös vonalak, címzett, ütemezés, megőrzés. Az ügyfél ezt szerkesztheti, és ez költözik vele.
+3. **Az utasítások (promptok) külön fájlokban vannak** (`monitoring/prompts/`), a profilból kitöltött változókkal. Így az ügyfél a saját szakterületéhez igazíthatja a szövegezést a motor átépítése nélkül.
+4. **A napló sémája rögzített és tenant-szerint exportálható** (`monitoring/naplo-sema.md`).
+5. **Titok nem kerül a profilba vagy a repóba.** A hozzáférések (levelezés, AI-kulcs) a motor kapcsolataiban élnek, és minden példány a *saját* kapcsolatait használja. A Make blueprint-exportja sem viszi magával a kapcsolatokat.
+6. **Kiadható csomag = motor + profilsablon + promptok + naplóséma + telepítési útmutató.** Ez verziókövetve van a repóban (Make esetén a blueprint-fájl a `make/` mappába kerülne).
+
+Két üzemmód: (a) **üzemeltetett**: Ön futtatja, ügyfelenként külön mappában/csapatban/profilban; (b) **leválasztott**: az ügyfél a saját fiókjába telepíti, saját kapcsolatokkal.
+
+*Szerződési oldal (nem műszaki, jogász bevonásával rendezendő):* mit kap az ügyfél (használat, módosítás, továbbadás), mi marad a tulajdonosnál, és a platform (Make) felhasználási feltételei megengedik-e az átadást.
+
 ## 5. A nyitott kérdések (4–9.) rövid válasza erre a prototípusra
 
 | # | Kérdés | Javaslat a prototípushoz |
@@ -145,7 +162,7 @@ Mindegyik végén van egy konkrét, ellenőrizhető eredmény, és ott megállun
 
 ## 7. Amit jóvá kell hagynia
 
-1. **Technológia:** Cloudflare Workers + D1 + Claude API (ajánlott), vagy Make-forgatókönyv gyors demónak.
+1. **Technológia (a Make-fiók vizsgálata után módosult):** a Make-fiók Free csomagon van (2 forgatókönyv, havi 1000 művelet, ebből 267 maradt; mindkét forgatókönyv-hely foglalt). A választási lehetőségek: (A) fizetős Make-csomag, a motor Make-ben; (B) Cloudflare Workers + D1 + Claude API; (C) vegyes: motor Cloudflare-en, Make csak a levélréteg. **Eldöntetlen.**
 2. **Nulladik ügyfél:** Ön maga (ajánlott), vagy egy kiválasztott leendő ügyfél.
 3. **Mérföldkő-sorrend:** a fenti 0–6, a megállási pontokkal.
 4. **A kezdő forráskör:** a hat hírportál plusz kulcsszavas hírkereső-csatorna.

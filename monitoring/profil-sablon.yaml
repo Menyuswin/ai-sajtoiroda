@@ -1,0 +1,54 @@
+# Ügyfélprofil – sablon (platformfüggetlen)
+# Minden, ami az ügyféltől vagy a szakterülettől függ, ITT van, és sehol máshol.
+# A motor (Make-forgatókönyv vagy Cloudflare-kód) ezt olvassa be futáskor, ezért
+# az ügyfél a saját területére igazíthatja, és leválasztáskor ez a fájl költözik vele.
+# Titkos adat (API-kulcs, jelszó) NEM kerül ide: az a motor kapcsolataiban él.
+
+schema_verzio: 1
+ugyfel_id: pelda-ugyfel           # kisbetű, kötőjel; ez a tenant_id a naplóban
+megnevezes: "Példa Ügyfél Kft."
+nyelv: hu
+foldrajzi_hatokor: [HU]
+
+vezeto:
+  nev: "Példa Vezető"
+  email: "vezeto@pelda.example"    # EZ AZ EGYETLEN cím, ahová levél mehet
+  # A motor más címre semmit nem küldhet (alapszabály).
+
+kulcsszavak:
+  szervezet: ["Példa Ügyfél", "Példa Kft."]
+  szemelyek: ["Példa Vezető"]
+  temak: ["példatéma egy", "példatéma kettő"]
+  kizaro: ["álláshirdetés"]       # ezekkel együtt előforduló találat kiesik
+
+versenytarsak: []                  # későbbi szakaszhoz; most üresen hagyható
+
+forrasok:
+  rss:
+    - { nev: "Index",     url: "https://index.hu/24ora/rss/" }
+    - { nev: "Telex",     url: "https://telex.hu/rss" }
+    - { nev: "24.hu",     url: "https://24.hu/feed/" }
+    - { nev: "Portfolio", url: "https://www.portfolio.hu/rss/all.xml" }
+    - { nev: "Magyar Nemzet", url: "https://magyarnemzet.hu/feed" }
+  hirkereso: []                    # kulcsszavas hírkereső-csatornák (a megvalósításkor ellenőrzendő)
+  sajat: []                        # az ügyfél által megadott szakmai/helyi források
+
+vorosvonalak:                      # ezeknél nem vár a reggeli szemlére: azonnali értesítés a vezetőnek
+  - "peres ügy vagy hatósági eljárás említése"
+  - "haláleset vagy baleset a szervezet intézményében"
+
+trend:
+  alapido_nap: 14
+  szoras_szorzo: 2
+  minimum_emlites: 5
+
+utemezes:
+  szemle: "07:30"
+  idozona: "Europe/Budapest"
+  trendellenorzes: "óránként"      # a motor képességeitől függően
+
+megorzes:
+  nyers_cikk_honap: 12
+  naplo_honap: 36                  # javaslat; GDPR-szempontból egyeztetendő
+
+ai_jelzes: "Ezt a szemlét mesterséges intelligencia készítette elő; a hivatkozott cikkek ellenőrzése a vezető feladata."

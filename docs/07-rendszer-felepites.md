@@ -1,6 +1,6 @@
 # A rendszer felépítése (a kód)
 
-*Állapot: 2026-10-29. Az első ügynök, a Monitoring, szárazon (dry-run) működik. Éles üzembe helyezés nincs, és nem is lesz addig, amíg a tulajdonos el nem indítja (lásd lent).*
+*Állapot: 2026-10-29. Az első ügynök, a Monitoring, szárazon (dry-run) működik, és a Cloudflare-réteg (D1-tár, ütemező, Worker) kész, de **nincs telepítve**. Éles üzembe helyezés nincs, és nem is lesz addig, amíg a tulajdonos el nem indítja (lásd lent).*
 
 ## Az alapgondolat
 
@@ -17,10 +17,16 @@ src/
     llm.js              AI-illesztő (mock / Claude API) és promptbetöltő
     registry.js         ügynök-nyilvántartás
     config.js           száraz / éles mód
+  cloudflare/
+    d1.js               D1-illesztők: napló, cikktár, profiltár, próbalevelek
+    scheduler.js        ütemezés és ügyfelenkénti futtatás
+  worker/index.js       Cloudflare Worker belépő (vékony)
   agents/
     monitoring/         az első ügynök
   cli.js                parancssori belépő
-monitoring/             profilsablon, promptok, naplóséma (ügyfél által igazítható rész)
+monitoring/             profilsablon, nulladik ügyfél profilja, promptok, naplóséma (ügyfél által igazítható rész)
+migrations/             D1 adatbázis-séma
+wrangler.toml           Cloudflare beállítás (nincs telepítve)
 test/                   automatikus tesztek (hálózat nélkül futnak)
 ```
 
@@ -34,7 +40,7 @@ test/                   automatikus tesztek (hálózat nélkül futnak)
 
 ```bash
 npm install
-npm test                                  # 21 automatikus teszt
+npm test                                  # 29 automatikus teszt
 node src/cli.js monitoring run \
   --profile test/fixtures/profil.yaml \
   --offline-feed test/fixtures/feed.xml   # a kimenet: out/pelda-korhazak/
@@ -50,7 +56,8 @@ Száraz módban a levelek az `out/` mappába kerülnek, nem mennek ki sehová, �
 | Gyűjtés, duplikátum-szűrés, kulcsszavas szűrés | A kulcsszavas hírkereső-csatorna (Google News RSS) működése és felhasználási feltételei |
 | Besorolás, trendjelzés, riasztás, napi szemle | Az **AI valódi minősége**: a Claude-hívás hamis API-val tesztelt; a magyar hangnembesorolás pontosságát 30 cikkes kézi ellenőrzéssel kell megmérni (docs/06, 2. mérföldkő) |
 | Hibatűrés (rossz forrás, AI-hiba nem állítja le a futást) | **Éles levélküldő**: a szolgáltatás kiválasztása nyitott döntés; addig az éles mód szándékosan megáll |
-| Hallucináció-védelem (a cikklistát és a számokat a program írja, a narratíva csak létező cikkszámra hivatkozhat) | **Időzítés** (reggeli futás, óránkénti ellenőrzés): a futtatási hely még nincs eldöntve |
+| Hallucináció-védelem (a cikklistát és a számokat a program írja, a narratíva csak létező cikkszámra hivatkozhat) | **A telepítés és az első futás Cloudflare-en**: a fiók, az adatbázis létrehozása és az ütemezés bekapcsolása az Ön hozzáférésével és jóváhagyásával lehetséges. A Worker éles futását nem próbáltuk; a csomag szárazon összeállt |
+| Cloudflare-réteg: D1-séma (módosíthatatlan napló), ügyfél-elkülönített tár, óránkénti ütemező (a szemle-időpont ügyfelenként, nyári/téli idővel), próbalevelek | **A kezelőfelület (HTML oldal)**: a terve jóváhagyásra vár (docs/08) |
 | | Válaszlevél feldolgozása (vezetői visszajelzés e-mailben): a 4. mérföldkő része |
 | | Trendjelzés új szereplők / szempontok felismerésére (csak a figyelt kifejezések említésszámát követi) |
 

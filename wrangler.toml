@@ -1,0 +1,25 @@
+# Cloudflare Worker beállítás. NINCS telepítve: a telepítés a tulajdonos Cloudflare-fiókjában, az ő jóváhagyásával történik.
+name = "ai-sajtoiroda"
+main = "src/worker/index.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Óránként, a 30. percben (a szemle-időpontot a profil dönti el, időzónával).
+[triggers]
+crons = ["30 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-sajtoiroda"
+database_id = "IDE-KERUL-A-D1-AZONOSITO"   # a `wrangler d1 create ai-sajtoiroda` adja
+migrations_dir = "migrations"
+
+# A promptok (.md) szövegként épülnek a csomagba.
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallthrough = true
+
+[vars]
+SAJTOIRODA_LIVE = "0"    # 1 = éles küldés; amíg nincs levélküldő kiválasztva, ne állítsd át
+SAJTOIRODA_LLM = "mock"  # "anthropic" = valódi AI (ANTHROPIC_API_KEY titokként: wrangler secret put ANTHROPIC_API_KEY)

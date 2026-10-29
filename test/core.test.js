@@ -4,6 +4,7 @@ import { validateProfile, loadProfile, agentActive } from '../src/core/profile.j
 import { createOutbox } from '../src/core/outbox.js';
 import { loadPrompt, extractJson } from '../src/core/llm.js';
 import { norm, dayKey } from '../src/core/text.js';
+import { readFile } from 'node:fs/promises';
 import { fixture, promptDir, makeCtx } from './helpers.js';
 
 test('a minta ügyfélprofil érvényes, a hiányos nem', async () => {
@@ -45,7 +46,7 @@ test('kimenő kapu: belső jelentés csak a vezetőnek, külső csak jóváhagy�
 });
 
 test('promptfájl szakaszokra bontása és kitöltése', async () => {
-  const { system, user } = await loadPrompt(`${promptDir}/cikk-besorolas.md`, {
+  const { system, user } = loadPrompt(await readFile(`${promptDir}/cikk-besorolas.md`, 'utf8'), {
     megnevezes: 'Példa Zrt.', szemelyek: ['A', 'B'], temak: ['t'], vorosvonalak: ['v'], cim: 'Cím', medium: 'M', ido: 'ma', reszlet: 'rész',
   });
   assert.match(system, /Példa Zrt\./);

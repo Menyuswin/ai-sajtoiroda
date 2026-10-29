@@ -1,8 +1,6 @@
 // AI-illesztő. Két mód:
 //  - 'mock': nincs hálózat, nincs költség; a mód az ügynök saját szabályalapú tartalékát használja;
 //  - 'anthropic': Claude API (ANTHROPIC_API_KEY kell).
-import { readFile } from 'node:fs/promises';
-
 export function createLlm({ mode = 'mock', key = null, models, fetchImpl = fetch }) {
   if (mode === 'mock') return { mode: 'mock', complete: null };
   if (mode !== 'anthropic') throw new Error(`Ismeretlen AI-mód: ${mode}`);
@@ -23,9 +21,9 @@ export function createLlm({ mode = 'mock', key = null, models, fetchImpl = fetch
   };
 }
 
-// A promptfájlok (monitoring/prompts/*.md) szakaszokra bontása és kitöltése.
-export async function loadPrompt(path, vars) {
-  const md = await readFile(path, 'utf8');
+// A promptok (monitoring/prompts/*.md szövege) szakaszokra bontása és kitöltése.
+// A szöveget a hívó adja (fájlból vagy a csomagba építve), így Cloudflare Workerben is működik.
+export function loadPrompt(md, vars) {
   const section = (title) => {
     const m = md.match(new RegExp(`^## ${title}[^\\n]*\\n([\\s\\S]*?)(?=^## |$(?![\\s\\S]))`, 'm'));
     return m ? m[1].trim() : '';

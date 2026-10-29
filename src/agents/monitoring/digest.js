@@ -59,9 +59,9 @@ export function validateSynthesis(obj, validNumbers) {
   };
 }
 
-export async function synthesize({ items, stats, trends, profile, llm, promptDir }) {
+export async function synthesize({ items, stats, trends, profile, llm, prompts }) {
   if (llm.mode === 'mock' || !items.length) return { synthesis: mockSynthesis(items, stats), dropped: [] };
-  const { system, user } = await loadPrompt(`${promptDir}/napi-szemle.md`, {
+  const { system, user } = loadPrompt(prompts.synthesize, {
     megnevezes: profile.megnevezes, vezeto_nev: profile.vezeto.nev || 'a vezető', alapido_nap: profile.trend.alapido_nap,
   });
   const data = {

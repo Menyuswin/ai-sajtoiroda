@@ -45,9 +45,9 @@ export function normalizeClassification(obj, model) {
   };
 }
 
-export async function classifyArticle(article, { profile, llm, promptDir, models }) {
+export async function classifyArticle(article, { profile, llm, prompts, models }) {
   if (llm.mode === 'mock') return mockClassify(article, profile);
-  const { system, user } = await loadPrompt(`${promptDir}/cikk-besorolas.md`, {
+  const { system, user } = loadPrompt(prompts.classify, {
     megnevezes: profile.megnevezes,
     szemelyek: profile.kulcsszavak.szemelyek,
     temak: profile.kulcsszavak.temak,

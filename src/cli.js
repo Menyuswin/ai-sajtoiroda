@@ -15,6 +15,7 @@ import { createLlm } from './core/llm.js';
 import { registerAgent, getAgent } from './core/registry.js';
 import { monitoringAgent } from './agents/monitoring/index.js';
 import { defaultFetchText } from './agents/monitoring/sources.js';
+import { profileToSql } from './cloudflare/d1.js';
 
 registerAgent(monitoringAgent);
 
@@ -27,18 +28,22 @@ function parseArgs(argv) {
   return { pos, flags };
 }
 
-export async function buildContext({ profile, config, llmMode = 'mock', fetchText = defaultFetchText, now = () => new Date(), promptDir }) {
+export async function buildContext({ profile, config, llmMode = 'mock', fetchText = defaultFetchText, now = () => new Date(), prompts }) {
   const log = createFileLog({ dir: config.dataDir, tenantId: profile.ugyfel_id, now });
   const store = createFileStore({ dir: config.dataDir, tenantId: profile.ugyfel_id });
   const mailer = config.live ? createLiveMailer(config.mailer) : createFileMailer({ outDir: config.outDir, now });
   const outbox = createOutbox({ profile, mailer, log });
   const llm = createLlm({ mode: llmMode, key: config.anthropicKey, models: config.models });
-  return { profile, log, store, outbox, llm, now, fetchText, promptDir, models: config.models };
+  return { profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models };
 }
 
 async function main() {
   const { pos, flags } = parseArgs(process.argv.slice(2));
   const [agentId, command] = pos;
+  if (agentId === 'profil-sql' && flags.profile) { // az első profil feltöltéséhez: wrangler d1 execute ... --command "$(…)"
+    console.log(profileToSql(await loadProfile(flags.profile)));
+    return;
+  }
   if (!agentId || command !== 'run' || !flags.profile) {
     console.error('Használat: node src/cli.js <ügynök> run --profile <profil.yaml> [--mode digest|check] [--llm mock|anthropic] [--offline-feed <feed.xml>]');
     process.exit(2);
@@ -47,7 +52,9 @@ async function main() {
   const profile = await loadProfile(flags.profile);
   const here = dirname(fileURLToPath(import.meta.url));
   const fetchText = flags['offline-feed'] ? async () => readFile(flags['offline-feed'], 'utf8') : defaultFetchText;
-  const ctx = await buildContext({ profile, config, llmMode: flags.llm || 'mock', fetchText, promptDir: join(here, '..', 'monitoring', 'prompts') });
+  const promptDir = join(here, '..', 'monitoring', 'prompts');
+  const prompts = { classify: await readFile(join(promptDir, 'cikk-besorolas.md'), 'utf8'), synthesize: await readFile(join(promptDir, 'napi-szemle.md'), 'utf8') };
+  const ctx = await buildContext({ profile, config, llmMode: flags.llm || 'mock', fetchText, prompts });
   console.error(`[${config.live ? 'ÉLES' : 'száraz'} mód] ügyfél: ${profile.ugyfel_id}, AI: ${ctx.llm.mode}`);
   const result = await getAgent(agentId).run(ctx, { mode: flags.mode || 'digest' });
   console.log(JSON.stringify(result, null, 2));

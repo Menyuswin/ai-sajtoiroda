@@ -8,6 +8,7 @@ import { buildContext } from '../src/cli.js';
 const here = dirname(fileURLToPath(import.meta.url));
 export const fixture = (n) => join(here, 'fixtures', n);
 export const promptDir = join(here, '..', 'monitoring', 'prompts');
+export const readPrompts = async () => ({ classify: await readFile(join(promptDir, 'cikk-besorolas.md'), 'utf8'), synthesize: await readFile(join(promptDir, 'napi-szemle.md'), 'utf8') });
 
 export async function makeCtx({ now = new Date('2026-10-29T06:30:00Z'), fetchText, llmMode = 'mock', profileMod, llmFetch } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'sajto-'));
@@ -15,7 +16,7 @@ export async function makeCtx({ now = new Date('2026-10-29T06:30:00Z'), fetchTex
   if (profileMod) profile = profileMod(profile);
   const feed = await readFile(fixture('feed.xml'), 'utf8');
   const config = { live: false, dataDir: join(dir, 'data'), outDir: join(dir, 'out'), anthropicKey: 'teszt', models: { classify: 'm-c', synthesize: 'm-s' } };
-  const ctx = await buildContext({ profile, config, llmMode, fetchText: fetchText || (async () => feed), now: () => now, promptDir });
+  const ctx = await buildContext({ profile, config, llmMode, fetchText: fetchText || (async () => feed), now: () => now, prompts: await readPrompts() });
   if (llmFetch) {
     const { createLlm } = await import('../src/core/llm.js');
     ctx.llm = createLlm({ mode: 'anthropic', key: 'teszt', models: config.models, fetchImpl: llmFetch });

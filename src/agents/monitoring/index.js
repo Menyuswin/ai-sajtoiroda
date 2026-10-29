@@ -16,7 +16,7 @@ const WHO = `ugynok:${AGENT}`;
 const MAX_CLASSIFY_PER_RUN = 80; // költségkorlát futásonként
 
 export async function run(ctx, { mode = 'digest' } = {}) {
-  const { profile, log, store, outbox, llm, now, fetchText, promptDir, models } = ctx;
+  const { profile, log, store, outbox, llm, now, fetchText, prompts, models } = ctx;
   if (!agentActive(profile, AGENT)) {
     await log.append({ szereplo: 'rendszer', tipus: 'futas', tartalom: { mode, kimenet: 'kihagyva: az ügynök ki van kapcsolva' } });
     return { skipped: true };
@@ -37,7 +37,7 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   for (const a of todo) {
     let cls;
     try {
-      cls = await classifyArticle(a, { profile, llm, promptDir, models });
+      cls = await classifyArticle(a, { profile, llm, prompts, models });
     } catch (e) {
       await log.append({ szereplo: WHO, tipus: 'hiba', hivatkozas: a.url, tartalom: { hiba: `besorolás sikertelen: ${e.message}` } });
       cls = { relevans: true, fontossag: 3, tema: a.matches[0].term, hangnem: 'semleges', erintett_szereplok: [], voros_vonal: false, indoklas: 'A besorolás nem sikerült; kézi ellenőrzés javasolt.', bizonytalan: true, modell: 'hiba' };
@@ -81,10 +81,10 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   const stats = buildStats(items);
   let synth;
   try {
-    synth = await synthesize({ items, stats, trends, profile, llm, promptDir });
+    synth = await synthesize({ items, stats, trends, profile, llm, prompts });
   } catch (e) {
     await log.append({ szereplo: WHO, tipus: 'hiba', tartalom: { hiba: `összefoglaló sikertelen: ${e.message}` } });
-    synth = await synthesize({ items, stats, trends, profile, llm: { mode: 'mock' }, promptDir });
+    synth = await synthesize({ items, stats, trends, profile, llm: { mode: 'mock' }, prompts });
   }
   for (const d of synth.dropped) await log.append({ szereplo: WHO, tipus: 'hiba', tartalom: { hiba: 'ellenőrizhetetlen narratíva elvetve', szoveg: d } });
 

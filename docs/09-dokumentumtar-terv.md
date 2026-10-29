@@ -1,6 +1,6 @@
 # A dokumentumtár terve
 
-*Állapot: **jóváhagyásra vár** (2026-10-29). Kód még nincs.*
+*Állapot: **jóváhagyva az ajánlott beállításokkal (2026-10-29), a D1–D3 lépések megépültek és tesztelve vannak**; a D4 (telepítés, R2 bekapcsolása) a tulajdonos Cloudflare-hozzáférésére vár. Lásd a 8. fejezetet.*
 
 ## 1. A cél
 
@@ -75,3 +75,21 @@ D1–D3 itt megépíthető és tesztelhető, a D4-hez az Ön Cloudflare-fiókja 
 5. **A „Nem küldhető AI-nak” jelölés** legyen meg az első ütemben?
 6. **A kategóriák** rendben vannak, vagy kell más?
 7. **Az Archívum ügynök** később erre a közös szolgáltatásra épüljön (ahogy az 1. fejezet írja)?
+
+## 8. Mi készült el (2026-10-29)
+
+- **Feltöltés és kinyerés:** txt, md, csv, docx (címsorok és táblázatsorok megőrzésével), szöveges PDF; a régi, nem UTF-8 kódolású szövegfájlok is helyesen jelennek meg (ő, ű). A fájl típusát a **tartalom** dönti el, nem a kiterjesztés: átnevezett PDF, hamis docx, program, bináris fájl, üres vagy túl nagy fájl elutasítva magyar üzenettel. Valódi, LibreOffice-szal és python-docx-szel készült fájlokon tesztelve.
+- **Tárolás:** metaadat, szakaszok és keresési index a D1-ben; az eredeti fájl R2-ben (ha be van kapcsolva; nélküle csak a kinyert szöveg marad meg, és a felület ezt jelzi). Az R2-hiba visszavonja a feltöltést, nem marad félkész dokumentum.
+- **Keresés:** szó alapú, ékezet- és kisbetű-független, ragozás-tűrő (a „ápolóhiányról” megtalálja az „ápolóhiány”-t); a rövid szavak pontosan keresődnek.
+- **Hatókör és AI-jelölés:** dokumentumonként megadható, mely ügynök használhatja; a „Nem küldhető AI-nak” jelölésű dokumentum részletei AI-hívásba nem kerülnek, és a válasz jelzi, ha ilyen miatt hagyott ki találatot. AI nélkül (a bemutató módban) a tartalom nem hagyja el a rendszert, ezért ott használható.
+- **Kérdés a dokumentumokhoz:** minden állítás mellett `[D1 §2]` típusú forrásjelölés; a nem létezőre hivatkozó jelölést a program törli, és jelzi.
+- **Kulcsszójavaslat dokumentumból:** a Monitoring asztalán az utasítás („Javasolj kulcsszavakat a feltöltött dokumentumok alapján”) javaslatot készít szervezetnevekből, személyekből és témákból; a vezető **tételenként** jelöli ki, mit vegyen fel. Jóváhagyás nélkül nem változik semmi; a kijelölés nélküli jóváhagyás hibát ad.
+- **Biztonság:** ügyfél-elkülönítés minden lépésben (lista, keresés, megnyitás, letöltés, törlés, módosítás tesztelve); letöltés csak csatolmányként (`nosniff`, `sandbox`); szigorú méret- és darabszám-korlát; a dokumentum adat, nem utasítás (a zárt műveletlista miatt szerkezetileg is); a törlés az eredetit, a szakaszokat és az indexet is törli (tesztelve); minden feltöltés, módosítás és törlés naplózott.
+- **Felület:** Dokumentumtár menüpont (behúzható feltöltés, kategória, hatókör, AI-jelölés, kérdés, keresés, megnyitás és beállítások, letöltés, törlés).
+
+**Korlátok:**
+- A PDF-kinyerés a `unpdf` könyvtárral történik; helyben, valódi PDF-fájlon működik, de a **Cloudflare Workerben nem futtattuk** (a csomag összeáll: 681 KiB tömörítve).
+- Beolvasott (szkennelt) PDF és kép: a rendszer felismeri, hogy nincs szövege, és ezt megmondja; a felismerés AI-val a D5 lépés.
+- A keresés a közös tárban az összes ügyfél indexén fut, az ügyfélre szűrés után; sok ügyfélnél (több száz) érdemes ügyfelenként külön indexre váltani.
+- A bemutató módban a kulcsszójavaslat szabályalapú (nagybetűs nevek és gyakori szavak), a minősége korlátozott; az AI-s ág hamis API-val tesztelt.
+- Az R2 bekapcsolása a tulajdonos fiókjában történik; a `wrangler.toml`-ban a kötés kikommentezve áll.

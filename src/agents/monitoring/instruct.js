@@ -9,7 +9,7 @@ import { checkLimits } from '../../core/profile.js';
 const GROUPS = new Set(['szervezet', 'szemelyek', 'temak', 'kizaro']);
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 export const READ_ONLY = new Set(['jelentes_keres']);
-export const OPERATIONS = new Set(['kifejezes_hozzaad', 'kifejezes_elvesz', 'forras_elvesz', 'vorosvonal_hozzaad', 'szunet', 'szunet_vege', 'jelentes_keres']);
+export const OPERATIONS = new Set(['kifejezes_hozzaad', 'kifejezes_elvesz', 'forras_elvesz', 'vorosvonal_hozzaad', 'szunet', 'szunet_vege', 'jelentes_keres', 'kulcsszo_javaslat', 'kifejezesek_hozzaad']);
 
 const str = (v, max = 120) => String(v ?? '').trim().slice(0, max);
 
@@ -34,6 +34,12 @@ export function validateOperation(op) {
       return { muvelet: m, parameterek: { ig }, magyarazat };
     }
     case 'szunet_vege': return { muvelet: m, parameterek: {}, magyarazat };
+    case 'kulcsszo_javaslat': return { muvelet: m, parameterek: {}, magyarazat };
+    case 'kifejezesek_hozzaad': {
+      const tetelek = (Array.isArray(p.tetelek) ? p.tetelek : []).map(t => ({ csoport: t?.csoport, ertek: str(t?.ertek), forras: str(t?.forras, 200) }));
+      if (!tetelek.length || tetelek.length > 30 || tetelek.some(t => !t.ertek || !GROUPS.has(t.csoport))) throw new Error('kifejezesek_hozzaad: érvénytelen tételek');
+      return { muvelet: m, parameterek: { tetelek }, magyarazat };
+    }
     case 'jelentes_keres': {
       const napok = Math.min(90, Math.max(1, Math.round(Number(p.napok) || 7)));
       return { muvelet: m, parameterek: { tema: p.tema ? str(p.tema) : null, napok }, magyarazat };
@@ -69,6 +75,7 @@ export function mockInterpret(text, profile) {
     const person = /\b(nevet|szemelyt)\b/.test(m[2]);
     return validateOperation({ muvelet: 'kifejezes_hozzaad', parameterek: { csoport: person ? 'szemelyek' : 'temak', ertek: v } });
   }
+  if (/^(javasolj|ajanlj|keress|gyujts)\b.*(kulcssz|kifejezes|temat|nevet)/.test(t)) return validateOperation({ muvelet: 'kulcsszo_javaslat' });
   if (/^(folytasd|indulj ujra|kapcsold be|vege a szunetnek|szunet vege)/.test(t)) return validateOperation({ muvelet: 'szunet_vege' });
   if (/^(szuneteltesd|allj le|szunet)\b/.test(t)) return validateOperation({ muvelet: 'szunet', parameterek: { ig: (t.match(/\d{4}-\d{2}-\d{2}/) || [null])[0] } });
   if (/^(mi tortent|keszits|kerek|foglald ossze|osszegezd|mutasd)\b/.test(t)) {
@@ -101,12 +108,14 @@ export function describeOperation(op) {
     case 'szunet': return p.ig ? `Szünetelek ${p.ig} végéig.` : 'Szünetelek, amíg vissza nem kapcsolsz.';
     case 'szunet_vege': return 'Folytatom a munkát (a szünetnek vége).';
     case 'jelentes_keres': return `Összefoglaló jelentést készítek${p.tema ? ` a(z) „${p.tema}” témáról` : ''} az elmúlt ${p.napok} napról.`;
+    case 'kulcsszo_javaslat': return 'Kulcsszavakat keresek a feltöltött dokumentumokban.';
+    case 'kifejezesek_hozzaad': return `Felvehetem ezeket a figyelt kifejezések közé (jelölje ki, melyiket): ${p.tetelek.map(t => `„${t.ertek}”`).join(', ')}.`;
     default: return op.magyarazat;
   }
 }
 
 // A módosító műveletek hatása a profilra (tiszta függvény; a mentés és a naplózás a hívó dolga).
-export function applyOperation(op, profile) {
+export function applyOperation(op, profile, selected = null) {
   const p = op.parameterek;
   const next = structuredClone(profile);
   const same = (a, b) => norm(a) === norm(b);
@@ -118,6 +127,12 @@ export function applyOperation(op, profile) {
       let removed = 0;
       for (const g of GROUPS) { const before = next.kulcsszavak[g].length; next.kulcsszavak[g] = next.kulcsszavak[g].filter(x => !same(x, p.ertek)); removed += before - next.kulcsszavak[g].length; }
       if (!removed) throw new Error(`Nincs ilyen figyelt kifejezés: „${p.ertek}”`);
+      break;
+    }
+    case 'kifejezesek_hozzaad': {
+      const picked = selected === null ? p.tetelek : p.tetelek.filter((_, i) => selected.includes(i));
+      if (!picked.length) throw new Error('Nincs kijelölt kifejezés.');
+      for (const t of picked) if (!next.kulcsszavak[t.csoport].some(x => same(x, t.ertek))) next.kulcsszavak[t.csoport].push(t.ertek);
       break;
     }
     case 'forras_elvesz': {

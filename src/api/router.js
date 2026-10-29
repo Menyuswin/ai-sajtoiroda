@@ -12,6 +12,9 @@ import { answerQuestion } from '../agents/monitoring/qa.js';
 import { computeTrends } from '../agents/monitoring/trend.js';
 import { createHandoffs } from '../core/handoff.js';
 import { handoffHandlers } from '../cloudflare/scheduler.js';
+import { createDocs, CATEGORIES } from '../docs/store.js';
+import { DocError, DOC_LIMITS } from '../docs/extract.js';
+import { answerFromDocs, suggestKeywords } from '../docs/answer.js';
 import { dayKey } from '../core/text.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
@@ -116,6 +119,7 @@ async function route(request, env, deps) {
   try { llm = createLlm({ mode: env.SAJTOIRODA_LLM === 'anthropic' ? 'anthropic' : 'mock', key: config.anthropicKey, models: config.models, ...(deps.llmFetch ? { fetchImpl: deps.llmFetch } : {}) }); }
   catch { llm = createLlm({ mode: 'mock' }); }
   const prompts = deps.prompts;
+  const docs = createDocs({ db: env.DB, bucket: env.DOCS || null, tenantId, now });
   const handoffs = createHandoffs({ repo: desk.atadasok, log, agentIds: AGENTS.map(a => a.id), handlers: handoffHandlers, now, isAvailable: (id) => !!agentById(id)?.elerheto && agentActive(profile, id, now()) });
   const mapHandoff = (h) => ({ id: h.id, tipus: h.tipus, honnan: h.honnan, hova: h.hova, targy: h.targy, szoveg: h.szoveg, anyag_id: h.anyag_id, melyseg: h.melyseg, allapot: h.allapot, ido: h.ido, valasz: h.valasz });
   const actor = `ember:${who.email}`;
@@ -194,6 +198,22 @@ async function route(request, env, deps) {
       const id = await desk.utasitasok.add({ ugynok: a.id, szoveg: text, allapot: 'visszakerdez', valasz: op.magyarazat });
       return json({ id, allapot: 'visszakerdez', valasz: op.magyarazat });
     }
+    if (op.muvelet === 'kulcsszo_javaslat') {
+      let sug;
+      try { sug = await suggestKeywords({ docs, profile, llm, prompts }); }
+      catch (e) { const id = await desk.utasitasok.add({ ugynok: a.id, szoveg: text, allapot: 'hiba', valasz: 'A javaslatot most nem tudtam elkészíteni. Próbálja újra később.' }); return json({ id, allapot: 'hiba', valasz: 'A javaslatot most nem tudtam elkészíteni.' }); }
+      const note = sug.kizart_ai ? ` (${sug.kizart_ai} szakasz „nem küldhető AI-nak” jelölésű dokumentumban van, ezeket nem használtam.)` : '';
+      if (!sug.tetelek.length) {
+        const valasz = (sug.uresTar ? 'Még nincs feltöltött dokumentum, amelyből javasolhatnék. A Dokumentumtárban tölthet fel.' : 'Nem találtam új, figyelésre érdemes kifejezést a feltöltött dokumentumokban.') + note;
+        const id = await desk.utasitasok.add({ ugynok: a.id, szoveg: text, allapot: 'kesz', valasz });
+        return json({ id, allapot: 'kesz', valasz });
+      }
+      const javaslat = { muvelet: 'kifejezesek_hozzaad', parameterek: { tetelek: sug.tetelek }, magyarazat: '' };
+      const valasz = `${sug.tetelek.length} kifejezést találtam a feltöltött dokumentumokban. Jelölje ki, melyiket vegyem fel a figyeltek közé.${note}`;
+      const id = await desk.utasitasok.add({ ugynok: a.id, szoveg: text, muvelet: javaslat, allapot: 'javaslat', valasz });
+      await log.append({ szereplo: `ugynok:${a.id}`, tipus: 'javaslat', hivatkozas: id, tartalom: { muvelet: javaslat, leiras: valasz } });
+      return json({ id, allapot: 'javaslat', valasz, muvelet: javaslat });
+    }
     const leiras = describeOperation(op);
     if (READ_ONLY.has(op.muvelet)) {
       const report = await buildReport({ tema: op.parameterek.tema, napok: op.parameterek.napok, articles: await store.load(), profile, llm, prompts, now: now() });
@@ -211,12 +231,14 @@ async function route(request, env, deps) {
     const u = await desk.utasitasok.get(decodeURIComponent(m[1]));
     if (!u) throw new HttpError(404, 'Nincs ilyen utasítás.');
     if (u.allapot !== 'javaslat') throw new HttpError(409, 'Erről a javaslatról már döntöttek.');
-    const d = (await body()).dontes;
+    const b = await body();
+    const d = b.dontes;
+    const selected = Array.isArray(b.kivalasztott) ? b.kivalasztott.map(Number).filter(Number.isInteger) : null;
     if (!['jovahagyva', 'elvetve'].includes(d)) throw new HttpError(400, 'A döntés „jovahagyva” vagy „elvetve” lehet.');
-    await log.append({ szereplo: actor, tipus: 'dontes', hivatkozas: u.id, dontes_ref: u.id, tartalom: { dontes: d, muvelet: u.muvelet } });
+    await log.append({ szereplo: actor, tipus: 'dontes', hivatkozas: u.id, dontes_ref: u.id, tartalom: { dontes: d, muvelet: u.muvelet, kivalasztott: selected } });
     if (d === 'elvetve') { await desk.utasitasok.resolve(u.id, { allapot: 'elvetve', by: actor }); return json({ allapot: 'elvetve' }); }
     try {
-      await profiles.put(applyOperation(u.muvelet, profile), { by: actor });
+      await profiles.put(applyOperation(u.muvelet, profile, selected), { by: actor });
       await desk.utasitasok.resolve(u.id, { allapot: 'vegrehajtva', valasz: 'Végrehajtva.', by: actor });
       return json({ allapot: 'vegrehajtva' });
     } catch (e) {
@@ -247,6 +269,65 @@ async function route(request, env, deps) {
     return json({ uzenetek: await desk.uzenetek.list(anyag.id) });
   }
   if (method === 'GET' && p === '/api/jelentesek') return json({ anyagok: await desk.anyagok.list({ limit: 100 }) });
+
+  // ---- Dokumentumtár
+  const docMeta = (d) => d;
+  if (method === 'GET' && p === '/api/dokumentumok') {
+    return json({ dokumentumok: (await docs.list({ kategoria: url.searchParams.get('kategoria') })).map(docMeta), hasznalat: await docs.usage(), eredeti_megorzes: docs.hasOriginals, kategoriak: CATEGORIES,
+      ugynokok: AGENTS.map(a => ({ id: a.id, nev: a.nev })), ai: llm.mode !== 'mock' });
+  }
+  if (method === 'POST' && p === '/api/dokumentumok') {
+    const name = String(url.searchParams.get('fajlnev') || '').trim();
+    if (!name) throw new HttpError(400, 'A fájl neve hiányzik.');
+    if (Number(request.headers.get('Content-Length') || 0) > DOC_LIMITS.fileBytes + 4096) throw new HttpError(413, 'A fájl túl nagy.');
+    const bytes = new Uint8Array(await request.arrayBuffer());
+    const scope = (url.searchParams.get('hatokor') || '').split(',').map(x => x.trim()).filter(Boolean);
+    if (scope.some(x => !agentById(x))) throw new HttpError(400, 'Ismeretlen ügynök a hatókörben.');
+    try {
+      const doc = await docs.add({ bytes, fajlnev: name, cim: url.searchParams.get('cim') || '', kategoria: url.searchParams.get('kategoria') || 'egyeb', hatokor: scope, aiTiltott: url.searchParams.get('ai_tiltott') === '1', by: actor });
+      await log.append({ szereplo: actor, tipus: 'dokumentum', hivatkozas: doc.id, tartalom: { esemeny: 'feltoltve', cim: doc.cim, fajlnev: doc.fajlnev, meret: doc.meret, szakaszok: doc.szakaszok, ai_tiltott: doc.ai_tiltott, hatokor: doc.hatokor } });
+      return json({ dokumentum: doc }, 201);
+    } catch (e) { if (e instanceof DocError) throw new HttpError(422, e.message); throw e; }
+  }
+  if (method === 'GET' && p === '/api/dokumentumok/kereses') {
+    const r = await docs.search(url.searchParams.get('q') || '', { forAI: false, limit: 10 });
+    return json({ talalatok: r.talalatok.map(t => ({ ...t, szoveg: t.szoveg.slice(0, 500) })) });
+  }
+  if (method === 'POST' && p === '/api/dokumentumok/kerdes') {
+    const q = String((await body()).szoveg || '').trim();
+    if (!q || q.length > 500) throw new HttpError(400, 'A kérdés 1–500 karakter legyen.');
+    await log.append({ szereplo: actor, tipus: 'kerdes', hivatkozas: 'dokumentumtar', tartalom: { kerdes: q } });
+    let r;
+    try { r = await answerFromDocs({ question: q, docs, profile, llm, prompts }); } catch { r = { valasz: 'A kérdésre most nem tudtam válaszolni. Próbálja újra később.', forrasok: [] }; }
+    return json(r);
+  }
+  if ((m = p.match(/^\/api\/dokumentumok\/([^/]+)(\/eredeti)?$/))) {
+    const id = decodeURIComponent(m[1]);
+    if (method === 'GET' && m[2]) {
+      const o = await docs.original(id);
+      if (!o) throw new HttpError(404, 'Az eredeti fájl nincs megőrizve.');
+      const ascii = o.fajlnev.replace(/[^\x20-\x7e]|["\\]/g, '_');
+      return new Response(o.bytes, { headers: { ...SECURITY, 'Content-Security-Policy': 'sandbox', 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(o.fajlnev)}`, 'Cache-Control': 'no-store' } });
+    }
+    if (method === 'GET') { const d = await docs.get(id); if (!d) throw new HttpError(404, 'Nincs ilyen dokumentum.'); return json({ dokumentum: d }); }
+    if (method === 'PUT') {
+      const b = await body();
+      const hatokor = b.hatokor === undefined ? undefined : (Array.isArray(b.hatokor) ? b.hatokor : null);
+      if (Array.isArray(hatokor) && hatokor.some(x => !agentById(x))) throw new HttpError(400, 'Ismeretlen ügynök a hatókörben.');
+      try {
+        const d = await docs.update(id, { cim: b.cim, kategoria: b.kategoria, hatokor, aiTiltott: b.ai_tiltott === undefined ? undefined : b.ai_tiltott === true });
+        if (!d) throw new HttpError(404, 'Nincs ilyen dokumentum.');
+        await log.append({ szereplo: actor, tipus: 'dokumentum', hivatkozas: id, tartalom: { esemeny: 'modositva', cim: d.cim, ai_tiltott: d.ai_tiltott, hatokor: d.hatokor } });
+        return json({ dokumentum: d });
+      } catch (e) { if (e instanceof DocError) throw new HttpError(422, e.message); throw e; }
+    }
+    if (method === 'DELETE') {
+      const d = await docs.get(id);
+      if (!d || !(await docs.remove(id))) throw new HttpError(404, 'Nincs ilyen dokumentum.');
+      await log.append({ szereplo: actor, tipus: 'dokumentum', hivatkozas: id, tartalom: { esemeny: 'torolve', cim: d.cim, fajlnev: d.fajlnev } });
+      return json({ ok: true });
+    }
+  }
 
   // ---- Átadások az ügynökök között
   if (method === 'GET' && p === '/api/atadasok') {

@@ -4,11 +4,13 @@ import classify from '../../monitoring/prompts/cikk-besorolas.md';
 import synthesize from '../../monitoring/prompts/napi-szemle.md';
 import instruct from '../../monitoring/prompts/utasitas-ertelmezes.md';
 import qa from '../../monitoring/prompts/kerdes-valasz.md';
+import docqa from '../../monitoring/prompts/dokumentum-kerdes.md';
+import keywords from '../../monitoring/prompts/kulcsszo-javaslat.md';
 import { runScheduled } from '../cloudflare/scheduler.js';
 import { handleRequest } from '../api/router.js';
 import { ASSETS } from './ui-assets.js';
 
-const prompts = { classify, synthesize, instruct, qa };
+const prompts = { classify, synthesize, instruct, qa, docqa, keywords };
 
 export default {
   async scheduled(_event, env, ctx) {

@@ -24,10 +24,10 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 | Az iroda felülete és API-ja (`ui/`, `src/api/`) | kész, tesztelt, böngészőben kipróbálva; **nincs telepítve** |
 | Telepíthető weboldal (PWA): manifest, service worker (az API-t nem tárolja), ikonok | kész, tesztelt |
 | Ügynökök közötti átadások (`docs/10`, `src/core/handoff.js`) | kész, tesztelt; az első valódi átadás: Monitoring riasztás → Proaktív (üres asztal, várakozik) |
-| Dokumentumtár (`docs/09`) | **jóváhagyva (2026-10-29, az ajánlott beállításokkal), építés folyamatban** |
+| Dokumentumtár (`docs/09`, `src/docs/`) | kész, tesztelt (valódi docx/PDF fájlokon); R2 (az eredeti fájlok tárolása) nincs bekapcsolva |
 | A többi 7 ügynök | csak specifikáció; az asztaluk az irodában üres |
 
-65 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
+81 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 
@@ -60,15 +60,16 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 ## Következő lépések (javasolt sorrend)
 
-1. Dokumentumtár építése (D1–D3, `docs/09`), majd a dokumentumokra hivatkozó átadások (A4).
+1. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), vagy a Kapcsolattartó Ügynök (postafiók-döntés kell hozzá). A dokumentumokra hivatkozó átadások (A4) a következő ügynök érkezésével.
 2. A Kapcsolattartó Ügynök (a postafiók-döntés után), mint a Monitoring mellé a bevezetési sorrend szerinti második.
-4. Éles telepítés (`docs/08`, 9. fejezet), AI bekapcsolása, a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
+3. Éles telepítés (`docs/08`, 9. fejezet), AI bekapcsolása, a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
 
 ## Korlátok (őszintén)
 
 - A **valódi hírforrásokat** (RSS, Google News keresés) a fejlesztői környezetből nem tudtuk lekérni; az értelmező csak mintaadaton van kipróbálva (alapja a manyai.hu-n működő `press.js`). Az első éles futás előtt valódi csatornákon ellenőrizni kell, és a Google News RSS felhasználási feltételeit is.
 - Az **AI valódi minősége** nem mért. A Claude-hívások hamis API-val teszteltek. A bemutatóban az utasításértelmezés, a besorolás és a rákérdezés **szabályalapú tartalék** (nem AI).
 - A Cloudflare **Worker éles futását** nem próbáltuk; D1-ből csak egy `node:sqlite`-alapú, D1-kompatibilis helyettesítővel teszteltünk.
+- A **PDF-kinyerés** (`unpdf`) helyben, valódi PDF-en működik, a Cloudflare Workerben nem futtattuk; beolvasott (szkennelt) PDF és kép felismerése még nincs (a rendszer megmondja, hogy nincs szöveg). Az R2 (eredeti fájlok) kötése a `wrangler.toml`-ban kikommentezve; nélküle csak a kinyert szöveg marad meg.
 - A **Cloudflare Access** aláírás-ellenőrzése helyben generált kulccsal tesztelt, valódi Access-szel nem.
 - Cloudflare ingyenes csomagján a külső kérések száma (invokációnként) szűk lehet; több hírforrásnál fizetős Workers ajánlott.
 
@@ -84,7 +85,7 @@ git config user.name ClaudeMZ && git config user.email noreply@anthropic.com
 
 # 3. Függőségek és tesztek
 npm install
-npm test                      # 65 teszt, hálózat nélkül
+npm test                      # 81 teszt, hálózat nélkül
 
 # 4. Az iroda kipróbálása a böngészőben (kitalált adatokkal, memóriában)
 npm run iroda                 # http://127.0.0.1:8787/ ;  --uzemelteto: üzemeltetői nézet
@@ -111,12 +112,13 @@ docs/05                   nyitott kérdések
 docs/06                   a Monitoring prototípus terve és döntései
 docs/07                   a kód felépítése, kipróbálás, új ügynök hozzáadása
 docs/08                   az iroda (felület) terve, mi készült el, telepítés lépései
-docs/09                   a dokumentumtár terve (jóváhagyva)
+docs/09                   a dokumentumtár terve és állapota (kész)
 docs/10                   az ügynökök közötti átadások terve és felelősségi mátrixa (kész)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök
 src/cloudflare/           D1-illesztők, asztalok adatai, ütemező
+src/docs/                 dokumentumtár: kinyerés (txt, md, csv, docx, PDF), tár, keresés, válasz, kulcsszójavaslat
 src/api/                  az iroda API-ja, belépés, ügynök-katalógus
 src/worker/               a Cloudflare Worker belépője
 src/dev/                  helyi bemutató és D1-helyettesítő

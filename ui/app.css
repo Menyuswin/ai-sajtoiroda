@@ -126,3 +126,13 @@ th { color: var(--halk); font-weight: 600; }
 .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--szoveg); color: var(--bg); padding: .6rem 1rem; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; max-width: 90vw; }
 .toast.latszik { opacity: 1; } .toast.hiba { background: var(--rossz); color: #fff; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* ---- dokumentumtár */
+.rejtett { display: none; }
+.dropzona { display: grid; gap: .25rem; place-items: center; text-align: center; padding: 1.5rem 1rem; border: 2px dashed var(--vonal); border-radius: 12px; background: var(--lap-2); cursor: pointer; margin-bottom: 1rem; }
+.dropzona:hover, .dropzona.rajta { border-color: var(--akcent); background: color-mix(in srgb, var(--akcent) 8%, var(--lap-2)); }
+.lista li.hibas { border-color: var(--rossz); color: var(--rossz); }
+.cimke input { margin: 0 .2rem 0 0; }
+.kijelolo .lista { margin: .5rem 0; } .kijelolo label { cursor: pointer; }
+.szakasz-szoveg { white-space: pre-wrap; overflow-wrap: anywhere; }
+.mezo label input[type=checkbox] { margin-right: .35rem; }

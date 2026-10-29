@@ -20,7 +20,8 @@ src/
   cloudflare/
     d1.js               D1-illesztők: napló, cikktár, profiltár, próbalevelek
     scheduler.js        ütemezés és ügyfelenkénti futtatás
-  api/                  az iroda API-ja (router, belépés, ügynök-katalógus)
+  api/                  az iroda API-ja (router, belépés, ügynök-katalógus, felület-csomagolás)
+  docs/                 dokumentumtár: kinyerés, tárolás és keresés, válasz forrásjelöléssel, kulcsszójavaslat
   worker/index.js       Cloudflare Worker belépő (vékony)
   dev/                  helyi bemutató (D1-helyettesítő, kiszolgáló)
 ui/                     az iroda felülete (egy HTML, egy JS, egy CSS)
@@ -44,7 +45,7 @@ test/                   automatikus tesztek (hálózat nélkül futnak)
 
 ```bash
 npm install
-npm test                                  # 51 automatikus teszt
+npm test                                  # 81 automatikus teszt
 node src/cli.js monitoring run \
   --profile test/fixtures/profil.yaml \
   --offline-feed test/fixtures/feed.xml   # a kimenet: out/pelda-korhazak/

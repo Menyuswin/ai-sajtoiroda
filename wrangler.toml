@@ -18,6 +18,12 @@ database_name = "ai-sajtoiroda"
 database_id = "IDE-KERUL-A-D1-AZONOSITO"   # a `wrangler d1 create ai-sajtoiroda` adja
 migrations_dir = "migrations"
 
+# A dokumentumok eredeti fájljainak tárolása (Cloudflare R2). Amíg az R2 nincs bekapcsolva a fiókban, ez a rész maradjon kikommentezve:
+# a rendszer ilyenkor csak a kinyert szöveget tárolja (az eredeti nem tölthető vissza).
+# [[r2_buckets]]
+# binding = "DOCS"
+# bucket_name = "ai-sajtoiroda-dokumentumok"
+
 # A promptok (.md) szövegként épülnek a csomagba.
 [[rules]]
 type = "Text"

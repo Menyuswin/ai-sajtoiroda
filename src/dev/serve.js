@@ -11,6 +11,8 @@ import { runScheduled } from '../cloudflare/scheduler.js';
 import { handleRequest } from '../api/router.js';
 import { loadProfile } from '../core/profile.js';
 import { buildAssets } from '../api/assets.js';
+import { createR2Shim } from './r2-shim.js';
+import { createDocs } from '../docs/store.js';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -26,9 +28,15 @@ export async function createDemo({ user = 'vezeto@pelda.example', now = () => DE
   const prompts = {
     classify: read('monitoring/prompts/cikk-besorolas.md'), synthesize: read('monitoring/prompts/napi-szemle.md'),
     instruct: read('monitoring/prompts/utasitas-ertelmezes.md'), qa: read('monitoring/prompts/kerdes-valasz.md'),
+    docqa: read('monitoring/prompts/dokumentum-kerdes.md'), keywords: read('monitoring/prompts/kulcsszo-javaslat.md'),
   };
   const feed = read('test/fixtures/feed.xml');
-  const env = { DB: db, SAJTOIRODA_DEV_AUTH: '1', SAJTOIRODA_DEV_USER: user };
+  const env = { DB: db, DOCS: createR2Shim(), SAJTOIRODA_DEV_AUTH: '1', SAJTOIRODA_DEV_USER: user };
+  // néhány kitalált mintadokumentum a bemutatóhoz
+  const docs = createDocs({ db, bucket: env.DOCS, tenantId: profile.ugyfel_id, now });
+  for (const [f, cim, kat] of [['sajtoiranyelv.docx', 'Sajtóirányelvek', 'iranyelv'], ['kerdesek.md', 'Gyakori kérdések és válaszok', 'kerdes_valasz'], ['jegyzet.txt', 'Értekezlet jegyzete', 'hatter']]) {
+    await docs.add({ bytes: new Uint8Array(readFileSync(new URL(`test/fixtures/docs/${f}`, root))), fajlnev: f, cim, kategoria: kat, by: 'rendszer' });
+  }
   await runScheduled(env, { now, fetchText: async () => feed, prompts }); // első szemle a tesztcikkekből
   const ui = (f) => new URL(`ui/${f}`, root);
   const assets = buildAssets((f) => readFileSync(ui(f), 'utf8'), (f) => readFileSync(ui(f)));

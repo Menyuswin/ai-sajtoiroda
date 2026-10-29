@@ -3,7 +3,7 @@
   'use strict';
   const state = { iroda: null, tenant: null };
   let routeToken = 0; // minden oldalváltáskor nő; a lassan érkező régi nézet nem írhatja felül az újat
-  const mainSet = (my, ...nodes) => { if (my === routeToken) $main.replaceChildren(...nodes); };
+  const mainSet = (my, ...nodes) => { if (my === routeToken) $main.replaceChildren(...nodes.flat(Infinity).filter(Boolean)); };
   const $main = document.getElementById('fo');
   const $head = document.getElementById('fejlec');
   const $toast = document.getElementById('toast');
@@ -28,11 +28,11 @@
   let toastTimer;
   const toast = (msg, err) => { $toast.textContent = msg; $toast.className = `toast latszik${err ? ' hiba' : ''}`; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $toast.className = 'toast'; }, 4500); };
 
+  const withTenant = (path) => { const sep = path.includes('?') ? '&' : '?'; return state.tenant && (state.iroda?.ugyfelek || []).length > 1 ? `${path}${sep}ugyfel=${encodeURIComponent(state.tenant)}` : path; };
   async function api(method, path, body) {
-    const sep = path.includes('?') ? '&' : '?';
-    const url = state.tenant && (state.iroda?.ugyfelek || []).length > 1 ? `${path}${sep}ugyfel=${encodeURIComponent(state.tenant)}` : path;
+    const raw = typeof Blob !== 'undefined' && body instanceof Blob; // fájlfeltöltés: a fájl tartalma megy, nem JSON
     let res;
-    try { res = await fetch(url, { method, headers: { 'X-Requested-With': 'iroda', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined }); }
+    try { res = await fetch(withTenant(path), { method, headers: { 'X-Requested-With': 'iroda', ...(body !== undefined && !raw ? { 'Content-Type': 'application/json' } : {}) }, body: body === undefined ? undefined : raw ? body : JSON.stringify(body) }); }
     catch { throw new Error('Nincs kapcsolat a szerverrel. A bizalmas adatok miatt az iroda kapcsolat nélkül nem mutat tartalmat; az oldal a kapcsolat visszatértével újratölthető.'); }
     const ct = res.headers.get('Content-Type') || '';
     const data = ct.includes('json') ? await res.json() : await res.text();
@@ -66,7 +66,7 @@
   }
 
   // ---------- fejléc és útválasztás
-  const NAV = [['#/', 'Iroda'], ['#/jelentesek', 'Jelentések'], ['#/atadasok', 'Átadások'], ['#/naplo', 'Napló'], ['#/beallitasok', 'Beállítások']];
+  const NAV = [['#/', 'Iroda'], ['#/jelentesek', 'Jelentések'], ['#/atadasok', 'Átadások'], ['#/dokumentumok', 'Dokumentumtár'], ['#/naplo', 'Napló'], ['#/beallitasok', 'Beállítások']];
   function renderHeader(route) {
     const i = state.iroda;
     $head.replaceChildren(
@@ -99,6 +99,7 @@
     else if ((m = r.match(/^asztal\/([a-z]+)$/))) await viewAsztal(m[1]);
     else if (r === 'jelentesek') await viewJelentesek();
     else if (r === 'atadasok') await viewAtadasok();
+    else if (r === 'dokumentumok') await viewDokumentumok();
     else if (r === 'naplo') await viewNaplo();
     else if (r === 'beallitasok') await viewBeallitasok();
     else location.hash = '#/';
@@ -162,7 +163,7 @@
 
   // ---------- egy ügynök asztala
   const UT_CIMKE = { javaslat: 'Jóváhagyásra vár', vegrehajtva: 'Végrehajtva', elvetve: 'Elvetve', kesz: 'Kész', visszakerdez: 'Visszakérdezés', hiba: 'Nem sikerült' };
-  const TIPPEK = ['Figyeld a várólista témát is', 'Mi történt a héten az ápolóhiány körül?', 'Szólj azonnal, ha a vezérigazgató nevét említik', 'Szüneteltesd 2026-11-05-ig'];
+  const TIPPEK = ['Javasolj kulcsszavakat a feltöltött dokumentumok alapján', 'Figyeld a várólista témát is', 'Mi történt a héten az ápolóhiány körül?', 'Szólj azonnal, ha a vezérigazgató nevét említik', 'Szüneteltesd 2026-11-05-ig'];
   async function viewAsztal(id, my = routeToken) {
     const d = await api('GET', `/api/ugynok/${id}`);
     const a = d.ugynok;
@@ -189,7 +190,8 @@
         h('div', { class: 'buborek en', text: u.szoveg }),
         h('div', { class: `buborek ugynok${u.allapot === 'javaslat' ? ' javaslat' : ''}` }, u.valasz || '',
           h('span', { class: 'allapotcimke', text: `${UT_CIMKE[u.allapot]} · ${when(u.ido)}` }),
-          u.allapot === 'javaslat' ? h('div', { class: 'sor' },
+          u.allapot === 'javaslat' && u.muvelet?.muvelet === 'kifejezesek_hozzaad' ? kijelolo(u, id) : null,
+          u.allapot === 'javaslat' && u.muvelet?.muvelet !== 'kifejezesek_hozzaad' ? h('div', { class: 'sor' },
             h('button', { class: 'gomb fo', type: 'button', onclick: guard(async () => { const r = await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'jovahagyva' }); toast(r.allapot === 'vegrehajtva' ? 'Végrehajtva.' : `Nem sikerült: ${r.valasz}`, r.allapot !== 'vegrehajtva'); await viewAsztal(id); }), text: 'Jóváhagyom' }),
             h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'elvetve' }); toast('Elvetve.'); await viewAsztal(id); }), text: 'Elvetem' })) : null,
           u.anyag_id ? h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(u.anyag_id), text: 'Megnyitás' })) : null)])
@@ -215,6 +217,21 @@
     mainSet(my, head, h('div', { class: 'harom' }, utasitasSav, munkaSav, anyagSav),
       h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, id, () => viewAsztal(id))));
     szal.scrollTop = szal.scrollHeight;
+  }
+  const CSOPORT = { szervezet: 'szervezet', szemelyek: 'személy', temak: 'téma', kizaro: 'kizáró szó' };
+  // Kulcsszójavaslat: tételenként kijelölhető, mit vegyen fel az ügynök.
+  function kijelolo(u, agentId) {
+    const boxes = u.muvelet.parameterek.tetelek.map((t, i) => ({ t, i, el: h('input', { type: 'checkbox', id: `t-${u.id}-${i}`, checked: true }) }));
+    return h('div', { class: 'kijelolo' },
+      h('ul', { class: 'lista' }, boxes.map(({ t, el, i }) => h('li', {}, h('label', { for: `t-${u.id}-${i}` }, el, ` ${t.ertek} `, h('span', { class: 'meta', text: `${CSOPORT[t.csoport]}${t.forras ? ` · ${t.forras}` : ''}` }))))),
+      h('div', { class: 'sor' },
+        h('button', { class: 'gomb fo', type: 'button', onclick: guard(async () => {
+          const kivalasztott = boxes.filter(b => b.el.checked).map(b => b.i);
+          if (!kivalasztott.length) { toast('Jelöljön ki legalább egy kifejezést, vagy vesse el a javaslatot.', true); return; }
+          const r = await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'jovahagyva', kivalasztott });
+          toast(r.allapot === 'vegrehajtva' ? `${kivalasztott.length} kifejezés felvéve.` : `Nem sikerült: ${r.valasz}`, r.allapot !== 'vegrehajtva'); await viewAsztal(agentId);
+        }), text: 'A kijelölteket jóváhagyom' }),
+        h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'elvetve' }); toast('Elvetve.'); await viewAsztal(agentId); }), text: 'Mindet elvetem' })));
   }
   const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés' };
   const AT_TIPUS = { jelzes: 'Jelzés', kerelem: 'Kérelem', anyag_atadas: 'Anyag-átadás', kerdes: 'Kérdés' };
@@ -277,6 +294,132 @@
       anyagok.length ? h('div', { class: 'kartya' }, h('ul', { class: 'lista' }, anyagok.map(a => h('li', { class: `kattinthato${a.olvasott ? '' : ' olvasatlan'}`, tabindex: '0', role: 'button', onclick: () => openAnyag(a.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAnyag(a.id); } } },
         h('strong', { text: a.cim }), h('span', { class: 'meta', text: `${nevek[a.ugynok] || a.ugynok} · ${TIPUS[a.tipus] || a.tipus} · ${when(a.ido)}` }))))) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
   }
+
+  // ---------- dokumentumtár
+  const meret = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+  async function viewDokumentumok(my = routeToken) {
+    const d = await api('GET', '/api/dokumentumok');
+    const kat = d.kategoriak;
+    const nevek = Object.fromEntries(d.ugynokok.map(a => [a.id, a.nev.replace(/ Ügynök$/, '')]));
+    const refresh = () => viewDokumentumok();
+
+    // -- feltöltés
+    const fileInput = h('input', { type: 'file', id: 'fajl', multiple: true, accept: '.txt,.md,.csv,.docx,.pdf', class: 'rejtett' });
+    const katSel = h('select', { id: 'f-kat', 'aria-label': 'Kategória' }, Object.entries(kat).map(([k, v]) => h('option', { value: k, text: v })));
+    const cimIn = h('input', { type: 'text', id: 'f-cim', maxlength: '200', placeholder: 'Cím (nem kötelező; alapértelmezés: a fájl neve)' });
+    const mind = h('input', { type: 'checkbox', id: 'f-mind', checked: true });
+    const agentBoxes = d.ugynokok.map(a => ({ a, el: h('input', { type: 'checkbox', id: `f-a-${a.id}` }) }));
+    const agentWrap = h('div', { class: 'cimkek rejtett' }, agentBoxes.map(({ a, el }) => h('label', { class: 'cimke', for: `f-a-${a.id}` }, el, ` ${nevek[a.id]}`)));
+    mind.addEventListener('change', () => agentWrap.classList.toggle('rejtett', mind.checked));
+    const aiBox = h('input', { type: 'checkbox', id: 'f-ai' });
+    const eredmeny = h('ul', { class: 'lista', 'aria-live': 'polite' });
+    const feltolt = guard(async (files) => {
+      for (const f of [...files]) {
+        const q = new URLSearchParams({ fajlnev: f.name, kategoria: katSel.value });
+        if (cimIn.value.trim() && files.length === 1) q.set('cim', cimIn.value.trim());
+        const scope = mind.checked ? [] : agentBoxes.filter(b => b.el.checked).map(b => b.a.id);
+        if (scope.length) q.set('hatokor', scope.join(','));
+        if (aiBox.checked) q.set('ai_tiltott', '1');
+        const li = h('li', { text: `${f.name}: feltöltés…` }); eredmeny.prepend(li);
+        try { const r = await api('POST', `/api/dokumentumok?${q}`, f); li.textContent = `${f.name}: feltöltve (${r.dokumentum.szakaszok} szakasz).`; }
+        catch (e) { li.textContent = `${f.name}: ${e.message}`; li.classList.add('hibas'); }
+      }
+      cimIn.value = ''; fileInput.value = '';
+      const fresh = await api('GET', '/api/dokumentumok'); renderList(fresh);
+    });
+    fileInput.addEventListener('change', () => feltolt(fileInput.files));
+    const drop = h('div', { class: 'dropzona', tabindex: '0', role: 'button', 'aria-label': 'Dokumentumok feltöltése: kattintson, vagy húzza ide a fájlokat', onclick: () => fileInput.click(), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } } },
+      h('strong', { text: 'Húzza ide a dokumentumokat, vagy kattintson a kiválasztáshoz' }), h('span', { class: 'meta', text: `txt, md, csv, docx, szöveges PDF · legfeljebb ${meret(d.hasznalat.korlat.fajl)} / fájl` }));
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('rajta'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('rajta'); }));
+    drop.addEventListener('drop', (e) => feltolt(e.dataTransfer.files));
+
+    // -- kérdés és keresés
+    const kerdes = h('textarea', { id: 'dok-kerdes', 'aria-label': 'Kérdés a dokumentumokból', maxlength: '500', placeholder: 'Kérdezzen a feltöltött dokumentumokból… (Ctrl+Enter: küldés)' });
+    const valasz = h('div', { 'aria-live': 'polite' });
+    const kerd = guard(async () => {
+      const szoveg = kerdes.value.trim(); if (!szoveg) return;
+      const r = await api('POST', '/api/dokumentumok/kerdes', { szoveg });
+      valasz.replaceChildren(h('div', { class: 'buborek ugynok', text: r.valasz }), r.forrasok.length ? h('ul', { class: 'lista' }, r.forrasok.map(f => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openDok(f.dokumentum_id, refresh), onkeydown: (e) => { if (e.key === 'Enter') openDok(f.dokumentum_id, refresh); } }, h('strong', { text: `[${f.ref}] ${f.dokumentum_cim}` }), h('span', { class: 'meta', text: f.szakasz_cim || `${f.sorszam}. szakasz` })))) : null);
+    });
+    kerdes.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); kerd(); } });
+    const keresIn = h('input', { type: 'text', id: 'dok-kereses', 'aria-label': 'Keresés a dokumentumokban', placeholder: 'Keresés a dokumentumokban (ragozott alakot is megtalál)' });
+    const talalat = h('div');
+    let keresTimer;
+    keresIn.addEventListener('input', () => { clearTimeout(keresTimer); keresTimer = setTimeout(guard(async () => {
+      const q = keresIn.value.trim(); if (q.length < 3) { talalat.replaceChildren(); return; }
+      const r = await api('GET', `/api/dokumentumok/kereses?q=${encodeURIComponent(q)}`);
+      talalat.replaceChildren(r.talalatok.length ? h('ul', { class: 'lista' }, r.talalatok.map(t => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openDok(t.dokumentum_id, refresh), onkeydown: (e) => { if (e.key === 'Enter') openDok(t.dokumentum_id, refresh); } }, h('strong', { text: t.dokumentum_cim }), h('span', { class: 'meta', text: `${t.szakasz_cim || `${t.sorszam}. szakasz`}` }), h('span', { text: t.szoveg.slice(0, 220) + (t.szoveg.length > 220 ? '…' : '') })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }));
+    }), 300); });
+
+    // -- lista
+    const listBox = h('div');
+    const usage = h('p', { class: 'sugo' });
+    function renderList(data) {
+      usage.textContent = `${data.hasznalat.darab} / ${data.hasznalat.korlat.darab} dokumentum · ${meret(data.hasznalat.bajt)} / ${meret(data.hasznalat.korlat.bajt)}`;
+      listBox.replaceChildren(data.dokumentumok.length ? h('ul', { class: 'lista' }, data.dokumentumok.map(x => h('li', {},
+        h('strong', { text: x.cim }),
+        h('span', { class: 'meta', text: `${kat[x.kategoria]} · ${x.fajlnev} · ${meret(x.meret)} · ${x.szakaszok} szakasz · ${x.feltolto.replace(/^ember:/, '')} · ${when(x.ido)}` }),
+        h('div', { class: 'sor' },
+          x.ai_tiltott ? h('span', { class: 'jelveny figy', text: 'Nem küldhető AI-nak' }) : null,
+          h('span', { class: 'jelveny', text: x.hatokor ? `Használja: ${x.hatokor.map(i => nevek[i] || i).join(', ')}` : 'Minden ügynök használhatja' }),
+          !x.eredeti ? h('span', { class: 'jelveny', title: 'Az eredeti fájl nincs megőrizve, csak a kinyert szöveg.', text: 'Csak szöveg' }) : null),
+        h('div', { class: 'sor' },
+          h('button', { class: 'gomb', type: 'button', onclick: () => openDok(x.id, refresh), text: 'Megnyitás és beállítások' }),
+          x.eredeti ? h('a', { class: 'gomb', href: withTenant(`/api/dokumentumok/${encodeURIComponent(x.id)}/eredeti`), text: 'Letöltés' }) : null,
+          h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { if (!confirm(`Biztosan törli ezt a dokumentumot: „${x.cim}”? Az eredeti fájl, a szöveg és a keresési index is törlődik.`)) return; await api('DELETE', `/api/dokumentumok/${encodeURIComponent(x.id)}`); toast('A dokumentum törölve.'); await refresh(); }), text: 'Törlés' }))))) : h('p', { class: 'ures-szoveg', text: 'Még nincs feltöltött dokumentum.' }));
+    }
+    renderList(d);
+
+    mainSet(my, h('h1', { text: 'Dokumentumtár' }),
+      h('p', { class: 'sugo', text: 'Az itt tárolt dokumentumokból dolgoznak az ügynökök: a válaszaik mellett mindig látszik, melyik dokumentum melyik részére támaszkodtak.' }),
+      d.eredeti_megorzes ? null : h('p', { class: 'sugo', role: 'note', text: 'Az eredeti fájlok tárolása nincs bekapcsolva: csak a kinyert szöveg marad meg, az eredeti nem tölthető vissza.' }),
+      h('div', { class: 'kartya' }, h('h2', { text: 'Feltöltés' }), drop, fileInput,
+        h('div', { class: 'mezo' }, h('label', { for: 'f-kat', text: 'Kategória' }), katSel),
+        h('div', { class: 'mezo' }, h('label', { for: 'f-cim', text: 'Cím' }), cimIn),
+        h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Melyik ügynökök használhatják?' }), h('label', {}, mind, ' Mindegyik'), agentWrap),
+        h('div', { class: 'mezo' }, h('label', {}, aiBox, ' Nem küldhető AI-nak'), h('span', { class: 'sugo', text: d.ai ? 'Az AI be van kapcsolva: a nem jelölt dokumentumok részletei az AI-szolgáltatóhoz kerülhetnek.' : 'Az AI most nincs bekapcsolva. Bekapcsolás után a nem jelölt dokumentumok részletei az AI-szolgáltatóhoz kerülhetnek; a jelölt dokumentum tartalma sosem.' })),
+        eredmeny),
+      h('div', { class: 'kartya' }, h('h2', { text: 'Kérdés a dokumentumokból' }), kerdes, h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: kerd, text: 'Kérdés küldése' })), valasz),
+      h('div', { class: 'kartya' }, h('h2', { text: 'Keresés' }), keresIn, talalat),
+      h('div', { class: 'kartya' }, h('h2', { text: 'A tár tartalma' }), usage, listBox));
+  }
+
+  // Egy dokumentum megnyitása: szakaszok és beállítások (cím, kategória, hatókör, AI-jelölés).
+  const openDok = guard(async (id, refresh) => {
+    const [{ dokumentum: x }, meta] = await Promise.all([api('GET', `/api/dokumentumok/${encodeURIComponent(id)}`), api('GET', '/api/dokumentumok')]);
+    const kat = meta.kategoriak;
+    lastFocus = document.activeElement;
+    const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); if (lastFocus && lastFocus.focus) lastFocus.focus(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const cim = h('input', { type: 'text', id: 'd-cim', value: x.cim, maxlength: '200' });
+    const ks = h('select', { id: 'd-kat' }, Object.entries(kat).map(([k, v]) => h('option', { value: k, ...(k === x.kategoria ? { selected: true } : {}), text: v })));
+    const mind = h('input', { type: 'checkbox', id: 'd-mind', ...(x.hatokor ? {} : { checked: true }) });
+    const boxes = meta.ugynokok.map(a => ({ a, el: h('input', { type: 'checkbox', id: `d-a-${a.id}`, ...(x.hatokor?.includes(a.id) ? { checked: true } : {}) }) }));
+    const wrap = h('div', { class: `cimkek${x.hatokor ? '' : ' rejtett'}` }, boxes.map(({ a, el }) => h('label', { class: 'cimke', for: `d-a-${a.id}` }, el, ` ${a.nev.replace(/ Ügynök$/, '')}`)));
+    mind.addEventListener('change', () => wrap.classList.toggle('rejtett', mind.checked));
+    const ai = h('input', { type: 'checkbox', id: 'd-ai', ...(x.ai_tiltott ? { checked: true } : {}) });
+    const mentes = guard(async () => {
+      const scope = mind.checked ? [] : boxes.filter(b => b.el.checked).map(b => b.a.id);
+      await api('PUT', `/api/dokumentumok/${encodeURIComponent(id)}`, { cim: cim.value, kategoria: ks.value, hatokor: scope, ai_tiltott: ai.checked });
+      toast('Mentve.'); close(); await refresh();
+    });
+    const closeBtn = h('button', { class: 'gomb', type: 'button', onclick: close, text: 'Bezár' });
+    const overlay = h('div', { class: 'nezo' }, h('div', { class: 'lap', role: 'dialog', 'aria-modal': 'true', 'aria-label': x.cim },
+      h('div', { class: 'sor' }, h('span', { class: 'jelveny', text: kat[x.kategoria] }), h('span', { class: 'meta', text: `${x.fajlnev} · ${meret(x.meret)} · ${when(x.ido)}` }), closeBtn),
+      h('h2', { text: x.cim }),
+      h('div', { class: 'mezo' }, h('label', { for: 'd-cim', text: 'Cím' }), cim),
+      h('div', { class: 'mezo' }, h('label', { for: 'd-kat', text: 'Kategória' }), ks),
+      h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Melyik ügynökök használhatják?' }), h('label', {}, mind, ' Mindegyik'), wrap),
+      h('div', { class: 'mezo' }, h('label', {}, ai, ' Nem küldhető AI-nak')),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: mentes, text: 'Mentés' })),
+      h('h3', { text: `Szakaszok (${x.szakaszLista.length})` }),
+      h('div', { class: 'tartalom' }, x.szakaszLista.map(s => h('section', {}, h('h3', { text: `${s.sorszam}. szakasz${s.cim ? `: ${s.cim}` : ''}` }), ...s.szoveg.split(/\n{2,}/).map(p => h('p', { class: 'szakasz-szoveg', text: p })))))));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.append(overlay);
+    closeBtn.focus();
+  });
 
   // ---------- napló
   async function viewNaplo(my = routeToken) {

@@ -102,6 +102,41 @@ await page.click('button:has-text("Megállít")'); await page.waitForSelector('t
 log('megállítás után:', (await page.locator('.lista li .meta').first().innerText()).slice(0, 80));
 await shot('11-ures-asztal-atadassal');
 
+// dokumentumtár: feltöltés (jó és hamis fájl), kérdés, keresés, megnyitás, kulcsszójavaslat jóváhagyása, törlés
+page.on('dialog', d => d.accept());
+await page.goto(BASE + '#/dokumentumok'); await page.waitForSelector('.dropzona');
+log('előre feltöltött dokumentumok:', await page.locator('h2:has-text("A tár tartalma") ~ div li, .kartya:has-text("A tár tartalma") li').count());
+const beforeUpload = problems.length;
+await page.setInputFiles('#fajl', ['test/fixtures/docs/adatok.csv', 'test/fixtures/docs/hamis.pdf']);
+await page.waitForSelector('li.hibas');
+problems.splice(beforeUpload); // a szándékosan hamis fájl várt 422-es válasza
+log('feltöltés eredménye:', (await page.locator('.dropzona ~ ul li').allInnerTexts()).join(' | '));
+await shot('12-dokumentumtar');
+await page.fill('#dok-kerdes', 'Mennyi az átlagos várakozási idő?'); await page.click('text=Kérdés küldése >> nth=0');
+await page.waitForSelector('.buborek.ugynok');
+log('válasz a dokumentumokból:', (await page.locator('.buborek.ugynok').first().innerText()).split('\n').slice(0, 2).join(' / ').slice(0, 170));
+await page.fill('#dok-kereses', 'ápolóhiányról'); await page.waitForSelector('.kartya:has-text("Keresés") li');
+log('találatok a keresésre:', await page.locator('.kartya:has-text("Keresés") li').count());
+await page.locator('.kartya:has-text("A tár tartalma") button:has-text("Megnyitás")').first().click();
+await page.waitForSelector('.nezo');
+await shot('13-dokumentum-megnyitva');
+await page.check('#d-ai'); await page.click('.nezo >> text=Mentés'); await page.waitForSelector('.jelveny:has-text("Nem küldhető AI-nak")');
+log('AI-jelölés mentve:', await page.locator('.jelveny:has-text("Nem küldhető AI-nak")').count());
+await page.goto(BASE + '#/asztal/monitoring'); await page.waitForSelector('.harom');
+await page.fill('#utasitas', 'Javasolj kulcsszavakat a feltöltött dokumentumok alapján'); await page.click('button:has-text("Küldés") >> nth=0');
+await page.waitForSelector('.kijelolo');
+const tetelek = await page.locator('.kijelolo li').allInnerTexts();
+log('javasolt kifejezések:', tetelek.map(t => t.replace(/\s+/g, ' ').trim()).join(' | ').slice(0, 220));
+await shot('14-kulcsszojavaslat');
+await page.locator('.kijelolo input[type=checkbox]').first().uncheck();
+await page.click('text=A kijelölteket jóváhagyom'); await page.waitForSelector('text=Végrehajtva');
+log('jóváhagyva a kijelölteket:', (await page.locator('#toast').innerText()) || 'ok');
+await page.goto(BASE + '#/dokumentumok'); await page.waitForSelector('.dropzona');
+const docCountBefore = await page.locator(".kartya:has-text(\"A tár tartalma\") li").count();
+await page.locator('.kartya:has-text("A tár tartalma") button:has-text("Törlés")').first().click();
+await page.waitForFunction((n) => [...document.querySelectorAll('.kartya')].find(k => k.textContent.includes('A tár tartalma'))?.querySelectorAll('li').length === n, docCountBefore - 1);
+log('törlés után:', docCountBefore, '→', docCountBefore - 1);
+
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');
 await page.evaluate(() => navigator.serviceWorker.ready);

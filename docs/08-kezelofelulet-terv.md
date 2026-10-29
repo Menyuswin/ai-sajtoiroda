@@ -6,7 +6,7 @@
 
 A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden ügynöknek saját asztala van. Az asztalnál utasítást ad az ügynöknek, megnézi az elkészített munkáját, és elolvassa a jelentéseit, programozói tudás nélkül. A felület egy külön domént (például `sajtoiroda.ugyfel.hu`) kaphat, és később önálló alkalmazás is épülhet rá.
 
-## 2. A három nézet (az én értelmezésem, kérem, ellenőrizze)
+## 2. A nézetek (javaslat)
 
 | Nézet | Mit lát és mit tud tenni |
 |-------|--------------------------|
@@ -14,7 +14,7 @@ A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden
 | **2. Az ügynök asztala** | Három sáv egy oldalon: **Utasítás** (üzenetablak: ide ír az ügynöknek, itt látja az előzményeket), **Munka** (amin az ügynök épp dolgozik, a mai találatok, a trendek), **Jelentések** (a korábbi szemlék és riasztások listája, megnyitva ugyanúgy, ahogy a levélben megérkeztek). Az asztalhoz tartozik a **Beállítások** (kulcsszavak, források, vörös vonalak, időzítés, címzett) és az **ügynök naplója**. |
 | **3. Jelentések** (összesítő) | Az összes ügynök jelentése egy helyen, időrendben, szűrhetően; letölthető. Ez az, amit a vezető reggel átfut. |
 
-*Két pontot kérek megerősíteni:* (a) a „három oldal” ez a három nézet-e, vagy más a három? (b) a „mozgatni az ügynököket” az elrendezés húzogatását jelenti-e (ahogy leírtam), vagy azt, hogy ügynököket lehet áthelyezni, például csoportokba, csapatokba?
+*Megjegyzés:* a tulajdonos leírásában szerepelt egy „három oldal” kifejezés, amelynek jelentése nem tisztázott. Ez a fejezet ezért egy javaslat az oldalak szétosztására (iroda, asztal, összesítő jelentések); a darabszám nem kötött, és bármikor módosítható. Ugyanígy nyitott, hogy a „mozgatni az ügynököket” az elrendezés húzogatását jelenti-e (ahogy fent leírtam).
 
 ## 3. Az utasítások működése (az alapszabályok szerint)
 
@@ -66,7 +66,7 @@ Az U1–U4 a mostani környezetben megépíthető és tesztelhető. Az U5-höz a
 
 ## 7. Amit jóvá kell hagynia
 
-1. **A három nézet értelmezése** (2. fejezet), és hogy a „mozgatás” az elrendezés húzogatása-e.
+1. **A nézetek felosztása** (2. fejezet), és hogy a „mozgatás” az elrendezés húzogatása-e.
 2. **Az utasítások modellje:** javaslat → vezetői jóváhagyás → végrehajtás, zárt műveletlistával (3. fejezet). Ez egyben a korábbi „csevegőfelület” döntésnek a megvalósítása.
 3. **Belépés:** Cloudflare Access (ajánlott).
 4. **Szerepek és a nem szerkeszthető elemek** (5. fejezet), különösen: az AI-jelzés nem törölhető, és a címzett-váltás védett.

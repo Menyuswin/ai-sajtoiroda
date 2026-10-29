@@ -65,7 +65,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 1. **Levélküldő szolgáltató kiválasztása** (P6): ezzel a jóváhagyott válaszok ténylegesen elmehetnek; addig a kimenő mappába kerülnek. Rövid összehasonlítás kell hozzá (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről).
 2. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), az iCloud-híd első valódi próbája (`tools/levelhid/README.md`), AI-kulcs és a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
-3. A következő ügynök a bevezetési sorrend szerint: Eseményszervező (terv előbb); a kiegészítők (Archívum, Közösségi média, Jogi és kockázat) igény szerint. A Jogi asztal már kap belső kérdéseket (red flag, jogi gyanú), amelyek az érkezéséig várnak.
+3. A következő ügynök a bevezetési sorrend szerint: Eseményszervező (terv kész: `docs/13`, jóváhagyásra vár, a 8. fejezet hat pontjával); a kiegészítők (Archívum, Közösségi média, Jogi és kockázat) igény szerint. A Jogi asztal már kap belső kérdéseket (red flag, jogi gyanú), amelyek az érkezéséig várnak.
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
 ## Korlátok (őszintén)
@@ -123,6 +123,7 @@ docs/09                   a dokumentumtár terve és állapota (kész)
 docs/10                   az ügynökök közötti átadások terve és felelősségi mátrixa (kész)
 docs/11                   a postafiók-réteg és a Kapcsolattartó Ügynök terve és állapota (kész, telefon nélkül)
 docs/12                   a Felkészítő és a Proaktív ügynök terve és állapota (kész)
+docs/13                   az Eseményszervező ügynök terve (jóváhagyásra vár)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

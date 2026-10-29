@@ -1,7 +1,7 @@
 // Az iroda ügynökei. A tartalom az agents/*.yaml specifikációkkal egyezik (teszt őrzi).
 // `elerheto`: van-e már működő ügynök az asztalnál. A többi asztal üres, a bevezetési sorrend szerint kerül betöltésre.
 export const AGENTS = [
-  { id: 'kapcsolattarto', fajl: '01-kapcsolattarto', nev: 'Kommunikációs Kapcsolattartó Ügynök', munkanev: 'Inbox & Call Agent', szakasz: 1, elerheto: false },
+  { id: 'kapcsolattarto', fajl: '01-kapcsolattarto', nev: 'Kommunikációs Kapcsolattartó Ügynök', munkanev: 'Inbox & Call Agent', szakasz: 1, elerheto: true },
   { id: 'felkeszito', fajl: '02-felkeszito', nev: 'Sajtófelkészítő Ügynök', munkanev: 'Briefing Agent', szakasz: 2, elerheto: false },
   { id: 'monitoring', fajl: '03-monitoring', nev: 'Sajtószemle- és Monitoring Ügynök', munkanev: 'Media Monitoring Agent', szakasz: 1, elerheto: true },
   { id: 'proaktiv', fajl: '04-proaktiv-strategia', nev: 'Proaktív Kommunikációs Stratégia Ügynök', munkanev: 'Agenda & Opportunity Agent', szakasz: 2, elerheto: false },

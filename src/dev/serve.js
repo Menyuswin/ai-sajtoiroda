@@ -29,6 +29,7 @@ export async function createDemo({ user = 'vezeto@pelda.example', now = () => DE
     classify: read('monitoring/prompts/cikk-besorolas.md'), synthesize: read('monitoring/prompts/napi-szemle.md'),
     instruct: read('monitoring/prompts/utasitas-ertelmezes.md'), qa: read('monitoring/prompts/kerdes-valasz.md'),
     docqa: read('monitoring/prompts/dokumentum-kerdes.md'), keywords: read('monitoring/prompts/kulcsszo-javaslat.md'),
+    letterClassify: read('monitoring/prompts/level-besorolas.md'), letterReply: read('monitoring/prompts/level-valasz.md'),
   };
   const feed = read('test/fixtures/feed.xml');
   const env = { DB: db, DOCS: createR2Shim(), SAJTOIRODA_DEV_AUTH: '1', SAJTOIRODA_DEV_USER: user };

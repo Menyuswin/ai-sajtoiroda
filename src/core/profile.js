@@ -4,6 +4,20 @@ import { parse } from 'yaml';
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{1,62}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const MAILBOX_PROVIDERS = ['proba', 'icloud', 'gmail', 'exchange', 'imap'];
+const SECRET_NAME_RE = /^[A-Z][A-Z0-9_]{2,63}$/;
+
+// A postafiók beállítása. A jelszó vagy token NEM a profilban van: csak a titok neve (környezeti változó / Workers-titok).
+export function validateMailbox(m) {
+  if (m == null) return null;
+  const errors = [];
+  if (!MAILBOX_PROVIDERS.includes(m.szolgaltato)) errors.push(`postafiok.szolgaltato: ${MAILBOX_PROVIDERS.join(' | ')}`);
+  if (!EMAIL_RE.test(m.cim || '')) errors.push('postafiok.cim érvénytelen');
+  if (m.szolgaltato !== 'proba' && !SECRET_NAME_RE.test(m.titok || '')) errors.push('postafiok.titok: a titok NEVE kell (nagybetű, szám, aláhúzás), nem maga a jelszó');
+  if (m.mappa != null && (typeof m.mappa !== 'string' || !m.mappa.trim() || m.mappa.length > 100)) errors.push('postafiok.mappa: 1–100 karakter');
+  if (errors.length) throw new Error('Érvénytelen ügyfélprofil:\n- ' + errors.join('\n- '));
+  return { szolgaltato: m.szolgaltato, cim: m.cim.trim(), mappa: (m.mappa || 'Sajtó').trim(), titok: m.titok || null };
+}
 
 export function validateProfile(raw) {
   const errors = [];
@@ -21,6 +35,7 @@ export function validateProfile(raw) {
     if (!s || !/^https?:\/\//.test(s.url || '')) errors.push(`forrás URL érvénytelen: ${JSON.stringify(s)}`);
   }
   if (errors.length) throw new Error('Érvénytelen ügyfélprofil:\n- ' + errors.join('\n- '));
+  const mailbox = validateMailbox(p.postafiok);
 
   const trend = { alapido_nap: 14, szoras_szorzo: 2, minimum_emlites: 5, ...(p.trend || {}) };
   return {
@@ -32,6 +47,8 @@ export function validateProfile(raw) {
     trend,
     utemezes: { idozona: 'Europe/Budapest', ...(p.utemezes || {}) },
     ugynokok: p.ugynokok || {},
+    ...(mailbox ? { postafiok: mailbox } : {}),
+    kapcsolattarto: { alairas: '', hangnem: '', ...(p.kapcsolattarto || {}) },
     ai_jelzes: p.ai_jelzes || 'Ezt a szemlét mesterséges intelligencia készítette elő; a hivatkozott cikkek ellenőrzése a vezető feladata.',
   };
 }

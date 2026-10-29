@@ -16,6 +16,12 @@ import { createDocs, CATEGORIES } from '../docs/store.js';
 import { DocError, DOC_LIMITS } from '../docs/extract.js';
 import { answerFromDocs, suggestKeywords } from '../docs/answer.js';
 import { dayKey } from '../core/text.js';
+import { buildLetterCtx } from '../cloudflare/agentctx.js';
+import { ingest, processLetter, decideLetter, run as runMailAgent } from '../agents/kapcsolattarto/index.js';
+import { buildDraft } from '../agents/kapcsolattarto/draft.js';
+import { isBridged, createMailbox } from '../mail/providers.js';
+import { MAIL_LIMITS } from '../mail/message.js';
+import { validateMailbox } from '../core/profile.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const SECURITY = { 'Content-Security-Policy': CSP, 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' };
@@ -26,8 +32,8 @@ class HttpError extends Error { constructor(status, message) { super(message); t
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...SECURITY, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 
 // Mit szerkeszthet az ügyfél (vezető), és mit csak az üzemeltető.
-const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'] };
-const UZEMELTETO_EXTRA = { vezeto: true, nyelv: true, trend: true, megorzes: true, ai_jelzes: true, utemezes: ['szemle', 'idozona'], megjelenes: true };
+const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true };
+const UZEMELTETO_EXTRA = { vezeto: true, nyelv: true, trend: true, megorzes: true, ai_jelzes: true, utemezes: ['szemle', 'idozona'], megjelenes: true, postafiok: true };
 
 const cleanList = (a) => [...new Set((Array.isArray(a) ? a : []).map(x => String(x).trim()).filter(Boolean))];
 
@@ -49,6 +55,13 @@ export function applyProfileEdit(profile, patch, role) {
     if ('szemle' in patch.utemezes) { if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(patch.utemezes.szemle)) throw new HttpError(400, 'A szemle időpontja ÓÓ:PP alakú legyen'); next.utemezes.szemle = patch.utemezes.szemle; }
     if ('idozona' in patch.utemezes) next.utemezes.idozona = String(patch.utemezes.idozona);
   }
+  if (patch.kapcsolattarto) {
+    for (const k of ['alairas', 'hangnem']) if (k in patch.kapcsolattarto) next.kapcsolattarto = { ...next.kapcsolattarto, [k]: String(patch.kapcsolattarto[k] ?? '').trim().slice(0, k === 'alairas' ? 400 : 300) };
+  }
+  if ('postafiok' in patch) {
+    if (patch.postafiok === null) delete next.postafiok;
+    else { try { next.postafiok = validateMailbox(patch.postafiok); } catch (e) { throw new HttpError(400, e.message.replace(/^Érvénytelen ügyfélprofil:\n- /, '')); } }
+  }
   for (const k of ['vezeto', 'nyelv', 'trend', 'megorzes', 'megjelenes']) if (k in patch) next[k] = k === 'vezeto' ? { ...next.vezeto, ...patch.vezeto } : patch[k];
   if ('ai_jelzes' in patch) { next.ai_jelzes = String(patch.ai_jelzes).trim(); if (!next.ai_jelzes) throw new HttpError(400, 'Az AI-jelzés nem hagyható el'); }
   try { checkLimits(next); } catch (e) { throw new HttpError(400, e.message); }
@@ -59,6 +72,45 @@ function csv(rows) {
   const cell = (v) => { let s = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
   return [['ido', 'szereplo', 'tipus', 'hivatkozas', 'tartalom'].map(cell).join(',')]
     .concat(rows.map(r => [r.ido, r.szereplo, r.tipus, r.hivatkozas, r.tartalom].map(cell).join(','))).join('\r\n');
+}
+
+// A postafiók állapota a felületnek. Titkot sosem ad vissza; csak azt, hogy be van-e állítva.
+async function mailboxStatus(lctx, env, profile) {
+  const cfg = profile.postafiok || null;
+  const st = await lctx.levelek.mailboxState();
+  const mod = !cfg || cfg.szolgaltato === 'proba' ? 'kezi' : isBridged(cfg) ? 'hid' : 'lekerdezes';
+  return { beallitva: !!cfg, szolgaltato: cfg?.szolgaltato || null, cim: cfg?.cim || null, mappa: cfg?.mappa || null, mod,
+    titok_megvan: cfg?.titok ? typeof env[cfg.titok] === 'string' && env[cfg.titok].length > 0 : cfg?.szolgaltato === 'proba',
+    utolso_siker: st.utolso_siker, utolso_hiba: st.utolso_hiba, utolso_hiba_ido: st.utolso_hiba_ido };
+}
+
+async function safeEqual(a, b) {
+  const h = async (x) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(x)));
+  const [x, y] = await Promise.all([h(a), h(b)]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
+// A levélhíd (tools/levelhid) fogadója. Nem a Cloudflare Access mögött van (a híd nem ember), hanem saját titokkal védett:
+// a profil `postafiok.titok` nevű Workers-titka a megosztott jelszó. Minden hiba ugyanazt a 401-et adja, hogy az ügyfélazonosító ne legyen kitalálható.
+async function bridgeIngest(request, env, deps, tenantId, now) {
+  const denied = () => json({ hiba: 'Nincs jogosultság.' }, 401);
+  const current = await createD1ProfileRepo({ db: env.DB, now }).get(tenantId);
+  const cfg = current?.profile.postafiok;
+  const expected = cfg && isBridged(cfg) ? env[cfg.titok] : null;
+  const auth = request.headers.get('Authorization') || '';
+  if (typeof expected !== 'string' || expected.length < 20 || !auth.startsWith('Bearer ') || !(await safeEqual(auth.slice(7), expected))) return denied();
+  if (Number(request.headers.get('Content-Length') || 0) > MAIL_LIMITS.bodyBytes) return json({ hiba: 'A kérés túl nagy.' }, 413);
+  const text = await request.text();
+  if (text.length > MAIL_LIMITS.bodyBytes) return json({ hiba: 'A kérés túl nagy.' }, 413);
+  let body;
+  try { body = JSON.parse(text); } catch { return json({ hiba: 'Hibás JSON.' }, 400); }
+  if (!Array.isArray(body?.levelek)) return json({ hiba: 'A „levelek” lista hiányzik.' }, 400);
+  const ctx = buildLetterCtx({ env, profile: current.profile, now, prompts: deps.prompts, llmFetch: deps.llmFetch });
+  const result = await ingest(ctx, body.levelek, 'hid', { processLimit: 5 }); // a többi a következő ütemezett futásra marad
+  await ctx.levelek.saveMailboxState({ kurzor: null, siker: true });
+  return json(result);
 }
 
 export async function handleRequest(request, env, deps = {}) {
@@ -81,6 +133,8 @@ async function route(request, env, deps) {
     if (!asset) return new Response('Nem található.', { status: 404, headers: SECURITY });
     return new Response(asset.base64 ? fromBase64(asset.body) : asset.body, { headers: { ...SECURITY, 'Content-Type': TYPES[asset.type], 'Cache-Control': asset.type === 'png' ? 'public, max-age=86400' : 'no-cache' } });
   }
+  let hid;
+  if (method === 'POST' && (hid = url.pathname.match(/^\/hid\/([a-z0-9][a-z0-9-]{1,62})\/levelek$/))) return bridgeIngest(request, env, deps, hid[1], now);
   if (!url.pathname.startsWith('/api/')) return json({ hiba: 'Nem található.' }, 404);
 
   // Belépés és jogosultság.
@@ -122,6 +176,7 @@ async function route(request, env, deps) {
   const docs = createDocs({ db: env.DB, bucket: env.DOCS || null, tenantId, now });
   const handoffs = createHandoffs({ repo: desk.atadasok, log, agentIds: AGENTS.map(a => a.id), handlers: handoffHandlers, now, isAvailable: (id) => !!agentById(id)?.elerheto && agentActive(profile, id, now()) });
   const mapHandoff = (h) => ({ id: h.id, tipus: h.tipus, honnan: h.honnan, hova: h.hova, targy: h.targy, szoveg: h.szoveg, anyag_id: h.anyag_id, melyseg: h.melyseg, allapot: h.allapot, ido: h.ido, valasz: h.valasz });
+  const lctx = buildLetterCtx({ env, profile, now, prompts, llmFetch: deps.llmFetch });
   const actor = `ember:${who.email}`;
   const p = url.pathname;
   let m;
@@ -130,12 +185,13 @@ async function route(request, env, deps) {
   if (method === 'GET' && p === '/api/iroda') {
     const [unread, pending, layout, open] = await Promise.all([desk.anyagok.unreadCounts(), desk.utasitasok.pendingCounts(), desk.layout.get(who.email), desk.atadasok.openCounts()]);
     const agents = [];
+    const letterCounts = await lctx.levelek.counts();
     for (const a of AGENTS) {
       const last = a.elerheto ? (await desk.anyagok.list({ ugynok: a.id, limit: 1 }))[0] : null;
       const aktiv = a.elerheto && agentActive(profile, a.id, now());
       agents.push({ id: a.id, nev: a.nev, munkanev: a.munkanev, szakasz: a.szakasz, elerheto: a.elerheto,
         allapot: !a.elerheto ? 'ures' : aktiv ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: unread[a.id] || 0, jovahagyasra_var: pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
+        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
       mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
@@ -160,6 +216,12 @@ async function route(request, env, deps) {
     if (!a) throw new HttpError(404, 'Ismeretlen ügynök.');
     const atadasok = (await desk.atadasok.list({ ugynok: a.id, limit: 50 })).map(mapHandoff);
     if (!a.elerheto) return json({ ugynok: a, allapot: 'ures', utasitasok: [], anyagok: [], munka: null, atadasok });
+    if (a.id === 'kapcsolattarto') {
+      return json({ ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
+        utasitasok: [], anyagok: role === 'vezeto' ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok,
+        munka: { tipus: 'kapcsolattarto', szamok: await lctx.levelek.counts(), postafiok: await mailboxStatus(lctx, env, profile), tartalom_lathato: role === 'vezeto',
+          legutobbi: role === 'vezeto' ? (await lctx.levelek.list({ limit: 6 })) : [] } });
+    }
     const articles = await store.load();
     const today = dayKey(now(), profile.utemezes.idozona);
     const todays = articles.filter(x => dayKey(x.published || x.fetchedAt, profile.utemezes.idozona) === today);
@@ -188,6 +250,7 @@ async function route(request, env, deps) {
     const a = agentById(m[1]);
     if (!a) throw new HttpError(404, 'Ismeretlen ügynök.');
     if (!a.elerheto) throw new HttpError(409, 'Ennél az asztalnál még nem ül senki.');
+    if (a.id !== 'monitoring') throw new HttpError(409, 'Ennek az ügynöknek a levelekre adhat utasítást: nyissa meg a Bejövő nézetet, és ott kérhet átírást vagy hozhat döntést.');
     const text = String((await body()).szoveg || '').trim();
     if (!text || text.length > 500) throw new HttpError(400, 'Az utasítás 1–500 karakter legyen.');
     await log.append({ szereplo: actor, tipus: 'utasitas', hivatkozas: a.id, tartalom: { szoveg: text } });
@@ -329,6 +392,66 @@ async function route(request, env, deps) {
     }
   }
 
+
+  // ---- Levelek (Kapcsolattartó): a tartalmat csak a vezető látja, a döntés is az övé
+  if (p.startsWith('/api/levelek') || p.startsWith('/api/postafiok')) {
+    if (method === 'GET' && p === '/api/postafiok') return json(await mailboxStatus(lctx, env, profile));
+    if (method === 'POST' && p === '/api/postafiok/beolvasas') {
+      const mailbox = (() => { try { return createMailbox(profile.postafiok, { env, fetchImpl: deps.mailFetch }); } catch (e) { throw new HttpError(409, e.message); } })();
+      const r = await runMailAgent({ ...lctx, mailbox });
+      await log.append({ szereplo: actor, tipus: 'level', tartalom: { esemeny: 'kezi_beolvasas', ...r } });
+      return json(r);
+    }
+    if (role !== 'vezeto') throw new HttpError(403, 'A levelek tartalmát csak a vezető látja és kezeli.');
+    if (!agentById('kapcsolattarto').elerheto) throw new HttpError(409, 'A Kapcsolattartó asztala nincs betöltve.');
+    if (method === 'GET' && p === '/api/levelek') {
+      const allapot = url.searchParams.get('allapot');
+      return json({ levelek: await lctx.levelek.list({ allapot: allapot || null, limit: 200 }), szamok: await lctx.levelek.counts() });
+    }
+    if (method === 'POST' && p === '/api/levelek') {
+      const b = await body();
+      const raw = { azonosito: `kezi:${crypto.randomUUID()}`, felado: String(b.felado || ''), felado_nev: String(b.felado_nev || ''), targy: String(b.targy || ''), szoveg: String(b.szoveg || ''), ido: now().toISOString() };
+      const r = await ingest(lctx, [raw], 'kezi');
+      if (!r.fogadott) throw new HttpError(400, 'A levél nem fogadható be: a feladó címe (e-mail) és a tárgy vagy a szöveg kötelező.');
+      return json(r, 201);
+    }
+    if ((m = p.match(/^\/api\/levelek\/([^/]+)$/)) && method === 'GET') {
+      const letter = await lctx.levelek.get(decodeURIComponent(m[1]));
+      if (!letter) throw new HttpError(404, 'Nincs ilyen levél.');
+      await lctx.levelek.markRead(letter.id);
+      const anyag = letter.anyag_id ? await desk.anyagok.get(letter.anyag_id) : null;
+      if (anyag) await desk.anyagok.markRead(anyag.id);
+      return json({ level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
+    }
+    if ((m = p.match(/^\/api\/levelek\/([^/]+)\/dontes$/)) && method === 'POST') {
+      const b = await body();
+      const r = await decideLetter(lctx, decodeURIComponent(m[1]), { dontes: b.dontes, szoveg: b.szoveg, targy: b.targy, hova: b.hova, by: actor });
+      if (r.status !== 200) throw new HttpError(r.status, r.hiba);
+      return json({ allapot: r.allapot, kiment: r.kiment === true });
+    }
+    if ((m = p.match(/^\/api\/levelek\/([^/]+)\/(ujra|atiras)$/)) && method === 'POST') {
+      const id = decodeURIComponent(m[1]);
+      const letter = await lctx.levelek.get(id);
+      if (!letter) throw new HttpError(404, 'Nincs ilyen levél.');
+      if (!['tervezet_kesz', 'hiba', 'halasztva'].includes(letter.allapot)) throw new HttpError(409, 'Erről a levélről már döntöttek.');
+      if (m[2] === 'ujra') {
+        if (letter.allapot !== 'hiba') throw new HttpError(409, 'Csak a sikertelen feldolgozás próbálható újra.');
+        const r = await processLetter(lctx, id);
+        return json({ ok: r.ok === true });
+      }
+      const utasitas = String((await body()).utasitas || '').trim();
+      if (!utasitas || utasitas.length > 300) throw new HttpError(400, 'Az átírási kérés 1–300 karakter legyen.');
+      if (lctx.llm.mode === 'mock') throw new HttpError(409, 'Átírást kérni csak bekapcsolt AI-val lehet; AI nélkül szerkessze kézzel a tervezetet.');
+      let draft;
+      try { draft = await buildDraft({ letter, cls: letter.besorolas, profile, llm: lctx.llm, prompts, models: lctx.models, docs: lctx.docs, instruction: utasitas }); }
+      catch { throw new HttpError(502, 'Az átírás most nem sikerült. Próbálja újra később.'); }
+      await desk.anyagok.update(letter.anyag_id, { szoveg: draft.opciok.map(o => (o.szoveg ? `## ${o.cim}\n${o.szoveg}` : `## ${o.cim}`)).join('\n\n'), meta: { level_id: id, besorolas: letter.besorolas, ...draft } });
+      await log.append({ szereplo: actor, tipus: 'valasz_tervezet', hivatkozas: id, tartalom: { esemeny: 'atiras_kerve', utasitas } });
+      return json({ ok: true });
+    }
+    throw new HttpError(404, 'Nem található.');
+  }
+
   // ---- Átadások az ügynökök között
   if (method === 'GET' && p === '/api/atadasok') {
     const list = await desk.atadasok.list({ ugynok: url.searchParams.get('ugynok'), allapot: url.searchParams.get('allapot'), limit: 200 });
@@ -343,8 +466,8 @@ async function route(request, env, deps) {
 
   // ---- Beállítások
   if (method === 'GET' && p === '/api/profil') {
-    const { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes } = profile;
-    return json({ szerep: role, profil: { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes }, szerkesztheto_vezeto: Object.keys(VEZETO_EDITABLE), verzio: current.version });
+    const { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok } = profile;
+    return json({ szerep: role, profil: { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok: postafiok || null }, szerkesztheto_vezeto: Object.keys(VEZETO_EDITABLE), verzio: current.version });
   }
   if (method === 'PUT' && p === '/api/profil') {
     const next = applyProfileEdit(profile, await body(), role);

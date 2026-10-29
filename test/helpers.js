@@ -15,6 +15,8 @@ export const readPrompts = async () => ({
   qa: await readFile(join(promptDir, 'kerdes-valasz.md'), 'utf8'),
   docqa: await readFile(join(promptDir, 'dokumentum-kerdes.md'), 'utf8'),
   keywords: await readFile(join(promptDir, 'kulcsszo-javaslat.md'), 'utf8'),
+  letterClassify: await readFile(join(promptDir, 'level-besorolas.md'), 'utf8'),
+  letterReply: await readFile(join(promptDir, 'level-valasz.md'), 'utf8'),
 });
 
 export async function makeCtx({ now = new Date('2026-10-29T06:30:00Z'), fetchText, llmMode = 'mock', profileMod, llmFetch } = {}) {

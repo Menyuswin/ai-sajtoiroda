@@ -13,6 +13,10 @@ import { createHandoffs } from '../core/handoff.js';
 import { AGENTS } from '../api/catalogue.js';
 import { monitoringAgent } from '../agents/monitoring/index.js';
 import { defaultFetchText } from '../agents/monitoring/sources.js';
+import { kapcsolattartoAgent } from '../agents/kapcsolattarto/index.js';
+import { createMailStore } from '../mail/store.js';
+import { createMailbox } from '../mail/providers.js';
+import { createDocs } from '../docs/store.js';
 
 export function localTime(date, tz) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
@@ -29,7 +33,7 @@ export function decideMode(profile, now, lastDigestDay) {
 // Az ügynök-azonosító → feldolgozó függvény térkép: az újabb ügynökök érkezésekor itt iratkoznak fel (docs/10).
 export const handoffHandlers = new Map();
 
-export async function runScheduled(env, { now = () => new Date(), fetchText = defaultFetchText, prompts, llmFetch, handlers = handoffHandlers } = {}) {
+export async function runScheduled(env, { now = () => new Date(), fetchText = defaultFetchText, prompts, llmFetch, mailFetch, handlers = handoffHandlers } = {}) {
   const config = getConfig(env);
   const repo = createD1ProfileRepo({ db: env.DB, now });
   const summary = [];
@@ -37,8 +41,7 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
     const tenantId = profile.ugyfel_id;
     const log = createD1Log({ db: env.DB, tenantId, now });
     try {
-      if (!agentActive(profile, 'monitoring', now())) { summary.push({ tenantId, skipped: true }); continue; }
-      const store = createD1Store({ db: env.DB, tenantId });
+      const entry = { tenantId };
       const mailer = config.live ? createLiveMailer(config.mailer) : createD1DryMailer({ db: env.DB, now });
       const outbox = createOutbox({ profile, mailer, log });
       const desk = createDesk({ db: env.DB, tenantId, now });
@@ -46,15 +49,39 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
       await handoffs.flush(); // a megérkezett asztaloknak kézbesít, a lejártakat lezárja
       const wantAi = env.SAJTOIRODA_LLM === 'anthropic';
       const llm = createLlm({ mode: wantAi ? 'anthropic' : 'mock', key: config.anthropicKey, models: config.models, ...(llmFetch ? { fetchImpl: llmFetch } : {}) });
-      const sent = await log.query({ tipus: 'szemle_elkuldve' });
-      const lastDigestDay = sent.length ? dayKey(sent[sent.length - 1].ido, profile.utemezes.idozona) : null;
-      const mode = decideMode(profile, now(), lastDigestDay);
-      const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models, anyagok: desk.anyagok, atadasok: handoffs }, { mode });
-      if (mode === 'digest' && profile.megorzes?.nyers_cikk_honap) {
-        const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - profile.megorzes.nyers_cikk_honap);
-        await store.purgeOlderThan(cutoff.toISOString());
+
+      if (!agentActive(profile, 'monitoring', now())) { entry.monitoring = { skipped: true }; entry.skipped = true; }
+      else {
+        const store = createD1Store({ db: env.DB, tenantId });
+        const sent = await log.query({ tipus: 'szemle_elkuldve' });
+        const lastDigestDay = sent.length ? dayKey(sent[sent.length - 1].ido, profile.utemezes.idozona) : null;
+        const mode = decideMode(profile, now(), lastDigestDay);
+        const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models, anyagok: desk.anyagok, atadasok: handoffs }, { mode });
+        if (mode === 'digest' && profile.megorzes?.nyers_cikk_honap) {
+          const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - profile.megorzes.nyers_cikk_honap);
+          await store.purgeOlderThan(cutoff.toISOString());
+        }
+        entry.monitoring = { mode, ...result };
+        Object.assign(entry, { mode, ...result }); // a korábbi összegző alak (Monitoring) megmarad
       }
-      summary.push({ tenantId, mode, ...result });
+
+      // Kapcsolattartó: a postafiók lekérdezése (ha van lekérdezhető) és a levelek feldolgozása. Egyik ügynök hibája a másikat nem állítja le.
+      if (profile.postafiok || (await createMailStore({ db: env.DB, tenantId, now }).pending(1)).length) {
+        try {
+          const levelek = createMailStore({ db: env.DB, tenantId, now });
+          let mailbox = null;
+          try { mailbox = createMailbox(profile.postafiok, { env, fetchImpl: mailFetch }); }
+          catch (e) { await levelek.saveMailboxState({ kurzor: null, hiba: e.message }); await log.append({ szereplo: 'rendszer', tipus: 'hiba', tartalom: { hiba: `postafiók: ${e.message}` } }); }
+          const docs = createDocs({ db: env.DB, bucket: env.DOCS || null, tenantId, now });
+          entry.kapcsolattarto = await kapcsolattartoAgent.run({ profile, log, outbox, llm, now, prompts, models: config.models, anyagok: desk.anyagok, atadasok: handoffs, levelek, docs, mailbox });
+          const keep = profile.megorzes?.level_nap ?? 90;
+          if (keep) await levelek.purgeOlderThan(new Date(now().getTime() - keep * 86400000).toISOString());
+        } catch (e) {
+          await log.append({ szereplo: 'rendszer', tipus: 'hiba', tartalom: { hiba: `kapcsolattartó: ${String(e.message || e)}` } }).catch(() => {});
+          entry.kapcsolattarto = { error: String(e.message || e) };
+        }
+      }
+      summary.push(entry);
     } catch (e) {
       // Egy ügyfél hibája nem állíthatja le a többit.
       await log.append({ szereplo: 'rendszer', tipus: 'hiba', tartalom: { hiba: String(e.message || e) } }).catch(() => {});

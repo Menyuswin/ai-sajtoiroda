@@ -1,6 +1,6 @@
 # A postafiók-réteg és a Kapcsolattartó Ügynök terve
 
-*Állapot: **terv, jóváhagyásra vár.** A döntés (2026-10-29, a tulajdonos): a nulladik ügyfélnél (ő maga) **iCloud** a postafiók; **Gmail** és **céges Exchange** ügyfelenként beállítható legyen.*
+*Állapot: **jóváhagyva (2026-10-29), a P1–P5 lépések megépültek és tesztelve vannak** (lásd a 9. fejezetet); a P6 (levélküldés) a levélküldő szolgáltató kiválasztására vár, a telefonhívások (ElevenLabs) a legvégére kerülnek. A döntés: a nulladik ügyfélnél (ő maga) **iCloud** a postafiók; **Gmail** és **céges Exchange** ügyfelenként beállítható.*
 
 ## 1. A cél
 
@@ -82,3 +82,30 @@ P1–P4 itt megépíthető; P5 a valódi iCloud-fiókhoz a tulajdonos közreműk
 3. **iCloud: levélhíd (B)** az első út, a Make-es út később? (Ajánlott.)
 4. **Gmail API és Graph** előbb a próba-illesztővel és hamis szerverrel, valódi fiókkal csak ügyfél érkezésekor?
 5. **Megőrzési idő:** a levélszöveg 90 nap, a napló marad?
+
+## 9. Mi készült el (2026-10-29)
+
+A tulajdonos az 5 pontot elfogadta: először csak olvasás és tervezet; külön sajtós mappa; iCloudnál levélhíd; Gmail és Graph hamis szerverrel tesztelve; 90 napos levélmegőrzés.
+
+- **Postafiók-réteg** (`src/mail/`): közös levélformátum (HTML szöveggé, hosszkorlát, hibás levél kiesik), Gmail API-illesztő (frissítő tokenes belépés, csak olvasás), Microsoft Graph illesztő (mappa-azonosító keresés, szöveges törzs), híd-típusú szolgáltatók (iCloud, IMAP), próba/kézi mód. A titok csak a környezetből jön, a profilban csak a **neve**; a hibaüzenetek nem tartalmazzák a szolgáltató válaszát.
+- **Levéltár** (`migrations/0005`, `src/mail/store.js`): ügyfél-elkülönítés, duplikátum-szűrés levélazonosítóval, megőrzési idő (profil: `megorzes.level_nap`, alapértelmezés 90 nap; a napló marad), postafiók-állapot (kurzor, utolsó siker és hiba).
+- **Kapcsolattartó Ügynök** (`src/agents/kapcsolattarto/`): besorolás (típus, téma, sürgősség, hangnem, határidő, vörös vonal, jogi gyanú), választervezet három opcióval (tartalmi válasz / nyugtázás / nem válaszolunk), kockázatok és forrásjelölés a dokumentumtárból. Szabályalapú tartalék AI nélkül, AI-ág (hamis API-val tesztelve) a `level-besorolas.md` és `level-valasz.md` promptokkal. Az AI-válasz szövegéből a forrásjelölés kikerül, a nem létező forrás törlődik. A **kitöltendő** rész (`[KITÖLTENDŐ: …]`) miatt a tervezet nem hagyható jóvá, amíg a vezető nem írta meg.
+- **Biztonság:** a levél adat, nem utasítás; a gyanús („hagyd figyelmen kívül…”) szöveget a program jelzi (Gyanús szöveg), a besorolás kimenete zárt értékekből áll, a tervezet pedig csak javaslat, ezért a levélbe rejtett utasítás nem tud mellékhatást kiváltani (külön teszt). A válasz **címzettje mindig a levél feladója**, a felületről nem módosítható. A jóváhagyás a kimenő kapun át megy (`kind: valasz`, vezetői jóváhagyás kell); próbaüzemben a kimenő mappába kerül, éles módban levélküldő nélkül nem megy el, és a levél újra nyitott marad.
+- **Vörös vonal:** riasztás csak a vezetőnek. **Jogi gyanú:** kérdés-átadás a Jogi asztalnak (üres: vár). **Továbbítás** a vezető döntésére belső átadásként.
+- **Adatvédelem:** a levelek **tartalmát csak a vezető látja**; az üzemeltető a darabszámokat és a postafiók állapotát (titok nélkül).
+- **Felület:** Bejövő nézet (lista, szűrés, részletek, tervezet-szerkesztés, döntések, átírás kérése AI-val, új levél vagy jegyzet kézi felvitele), a Kapcsolattartó asztala (számok, postafiók-állapot, „Beolvasás most”), Beállítások (aláírás, hangnem; üzemeltetőként a postafiók).
+- **Levélhíd** (`tools/levelhid/`): IMAP → HTTPS, csak olvas; fogadója `POST /hid/<ügyfél>/levelek` saját titokkal védett (egységes 401), a Cloudflare Access mögül kivéve. Beállítás: `tools/levelhid/README.md`.
+
+**Korlátok (őszintén):**
+- Az **iCloud-kapcsolatot** és a híd IMAP-részét valódi fiókkal nem próbáltuk; a híd logikája, a fogadó és a Gmail/Graph illesztők hamis szerverrel tesztelve. Valódi Gmail- és Microsoft-belépéshez ügyfél hozzájárulása kell.
+- A Gmail/Graph postafiókot az ütemező **óránként** kérdezi le; az iCloud-híd levelei azonnal beérkeznek (a fogadó legfeljebb 5 levelet dolgoz fel azonnal, a többit a következő futás). Sürgős megkereséseknél érdemes sűrűbb ütemezést kérni (pl. 15 percenként, `wrangler.toml` `crons`).
+- A tervezet minősége AI nélkül szabályalapú (csak nyugtázó szöveget ad); az AI valódi minősége nem mért.
+- A tervezet nem veszi át a levélből az „idézett” korábbi szálakat; a szálkezelés és a csatolmányok nincsenek kezelve (a levélhez csatolt fájlt a rendszer nem olvassa).
+
+## 10. Telefonhívások (a legvégére, ElevenLabs)
+
+A tulajdonos döntése: a bejövő hívások kezelése és a hívóval való beszélgetés **ElevenLabs**-szal készül, de **a legvégén**. Amit addig érdemes tudni, hogy a tervezésnél ne érjen meglepetés:
+- A hívás **valós időben, kifelé szól**: ez az „semmi nem megy ki jóváhagyás nélkül” alapszabállyal ütközik. A megoldás várhatóan szűk szerepkör: a hang-ügynök csak **üzenetet vesz fel** (név, médium, kérdés, visszahívási szám, határidő), vagy **előre jóváhagyott** kijelentéseket mond el; tartalmi választ nem ad. Ezt a vezetővel külön dönteni kell, mielőtt bármi épül.
+- A hívót **tájékoztatni kell**, hogy mesterséges intelligenciával beszél (EU AI Act átláthatóság; `docs/05`, 8. kérdés), és a hívásfelvétel és az átirat személyes adat (GDPR, `docs/05`, 7. kérdés). Jogászi átnézés javasolt.
+- Az átirat és az összefoglaló ugyanúgy a Bejövőbe kerülne (mint a kézi jegyzet), besorolással és visszahívási javaslattal; a felület erre már alkalmas (a „kézi jegyzet” útvonal).
+- Szempontok a választáshoz: magyar nyelvű beszédfelismerés és hang minősége, késleltetés, költség percenként, adatkezelés és adattárolási hely, telefonszám-szolgáltatás. Ezek a megvalósításkor, ajánlattal együtt kerülnek elő.

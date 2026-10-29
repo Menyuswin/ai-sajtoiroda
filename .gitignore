@@ -4,3 +4,5 @@ out/
 profiles/
 .env
 src/worker/ui-assets.js
+
+levelhid-allapot.json

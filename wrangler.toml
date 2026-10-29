@@ -10,6 +10,7 @@ compatibility_flags = ["nodejs_compat"]
 command = "node scripts/build-ui.mjs"
 
 [triggers]
+# A Gmail/Exchange postafiókot ez az ütemezés kérdezi le; sürgős megkeresésekhez sűrítse (pl. "*/15 * * * *"). A levélhíd (iCloud) levelei azonnal beérkeznek.
 crons = ["30 * * * *"]
 
 [[d1_databases]]

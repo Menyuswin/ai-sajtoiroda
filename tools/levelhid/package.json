@@ -1,0 +1,11 @@
+{
+  "name": "levelhid",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "IMAP → AI-sajtóiroda levélhíd (iCloud, általános IMAP). Csak olvas.",
+  "dependencies": {
+    "imapflow": "^1.0.0",
+    "mailparser": "^3.7.0"
+  }
+}

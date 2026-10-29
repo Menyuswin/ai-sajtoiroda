@@ -13,6 +13,8 @@ import { loadProfile } from '../core/profile.js';
 import { buildAssets } from '../api/assets.js';
 import { createR2Shim } from './r2-shim.js';
 import { createDocs } from '../docs/store.js';
+import { buildLetterCtx } from '../cloudflare/agentctx.js';
+import { ingest } from '../agents/kapcsolattarto/index.js';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -38,6 +40,12 @@ export async function createDemo({ user = 'vezeto@pelda.example', now = () => DE
   for (const [f, cim, kat] of [['sajtoiranyelv.docx', 'Sajtóirányelvek', 'iranyelv'], ['kerdesek.md', 'Gyakori kérdések és válaszok', 'kerdes_valasz'], ['jegyzet.txt', 'Értekezlet jegyzete', 'hatter']]) {
     await docs.add({ bytes: new Uint8Array(readFileSync(new URL(`test/fixtures/docs/${f}`, root))), fajlnev: f, cim, kategoria: kat, by: 'rendszer' });
   }
+  // kitalált mintalevelek a Kapcsolattartó asztalához (a bemutatóban kézi felvitel)
+  await ingest(buildLetterCtx({ env, profile, now, prompts }), [
+    { azonosito: 'minta:1', felado: 'Kovács Éva <eva.kovacs@hirportal.example>', targy: 'Interjúkérés az ápolóhiányról', szoveg: 'Tisztelt Sajtóiroda! A Hírportál egészségügyi rovata interjút szeretne készíteni az ápolóhiányról a szervezet vezetőjével. Kérjük, holnap 12:00-ig jelezzenek vissza, hogy elérhető-e.\n\nÜdvözlettel: Kovács Éva', ido: '2026-10-29T08:10:00Z' },
+    { azonosito: 'minta:2', felado: 'Nagy Bence <bence@regionalis.example>', targy: 'Adatkérés: várólisták', szoveg: 'Kedves Kollégák! Cikkhez kérnék adatot a várólisták átlagos hosszáról az elmúlt két évben. Köszönöm a segítségüket.', ido: '2026-10-29T08:40:00Z' },
+    { azonosito: 'minta:3', felado: 'Szabó Tamás <tamas@napilap.example>', targy: 'Hatósági eljárás indult?', szoveg: 'Értesüléseink szerint hatósági eljárás indult az egyik intézményükkel szemben, és feljelentés is született. Szeretnénk megkapni a szervezet álláspontját még ma, 16:00-ig.', ido: '2026-10-29T09:05:00Z' },
+  ], 'kezi');
   await runScheduled(env, { now, fetchText: async () => feed, prompts }); // első szemle a tesztcikkekből
   const ui = (f) => new URL(`ui/${f}`, root);
   const assets = buildAssets((f) => readFileSync(ui(f), 'utf8'), (f) => readFileSync(ui(f)));

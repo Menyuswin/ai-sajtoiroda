@@ -14,7 +14,7 @@ A modell leírása kész. Mielőtt bármi futtatható készül, ezeket kell eld�
 
 4. **Források a monitoringhoz.** RSS-csatornák (ahogy a manyai.hu sajtófigyelője), hírkereső szolgáltatás, közösségi média? A fizetős médiafigyelő adatbázisok jobbak, de költségesek.
 5. **Postafiók-hozzáférés.** A Kapcsolattartó Ügynöknek olvasnia kell a sajtós postafiókot, és tervezetet kell írnia. Melyik postafiókról van szó (Gmail, iCloud, céges Exchange)? **Döntés (2026-10-29):** a nulladik ügyfélnél iCloud; Gmail és céges Exchange ügyfelenként beállítható. Terv: `docs/11`.
-6. **Telefonhívások.** A valós idejű jegyzőkönyvhöz hívásrögzítés és átirat kell. Ehhez a hívó fél tájékoztatása jogi kötelezettség. Az első szakaszban érdemes a hívások utáni, kézi összefoglalóval kezdeni.
+6. **Telefonhívások.** A valós idejű jegyzőkönyvhöz hívásrögzítés és átirat kell. Ehhez a hívó fél tájékoztatása jogi kötelezettség. Az első szakaszban érdemes a hívások utáni, kézi összefoglalóval kezdeni. **Döntés (2026-10-29):** a bejövő hívások kezelése és a hívóval való beszélgetés **ElevenLabs**-szal készül, a fejlesztés **legvégén**; addig a kézi jegyzet útvonal működik (docs/11, 10. fejezet: ott a megvalósítás előtt eldöntendő szempontok).
 
 ## Adatvédelem és felelősség
 

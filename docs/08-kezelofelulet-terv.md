@@ -100,4 +100,6 @@ Az U1–U4 a mostani környezetben megépíthető és tesztelhető. Az U5-höz a
 2. A nulladik ügyfél profilja és hozzáférése: `node src/cli.js profil-sql --profile monitoring/nulladik-ugyfel.yaml`, `node src/cli.js hozzaferes-sql --email … --ugyfel manyai-zoltan --szerep uzemelteto`; a kimenő SQL-ek futtatása `wrangler d1 execute`-tal.
 3. Cloudflare Access alkalmazás a doménre; a `ACCESS_TEAM_DOMAIN` és `ACCESS_AUD` értékét a `wrangler.toml`-ba.
 4. `wrangler deploy`. Az `SAJTOIRODA_DEV_AUTH` maradjon `0`.
-5. Külön domén esetén: `node src/cli.js domen-sql --domen … --ugyfel …`.
+5. Ha levélhidat használ (iCloud, IMAP; `tools/levelhid/README.md`): a Cloudflare Access alkalmazáson a `/hid/*` útvonalra „Bypass” szabály kell, és a híd-titok Workers-titokként: `wrangler secret put <a profil postafiok.titok neve>`. A fogadó saját titokkal védett; minden más útvonal az Access mögött marad.
+6. Gmail vagy Exchange postafiók esetén a titok (JSON) is Workers-titok: Gmail `{client_id, client_secret, refresh_token}` (csak olvasási hatókör), Exchange `{tenant, client_id, client_secret}` (alkalmazásregisztráció `Mail.Read` joggal, lehetőleg egyetlen postafiókra korlátozva). A címzett postafiók és a mappa az iroda Beállításaiban adható meg (üzemeltetőként).
+7. Külön domén esetén: `node src/cli.js domen-sql --domen … --ugyfel …`.

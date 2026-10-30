@@ -1,6 +1,6 @@
 # Az Eseményszervező ügynök terve
 
-*Állapot: **terv, jóváhagyásra vár** (2026-10-29). A bevezetési sorrend szerint a harmadik szakasz (`docs/04`). Az átadások, a Dokumentumtár, a naptár (`docs/12`) és a kimenő kapu (`docs/11`) már készek, erre épül.*
+*Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 9. fejezetet). A bevezetési sorrend szerint a harmadik szakasz (`docs/04`). Az átadások, a Dokumentumtár, a naptár (`docs/12`) és a kimenő kapu (`docs/11`) már készek, erre épül.*
 
 ## 1. A cél, egy példával
 
@@ -61,3 +61,23 @@ Az Eseményszervező asztala: **Események** (állapotokkal), **Új esemény** (
 4. **Korlátok:** napi 3 koncepció, 50 meghívótervezet, eseményenként 200 meghívó?
 5. **A visszajelzés-követés javaslat-alapú** (az ügynök jelöl, Ön véglegesít)? (Ajánlott.)
 6. A **sajtólista személyes adatai** (név, e-mail) az AI-nak nem mennek át, csak médium és téma szintjén? (Ajánlott; GDPR miatt jogász átnézése javasolt.)
+
+## 9. Mi készült el (2026-10-30)
+
+A tulajdonos mind a hat pontot elfogadta (állapotmenet, belső sajtólista, meghívó csak a kimenő kapun át, korlátok: 3 koncepció és 50 meghívótervezet naponta, 200 meghívó eseményenként, javaslat-alapú visszajelzés-követés, a személyes adatok nem mennek az AI-nak).
+
+- **Állapotgép** (`src/agents/esemenyszervezo/index.js`): koncepció → jóváhagyás → szervezés → lezajlott → utómunka → lezárva; elvetve és elhalasztva. Jóváhagyott koncepció nélkül nincs meghívólista, meghívószöveg-szerkesztés, ellenőrzőlista és küldés (409). A jóváhagyás egyszeri, naplózott.
+- **Koncepció:** cél, célközönség, formátum, időpont, helyszín-szempontok, költség- és erőforrásbecslés, kockázatok. **A program számolja** az időpont-javaslatot (a Proaktív naptárából), a költség-összeget (csak megadott számokból; a hiányzó összeg „ismeretlen”, nem nulla) és a keret-túllépést. AI nélkül váz `[KITÖLTENDŐ]` részekkel. Túllépésnél riasztás csak a vezetőnek; jogi vagy biztonsági kérdésnél belső kérdés a Jogi asztalnak.
+- **Sajtólista:** kézi felvitel és CSV-import (hibás sor jelzése, duplikátum-szűrés, a hozzájárulás megerősítése), export (képletkarakter-védelemmel), törlés (a meghívók is törlődnek), 2000 kapcsolat korlát. A név és az e-mail az AI-nak nem megy át (az AI csak a darabszámot kapja a koncepcióhoz, a program írja).
+- **Meghívók:** a jelöltek prioritás és téma szerint rendezve, tételes kijelöléssel; hozzájárulás nélküli kapcsolat nem hívható (422). A szöveg szerkeszthető, a `[KITÖLTENDŐ]` rész kitöltéséig nem küldhető. A kiküldés a vezető kifejezett döntése, a **kimenő kapun át** (`kind: meghivo`), személyesen megszólítva („Tisztelt <név>!”), kétszer nem megy ki; próbaüzemben a kimenő mappába kerül, éles módban levélküldő nélkül megáll, és a meghívók tervezetek maradnak.
+- **Visszajelzések:** a meghívott levele (Kapcsolattartó) javaslatot ad az esemény meghívóin (részt vesz / nem vesz részt / bizonytalan, szabályalapú); a vezető véglegesíti.
+- **Ellenőrzőlista:** 11 sablontétel, határidők az időpontból hátrafelé számolva; pipák, felelősök, saját tételek (legfeljebb 40).
+- **Utómunka:** résztvevői lista, meghívott-statisztika, megjelenések a Monitoring tárolt cikkeiből, sajtóanyag-váz.
+- **Felület:** az Eseményszervező asztala (események, új esemény, sajtólista), az esemény részletei (állapotsor, ellenőrzőlista, meghívó, jelöltek, meghívottak, Felkészítő-kérés), a Sajtólista nézet; a Proaktív elfogadott javaslatánál „Esemény szervezése ebből”.
+
+**Korlátok (őszintén):**
+- Az **AI valódi minősége nem mért** (hamis API-val tesztelt); AI nélkül a koncepció váz, a költségtételek összegei üresek.
+- A **sajtóanyag** szövegét az ügynök nem írja meg (váz `[KITÖLTENDŐ]` jelöléssel); a megjelenések összefoglalója a Monitoring tárolt cikkeire korlátozódik.
+- A visszajelzés-javaslat egyszerű kulcsszavas szabály; a bonyolultabb válaszokat (feltételek, helyettes küldése) a vezetőnek kell véglegesítenie.
+- A meghívó **tényleges kiküldése** a levélküldő szolgáltató kiválasztására vár (P6). A sajtólista GDPR-megfelelőségét (jogalap, tájékoztatás, megőrzés) jogász nézze át.
+- Nincs naptár-meghívó (iCal) és online regisztrációs oldal; a regisztráció a visszajelzések követésén át történik.

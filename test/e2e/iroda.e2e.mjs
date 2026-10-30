@@ -190,6 +190,42 @@ log('csomag címe:', await page.locator('.nezo h2').first().innerText());
 await shot('21-csomag');
 await page.keyboard.press('Escape');
 
+// Eseményszervező: sajtólista, koncepció, jóváhagyás, meghívók (próbaüzem), ellenőrzőlista, utómunka
+await page.goto(BASE + '#/asztal/esemenyszervezo'); await page.waitForSelector('#ev-tema');
+log('Eseményszervező sávjai:', (await page.locator('.harom h2').allInnerTexts()).join(', '));
+await page.click('a:has-text("A sajtólista kezelése")'); await page.waitForSelector('#sl-nev');
+await page.fill('#sl-nev', 'Kovács Éva'); await page.fill('#sl-medium', 'Hírportál'); await page.fill('#sl-email', 'eva@hirportal.example'); await page.fill('#sl-tema', 'várólista egészségügy'); await page.selectOption('#sl-prio', '1');
+await page.click('button:text-is("Felvétel")'); await page.waitForSelector('td:has-text("eva@hirportal.example")');
+await page.fill('#sl-csv', 'név;e-mail;médium;téma;prioritás\nNagy Bence;bence@regio.example;Regionális;várólista;2\nHibás;nincs-kukac;;;\n'); await page.check('#sl-csv-hj');
+await page.click('button:text-is("Feltöltés")'); await page.waitForSelector('td:has-text("bence@regio.example")');
+log('sajtólista sorai:', await page.locator('tbody tr').count(), '| import üzenet:', (await page.locator('#toast').innerText()).slice(0, 90));
+await shot('22-sajtolista');
+await page.goto(BASE + '#/asztal/esemenyszervezo'); await page.waitForSelector('#ev-tema');
+await page.fill('#ev-tema', 'a várólista-csökkentés eredményei'); await page.fill('#ev-ido', '2026-11-12'); await page.fill('#ev-hely', 'Központi Kórház, díszterem'); await page.fill('#ev-keret', '500000');
+await page.click('button:has-text("Koncepció készítése")'); await page.waitForSelector('button:has-text("Jóváhagyom a koncepciót")');
+log('esemény:', (await page.locator('h1').first().innerText()), '|', (await page.locator('.asztal-fej .munkanev').innerText()));
+await page.click('button:has-text("A koncepció megnyitása")'); await page.waitForSelector('.nezo');
+await shot('23-koncepcio'); await page.keyboard.press('Escape');
+await page.click('button:has-text("Jóváhagyom a koncepciót")'); await page.waitForSelector('text=Logisztikai ellenőrzőlista');
+log('ellenőrzőlista:', await page.locator('.cl-sor').count(), 'tétel');
+await page.click('button:has-text("Jelöltek betöltése")'); await page.waitForSelector('.sav:has-text("Ki legyen") li');
+await page.click('button:has-text("A kijelöltek a meghívólistára")'); await page.waitForSelector('table td:has-text("Kovács Éva")');
+log('meghívottak:', await page.locator('.sav:has-text("Meghívottak") tbody tr').count());
+const beforeKit = problems.length;
+await page.fill('#mh-szoveg', 'Meghívjuk Önt. [KITÖLTENDŐ: program]');
+await page.click('button:has-text("Jóváhagyom (próbaüzem")'); await page.waitForSelector('.toast.latszik.hiba');
+problems.splice(beforeKit); // a kitöltetlen meghívó várt 422-es válasza
+log('kitöltetlen meghívó:', (await page.locator('#toast').innerText()).slice(0, 80));
+await page.fill('#mh-szoveg', 'Meghívjuk a sajtótájékoztatónkra a várólista-csökkentés eredményeiről.\nHelyszín: Központi Kórház, díszterem.\nÜdvözlettel: a sajtóiroda');
+await page.click('button:has-text("Jóváhagyom (próbaüzem")'); await page.waitForSelector('.toast.latszik:has-text("kimenő mappába")');
+log('meghívók kiküldése:', await page.locator('#toast').innerText());
+await shot('24-esemeny-szervezes');
+await page.click('button:has-text("Az esemény lezajlott")'); await page.waitForSelector('button:has-text("Utómunka készítése")');
+await page.click('button:has-text("Utómunka készítése")'); await page.waitForSelector('button:has-text("Az utómunka megnyitása")');
+await page.click('button:has-text("Az utómunka megnyitása")'); await page.waitForSelector('.nezo h2');
+log('utómunka címe:', await page.locator('.nezo h2').first().innerText());
+await shot('25-utomunka'); await page.keyboard.press('Escape');
+
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');
 await page.evaluate(() => navigator.serviceWorker.ready);

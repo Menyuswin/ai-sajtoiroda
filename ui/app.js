@@ -79,7 +79,7 @@
         installEvent ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { installEvent.prompt(); await installEvent.userChoice; installEvent = null; renderHeader((location.hash || '#/').slice(2)); }), text: 'Telepítés a gépre' }) : null,
         h('span', { text: `${i.felhasznalo.email} (${i.felhasznalo.szerep === 'uzemelteto' ? 'üzemeltető' : 'vezető'})` })));
   }
-  const isCurrent = (href, route) => (href === '#/' ? route === '' || route.startsWith('asztal') : route.startsWith(href.slice(2)));
+  const isCurrent = (href, route) => (href === '#/' ? route === '' || route.startsWith('asztal') || route.startsWith('esemeny') || route === 'sajtolista' : route.startsWith(href.slice(2)));
 
   async function boot() {
     try {
@@ -98,6 +98,8 @@
     if (r === '') await viewIroda();
     else if ((m = r.match(/^asztal\/([a-z]+)$/))) await viewAsztal(m[1]);
     else if ((m = r.match(/^bejovo(?:\/(.+))?$/))) await viewBejovo(m[1] ? decodeURIComponent(m[1]) : null);
+    else if ((m = r.match(/^esemeny\/(.+)$/))) await viewEsemeny(decodeURIComponent(m[1]));
+    else if (r === 'sajtolista') await viewSajtolista();
     else if (r === 'jelentesek') await viewJelentesek();
     else if (r === 'atadasok') await viewAtadasok();
     else if (r === 'dokumentumok') await viewDokumentumok();
@@ -181,6 +183,7 @@
     if (d.munka?.tipus === 'kapcsolattarto') { mainSet(my, head, kapcsolattartoAsztal(d, id)); return; }
     if (d.munka?.tipus === 'felkeszito') { mainSet(my, head, felkeszitoAsztal(d, id)); return; }
     if (d.munka?.tipus === 'proaktiv') { mainSet(my, head, proaktivAsztal(d, id)); return; }
+    if (d.munka?.tipus === 'esemenyszervezo') { mainSet(my, head, esemenyszervezoAsztal(d, id)); return; }
     const input = h('textarea', { id: 'utasitas', 'aria-label': 'Utasítás az ügynöknek', maxlength: '500', placeholder: 'Írja le magyarul, mit szeretne… (Ctrl+Enter: küldés)' });
     const send = guard(async () => {
       const szoveg = input.value.trim(); if (!szoveg) return;
@@ -237,7 +240,7 @@
         }), text: 'A kijelölteket jóváhagyom' }),
         h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'elvetve' }); toast('Elvetve.'); await viewAsztal(agentId); }), text: 'Mindet elvetem' })));
   }
-  const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés', valasz_tervezet: 'Választervezet', felkeszito_csomag: 'Felkészítő csomag', megszolalasi_javaslat: 'Megszólalási javaslat' };
+  const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés', valasz_tervezet: 'Választervezet', esemeny_koncepcio: 'Eseménykoncepció', esemeny_utomunka: 'Utómunka', felkeszito_csomag: 'Felkészítő csomag', megszolalasi_javaslat: 'Megszólalási javaslat' };
   const AT_TIPUS = { jelzes: 'Jelzés', kerelem: 'Kérelem', anyag_atadas: 'Anyag-átadás', kerdes: 'Kérdés' };
   const AT_ALLAPOT = { varakozik: 'Vár a címzettre', kezbesitve: 'Kézbesítve', feldolgozva: 'Feldolgozva', lezarva: 'Lezárva', megallitva: 'Megállítva', lejart: 'Lejárt' };
   const rovid = (id) => (state.iroda.ugynokok.find(a => a.id === id)?.nev || id).replace(/ Ügynök$/, '');
@@ -332,6 +335,7 @@
           const dont = (dontes) => guard(async () => { const r = await api('POST', `/api/javaslatok/${encodeURIComponent(j.id)}/dontes`, { dontes, csomag: csomag.checked }); toast(dontes === 'elfogad' ? (r.csomag_atadas && !r.csomag_atadas.hiba ? 'Elfogadva; a Felkészítő csomagot készít.' : 'Elfogadva.') : 'Rögzítve.'); await viewAsztal(agentId); });
           return h('li', {}, h('strong', { text: j.tema }), h('span', { class: 'meta', text: `${JAV_ALLAPOT[j.allapot]} · ${when(j.ido)}` }),
             h('div', { class: 'sor' }, j.anyag_id ? h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(j.anyag_id), text: 'Megnyitás' }) : null),
+            j.allapot === 'elfogadva' ? h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { const r = await api('POST', '/api/esemenyek', { tema: j.tema, formatum: 'sajtotajekoztato', javaslat_id: j.id }); toast('Elkészült az eseménykoncepció; jóváhagyásra vár.'); location.hash = `#/esemeny/${encodeURIComponent(r.id)}`; }), text: 'Esemény szervezése ebből' })) : null,
             ['nyitott', 'halasztva'].includes(j.allapot) ? h('div', {},
               h('label', { class: 'cimke', for: `cs-${j.id}` }, csomag, ' Elfogadás esetén kérem a felkészítő csomagot is'),
               h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: dont('elfogad'), text: 'Elfogadom' }), h('button', { class: 'gomb rossz', type: 'button', onclick: dont('elvet'), text: 'Elvetem' }), j.allapot === 'nyitott' ? h('button', { class: 'gomb', type: 'button', onclick: dont('halaszt'), text: 'Később döntök' }) : null)) : null);
@@ -358,6 +362,149 @@
     const anyagSav = h('section', { class: 'sav teljes', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Elkészült anyagok' }), d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
     return [h('div', { class: 'harom' }, javSav, kerPont, naptarSav), anyagSav,
       h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+  }
+
+
+  // ---------- Eseményszervező: asztal, esemény részletei, sajtólista
+  const EV_ALLAPOT = { koncepcio: 'Koncepció: jóváhagyásra vár', szervezes: 'Szervezés alatt', lezajlott: 'Lezajlott', utomunka: 'Utómunka', lezarva: 'Lezárva', elvetve: 'Elvetve', elhalasztva: 'Elhalasztva' };
+  const VALASZ = { nincs: 'Nincs válasz', reszt_vesz: 'Részt vesz', nem_vesz_reszt: 'Nem vesz részt', bizonytalan: 'Bizonytalan' };
+  const PRIO = { 1: '1 (kiemelt)', 2: '2', 3: '3' };
+
+  function esemenyszervezoAsztal(d, agentId) {
+    const m = d.munka;
+    const tema = h('input', { type: 'text', id: 'ev-tema', maxlength: '300', placeholder: 'Pl.: a várólista-csökkentés eredményei', ...(m.tartalom_lathato ? {} : { disabled: true }) });
+    const fmt = h('select', { id: 'ev-fmt' }, Object.entries(m.formatumok).map(([k, v]) => h('option', { value: k, text: v })));
+    const ido = h('input', { type: 'date', id: 'ev-ido' }), hely = h('input', { type: 'text', id: 'ev-hely', maxlength: '200', placeholder: 'Nem kötelező' }), keret = h('input', { type: 'number', id: 'ev-keret', min: '0', step: '10000', placeholder: 'Ft, nem kötelező' });
+    const keszit = guard(async () => {
+      if (!tema.value.trim()) { toast('Adja meg az esemény témáját.', true); return; }
+      const r = await api('POST', '/api/esemenyek', { tema: tema.value, formatum: fmt.value, idopont: ido.value, helyszin: hely.value, keret: keret.value === '' ? null : Number(keret.value) });
+      toast(r.tullepes ? 'Elkészült a koncepció. Figyelem: a becsült költség meghaladja a keretet.' : 'Elkészült a koncepció; jóváhagyásra vár.'); location.hash = `#/esemeny/${encodeURIComponent(r.id)}`;
+    });
+    const urlap = h('section', { class: 'sav', 'aria-labelledby': 'h-ue' }, h('h2', { id: 'h-ue', text: 'Új esemény' }),
+      m.tartalom_lathato ? null : h('p', { class: 'sugo', text: 'Az eseményeket csak a vezető indíthatja és olvashatja.' }),
+      h('div', { class: 'mezo' }, h('label', { for: 'ev-tema', text: 'Téma' }), tema), h('div', { class: 'mezo' }, h('label', { for: 'ev-fmt', text: 'Formátum' }), fmt),
+      h('div', { class: 'mezo' }, h('label', { for: 'ev-ido', text: 'Időpont (ha már megvan)' }), ido), h('div', { class: 'mezo' }, h('label', { for: 'ev-hely', text: 'Helyszín' }), hely), h('div', { class: 'mezo' }, h('label', { for: 'ev-keret', text: 'Költségkeret' }), keret),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: keszit, text: 'Koncepció készítése' }), h('span', { class: 'meta', text: `Ma: ${m.koncepcio_ma}/${m.korlatok.concepts} koncepció` })),
+      h('p', { class: 'sugo', text: 'Az ügynök koncepciót készít (cél, célközönség, időpont, helyszín-szempontok, költségbecslés). Amíg Ön nem hagyja jóvá, meghívó nem készül és nem megy ki.' }));
+    const lista = h('section', { class: 'sav', 'aria-labelledby': 'h-ev' }, h('h2', { id: 'h-ev', text: 'Események' }),
+      !m.tartalom_lathato ? h('p', { class: 'sugo', text: `Jóváhagyásra váró koncepció: ${m.nyitott_db}. A tartalmat csak a vezető látja.` })
+        : m.esemenyek.length ? h('ul', { class: 'lista' }, m.esemenyek.map(e => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => { location.hash = `#/esemeny/${encodeURIComponent(e.id)}`; }, onkeydown: (ev) => { if (ev.key === 'Enter') location.hash = `#/esemeny/${encodeURIComponent(e.id)}`; } },
+          h('strong', { text: e.cim }), h('span', { class: 'meta', text: `${EV_ALLAPOT[e.allapot]}${e.idopont ? ` · ${e.idopont}` : ''}` })))) : h('p', { class: 'ures-szoveg', text: 'Még nincs esemény. A Proaktív elfogadott javaslatából vagy innen indíthat egyet.' }));
+    const sl = h('section', { class: 'sav', 'aria-labelledby': 'h-sl' }, h('h2', { id: 'h-sl', text: 'Sajtólista' }),
+      h('p', { text: `${m.kapcsolat_db} kapcsolat (legfeljebb ${m.korlatok.contacts}).` }),
+      m.tartalom_lathato ? h('div', { class: 'sor' }, h('a', { class: 'gomb fo', href: '#/sajtolista', text: 'A sajtólista kezelése' })) : null,
+      h('p', { class: 'sugo', text: 'Csak a hozzájárulás-jelöléssel rendelkező kapcsolat hívható meg. A név és az e-mail-cím az AI-nak nem megy át.' }));
+    return [h('div', { class: 'harom' }, lista, urlap, sl),
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Elkészült anyagok' }), d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' })),
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+  }
+
+  async function viewEsemeny(id, my = routeToken) {
+    const d = await api('GET', `/api/esemenyek/${encodeURIComponent(id)}`);
+    const ev = d.esemeny, meghivok = d.meghivok;
+    const refresh = () => viewEsemeny(id);
+    const act = (path, body, okMsg) => guard(async () => { const r = await api('POST', `/api/esemenyek/${encodeURIComponent(id)}${path}`, body); toast(typeof okMsg === 'function' ? okMsg(r) : okMsg); await refresh(); });
+    const dont = (kod, msg, cls = 'gomb', text) => h('button', { class: cls, type: 'button', onclick: act('/dontes', { dontes: kod }, msg), text });
+    const parts = [h('div', { class: 'asztal-fej' }, h('a', { class: 'gomb vissza', href: '#/asztal/esemenyszervezo', text: '← Eseményszervező' }), h('div', {}, h('h1', { text: ev.cim }), h('div', { class: 'munkanev', text: `${EV_ALLAPOT[ev.allapot]}${ev.idopont ? ` · ${ev.idopont}` : ''}${ev.helyszin ? ` · ${ev.helyszin}` : ''}${ev.keret != null ? ` · keret: ${ev.keret.toLocaleString('hu-HU')} Ft` : ''}` })))];
+    const bar = h('div', { class: 'sor' },
+      ev.koncepcio_anyag_id ? h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(ev.koncepcio_anyag_id), text: 'A koncepció megnyitása' }) : null,
+      ev.utomunka_anyag_id ? h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(ev.utomunka_anyag_id), text: 'Az utómunka megnyitása' }) : null,
+      ev.allapot === 'koncepcio' ? [dont('jovahagy', 'A koncepció jóváhagyva: indulhat a szervezés.', 'gomb fo', 'Jóváhagyom a koncepciót'), dont('elhalaszt', 'Elhalasztva.', 'gomb', 'Elhalasztom'), dont('elvet', 'Elvetve.', 'gomb rossz', 'Elvetem')] : null,
+      ev.allapot === 'szervezes' ? [dont('lezajlott', 'Lezajlottnak jelölve.', 'gomb', 'Az esemény lezajlott'), dont('elhalaszt', 'Elhalasztva.', 'gomb', 'Elhalasztom'), dont('elvet', 'Elvetve.', 'gomb rossz', 'Elvetem')] : null,
+      ev.allapot === 'lezajlott' ? [h('button', { class: 'gomb fo', type: 'button', onclick: act('/utomunka', {}, 'Elkészült az utómunka-anyag.'), text: 'Utómunka készítése' }), dont('lezar', 'Lezárva.', 'gomb', 'Lezárás utómunka nélkül')] : null,
+      ev.allapot === 'utomunka' ? dont('lezar', 'Lezárva.', 'gomb fo', 'Az esemény lezárása') : null);
+    parts.push(h('div', { class: 'kartya' }, ev.allapot === 'koncepcio' ? h('p', { text: 'A koncepció jóváhagyásáig semmi nem indul el: meghívólista, meghívószöveg és ellenőrzőlista a jóváhagyás után készül.' }) : null, bar));
+
+    if (['szervezes', 'lezajlott', 'utomunka', 'lezarva'].includes(ev.allapot)) {
+      // ellenőrzőlista
+      const items = ev.ellenorzolista.map(t => ({ ...t }));
+      const clBox = h('div');
+      const editable = ev.allapot === 'szervezes' || ev.allapot === 'lezajlott' || ev.allapot === 'utomunka';
+      const paintCl = () => clBox.replaceChildren(h('ul', { class: 'lista' }, items.map((t, i) => h('li', { class: 'cl-sor' },
+        h('label', { class: 'cimke', for: `cl-${i}` }, h('input', { type: 'checkbox', id: `cl-${i}`, ...(t.kesz ? { checked: true } : {}), ...(editable ? {} : { disabled: true }), onchange: (e) => { t.kesz = e.target.checked; } }), ` ${t.tetel}`),
+        h('input', { type: 'text', 'aria-label': `Felelős: ${t.tetel}`, placeholder: 'Felelős', value: t.felelos, maxlength: '100', ...(editable ? {} : { disabled: true }), oninput: (e) => { t.felelos = e.target.value; } }),
+        h('input', { type: 'date', 'aria-label': `Határidő: ${t.tetel}`, value: t.hatarido || '', ...(editable ? {} : { disabled: true }), onchange: (e) => { t.hatarido = e.target.value || null; } })))),
+        editable ? h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: () => { const v = prompt_free('Új tétel'); if (v) { items.push({ id: `u${Date.now() % 100000}`, tetel: v, felelos: '', hatarido: null, kesz: false }); paintCl(); } }, text: '+ Saját tétel' }),
+          h('button', { class: 'gomb fo', type: 'button', onclick: guard(async () => { await api('PUT', `/api/esemenyek/${encodeURIComponent(id)}/ellenorzolista`, { tetelek: items }); toast('Az ellenőrzőlista mentve.'); }), text: 'Az ellenőrzőlista mentése' })) : null);
+      paintCl();
+      parts.push(h('section', { class: 'sav teljes', 'aria-labelledby': 'h-cl' }, h('h2', { id: 'h-cl', text: `Logisztikai ellenőrzőlista (${items.filter(t => t.kesz).length}/${items.length} kész)` }), clBox));
+    }
+
+    if (ev.allapot === 'szervezes') {
+      const targy = h('input', { type: 'text', id: 'mh-targy', maxlength: '300', value: ev.meghivo_targy || '' });
+      const szoveg = h('textarea', { id: 'mh-szoveg', rows: '10', maxlength: '5000', 'aria-label': 'A meghívó szövege' }); szoveg.value = ev.meghivo_szoveg || '';
+      const draft = meghivok.filter(i => i.allapot === 'tervezet').length;
+      parts.push(h('section', { class: 'sav teljes', 'aria-labelledby': 'h-mh' }, h('h2', { id: 'h-mh', text: 'Meghívó' }),
+        h('div', { class: 'mezo' }, h('label', { for: 'mh-targy', text: 'Tárgy' }), targy), h('div', { class: 'mezo' }, h('label', { for: 'mh-szoveg', text: 'Szöveg (minden címzettet „Tisztelt <név>!” megszólítással kap)' }), szoveg),
+        h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { await api('PUT', `/api/esemenyek/${encodeURIComponent(id)}/meghivo`, { targy: targy.value, szoveg: szoveg.value }); toast('A meghívó szövege mentve.'); }), text: 'A szöveg mentése' }),
+          h('button', { class: 'gomb fo', type: 'button', ...(draft ? {} : { disabled: true }), onclick: guard(async () => {
+            await api('PUT', `/api/esemenyek/${encodeURIComponent(id)}/meghivo`, { targy: targy.value, szoveg: szoveg.value });
+            const r = await api('POST', `/api/esemenyek/${encodeURIComponent(id)}/kuldes`, {});
+            toast(r.kiment ? `${r.kiment} meghívó elment.` : `Jóváhagyva: ${r.elkuldve} meghívó a kimenő mappába került (próbaüzem, nem ment ki).`); await refresh();
+          }), text: d.elo ? `Jóváhagyom és elküldöm (${draft} meghívó)` : `Jóváhagyom (próbaüzem: nem megy ki; ${draft} meghívó)` })),
+        h('p', { class: 'sugo', text: 'A meghívó csak az Ön jóváhagyásával, a kimenő kapun át megy, és csak a sajtólistán szereplő, hozzájáruló kapcsolatoknak. A [KITÖLTENDŐ] jelölésű rész kitöltéséig nem küldhető ki.' })));
+
+      // jelöltek
+      const candBox = h('div');
+      const loadCand = guard(async () => {
+        const { jeloltek } = await api('GET', `/api/esemenyek/${encodeURIComponent(id)}/jeloltek`);
+        const boxes = jeloltek.map(c => ({ c, el: h('input', { type: 'checkbox', id: `jc-${c.id}`, ...(c.hozzajarulas && c.prioritas === 1 ? { checked: true } : {}), ...(c.hozzajarulas ? {} : { disabled: true }) }) }));
+        candBox.replaceChildren(boxes.length ? h('ul', { class: 'lista' }, boxes.map(({ c, el }) => h('li', {}, h('label', { for: el.id, class: 'cimke' }, el, ` ${c.nev} `), h('span', { class: 'meta', text: `${c.medium || '–'} · prioritás ${PRIO[c.prioritas]}${c.temahoz_illik ? ' · a témához illik' : ''}${c.hozzajarulas ? '' : ' · nincs hozzájárulás-jelölés, nem hívható'}` })))) : h('p', { class: 'ures-szoveg', text: 'Nincs több felvehető kapcsolat. A sajtólistát a Sajtólista nézetben bővítheti.' }),
+          boxes.length ? h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: guard(async () => { const ids = boxes.filter(b => b.el.checked).map(b => b.c.id); if (!ids.length) { toast('Jelöljön ki legalább egy kapcsolatot.', true); return; } const r = await api('POST', `/api/esemenyek/${encodeURIComponent(id)}/meghivolista`, { kapcsolatok: ids }); toast(`${r.darab} kapcsolat a meghívólistára került (tervezetként).`); await refresh(); }), text: 'A kijelöltek a meghívólistára' })) : null);
+      });
+      parts.push(h('section', { class: 'sav teljes', 'aria-labelledby': 'h-jl' }, h('h2', { id: 'h-jl', text: 'Ki legyen a meghívottak között?' }), h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: loadCand, text: 'Jelöltek betöltése a sajtólistáról' })), candBox));
+    }
+
+    if (meghivok.length) {
+      const editable = ['szervezes', 'lezajlott'].includes(ev.allapot);
+      parts.push(h('section', { class: 'sav teljes', 'aria-labelledby': 'h-mv' }, h('h2', { id: 'h-mv', text: `Meghívottak (${meghivok.length})` }),
+        h('div', { class: 'kartya' }, h('table', {}, h('thead', {}, h('tr', {}, ['Név', 'Médium', 'Állapot', 'Visszajelzés', ''].map(x => h('th', { text: x })))), h('tbody', {}, meghivok.map(i => {
+          const sel = h('select', { 'aria-label': `Visszajelzés: ${i.nev}`, ...(editable ? {} : { disabled: true }), onchange: guard(async (e) => { await api('PUT', `/api/meghivok/${encodeURIComponent(i.id)}`, { valasz: e.target.value }); toast('Rögzítve.'); }) }, d.valaszok.map(v => h('option', { value: v, text: VALASZ[v], ...(i.valasz === v ? { selected: true } : {}) })));
+          return h('tr', {}, h('td', { text: i.nev || '(törölt kapcsolat)' }), h('td', { text: i.medium || '' }), h('td', { text: i.allapot === 'tervezet' ? 'Tervezet' : 'Elküldve' }),
+            h('td', {}, sel, i.valasz_javaslat && i.valasz === 'nincs' ? h('span', { class: 'meta', text: ` Javaslat a beérkezett levélből: ${VALASZ[i.valasz_javaslat]}` }) : null),
+            h('td', {}, i.allapot === 'tervezet' && ev.allapot === 'szervezes' ? h('button', { class: 'gomb rossz', type: 'button', 'aria-label': `${i.nev} elhagyása`, onclick: guard(async () => { await api('DELETE', `/api/meghivok/${encodeURIComponent(i.id)}`); await refresh(); }), text: 'Elhagy' }) : null));
+        }))))));
+    }
+
+    if (['szervezes', 'lezajlott'].includes(ev.allapot)) {
+      parts.push(h('section', { class: 'sav teljes', 'aria-labelledby': 'h-fk' }, h('h2', { id: 'h-fk', text: 'A megszólalók felkészítése' }),
+        h('p', { text: 'A Felkészítő háttéranyagot, kérdés-válasz listát és talking pointokat készít az esemény témájához.' }),
+        h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { const r = await api('POST', '/api/felkeszito/csomag', { tema: ev.tema, alkalom: 'sajtotajekoztato', idopont: ev.idopont || '' }); toast('Elkészült a felkészítő csomag.'); openAnyag(r.anyag_id); }), text: 'Felkészítő csomag kérése' }))));
+    }
+    mainSet(my, ...parts);
+  }
+  const prompt_free = (label) => { const v = window.prompt(label); return v ? v.trim().slice(0, 200) : ''; };
+
+  async function viewSajtolista(my = routeToken) {
+    const d = await api('GET', '/api/sajtolista');
+    const F = { nev: h('input', { type: 'text', id: 'sl-nev', maxlength: '120' }), medium: h('input', { type: 'text', id: 'sl-medium', maxlength: '120' }), email: h('input', { type: 'email', id: 'sl-email', maxlength: '200' }), tema: h('input', { type: 'text', id: 'sl-tema', maxlength: '200', placeholder: 'Pl.: egészségügy, várólista' }),
+      prio: h('select', { id: 'sl-prio' }, [1, 2, 3].map(p => h('option', { value: p, text: PRIO[p], ...(p === 2 ? { selected: true } : {}) }))), hj: h('input', { type: 'checkbox', id: 'sl-hj', checked: true }) };
+    const hozzaad = guard(async () => { await api('POST', '/api/sajtolista', { nev: F.nev.value, medium: F.medium.value, email: F.email.value, tema: F.tema.value, prioritas: Number(F.prio.value), hozzajarulas: F.hj.checked }); toast('Felvéve.'); await viewSajtolista(); });
+    const csvText = h('textarea', { id: 'sl-csv', rows: '5', placeholder: 'név;e-mail;médium;téma;prioritás;hozzájárulás\nKovács Éva;eva@hirportal.hu;Hírportál;egészségügy;1;igen' });
+    const csvFile = h('input', { type: 'file', id: 'sl-file', accept: '.csv,text/csv', 'aria-label': 'CSV-fájl kiválasztása' });
+    csvFile.addEventListener('change', async () => { const f = csvFile.files[0]; if (f) csvText.value = await f.text(); });
+    const csvHj = h('input', { type: 'checkbox', id: 'sl-csv-hj' });
+    const csvBtn = guard(async () => {
+      const r = await api('POST', '/api/sajtolista/csv', { csv: csvText.value, hozzajarulas_megerositve: csvHj.checked });
+      toast(`${r.hozzaadva} kapcsolat felvéve${r.hibas_osszesen ? `, ${r.hibas_osszesen} sor hibás: ${r.hibak.slice(0, 2).join('; ')}` : ''}.`, !!r.hibas_osszesen); await viewSajtolista();
+    });
+    const kereso = h('input', { type: 'search', id: 'sl-q', 'aria-label': 'Keresés a sajtólistában', placeholder: 'Keresés…' });
+    const tbl = h('div', { class: 'kartya' });
+    const paint = (rows) => tbl.replaceChildren(rows.length ? h('table', {}, h('thead', {}, h('tr', {}, ['Név', 'Médium', 'E-mail', 'Téma', 'Prio', 'Hozzájárulás', ''].map(x => h('th', { text: x })))), h('tbody', {}, rows.map(c => h('tr', {}, h('td', { text: c.nev }), h('td', { text: c.medium || '' }), h('td', { text: c.email }), h('td', { text: c.tema || '' }), h('td', { text: String(c.prioritas) }), h('td', { text: c.hozzajarulas ? 'igen' : 'nem' }),
+      h('td', {}, h('button', { class: 'gomb rossz', type: 'button', 'aria-label': `${c.nev} törlése`, onclick: guard(async () => { await api('DELETE', `/api/sajtolista/${encodeURIComponent(c.id)}`); toast('Törölve (a meghívói is).'); await viewSajtolista(); }), text: 'Töröl' })))))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }));
+    paint(d.kapcsolatok);
+    kereso.addEventListener('input', guard(async () => { paint((await api('GET', `/api/sajtolista?q=${encodeURIComponent(kereso.value)}`)).kapcsolatok); }));
+    mainSet(my, h('div', { class: 'asztal-fej' }, h('a', { class: 'gomb vissza', href: '#/asztal/esemenyszervezo', text: '← Eseményszervező' }), h('div', {}, h('h1', { text: 'Sajtólista' }), h('div', { class: 'munkanev', text: `${d.kapcsolatok.length} kapcsolat · legfeljebb ${d.korlat}` }))),
+      h('p', { class: 'sugo', text: 'A sajtólista személyes adatot tartalmaz. Csak a hozzájárulás-jelöléssel rendelkező kapcsolat hívható meg eseményre; a név és az e-mail-cím az AI-nak nem megy át. Bármikor törölhet vagy exportálhat.' }),
+      h('div', { class: 'harom' },
+        h('section', { class: 'sav' }, h('h2', { text: 'Új kapcsolat' }), h('div', { class: 'mezo' }, h('label', { for: 'sl-nev', text: 'Név' }), F.nev), h('div', { class: 'mezo' }, h('label', { for: 'sl-medium', text: 'Médium' }), F.medium), h('div', { class: 'mezo' }, h('label', { for: 'sl-email', text: 'E-mail' }), F.email),
+          h('div', { class: 'mezo' }, h('label', { for: 'sl-tema', text: 'Témák' }), F.tema), h('div', { class: 'mezo' }, h('label', { for: 'sl-prio', text: 'Prioritás' }), F.prio),
+          h('label', { class: 'cimke', for: 'sl-hj' }, F.hj, ' A hozzájárulás megvan'), h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: hozzaad, text: 'Felvétel' }))),
+        h('section', { class: 'sav' }, h('h2', { text: 'Feltöltés CSV-ből' }), h('div', { class: 'mezo' }, h('label', { for: 'sl-file', text: 'CSV-fájl' }), csvFile), h('div', { class: 'mezo' }, h('label', { for: 'sl-csv', text: 'vagy illessze be a tartalmát' }), csvText),
+          h('label', { class: 'cimke', for: 'sl-csv-hj' }, csvHj, ' Megerősítem, hogy a listán szereplők hozzájárulása megvan (ha nincs „hozzájárulás” oszlop)'), h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: csvBtn, text: 'Feltöltés' })),
+          h('p', { class: 'sugo', text: 'Kötelező oszlopok: név, e-mail. Nem kötelező: médium, téma, prioritás (1–3), megjegyzés, hozzájárulás (igen/nem).' })),
+        h('section', { class: 'sav' }, h('h2', { text: 'Export' }), h('p', { text: 'A teljes lista letölthető CSV-ben.' }), h('div', { class: 'sor' }, h('a', { class: 'gomb', href: state.tenant && state.iroda.ugyfelek.length > 1 ? `/api/sajtolista.csv?ugyfel=${encodeURIComponent(state.tenant)}` : '/api/sajtolista.csv', text: 'Letöltés CSV-ben' })))),
+      h('div', { class: 'sor' }, kereso), tbl);
   }
 
   // ---------- Kapcsolattartó: az asztal és a Bejövő nézet

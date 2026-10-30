@@ -28,9 +28,10 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 | Kapcsolattartó Ügynök (`docs/11`, `src/agents/kapcsolattarto/`, `src/mail/`) | kész, tesztelt: levelek fogadása (Gmail API, Exchange/Graph, levélhíd az iCloudhoz, kézi felvitel), besorolás, választervezet, vezetői döntés a kimenő kapun át; a levélküldés (P6) és a telefon (ElevenLabs) hátra van |
 | Levélhíd (`tools/levelhid/`) | kész, a logikája tesztelt; **valódi iCloud-kapcsolattal nem próbáltuk** |
 | Felkészítő és Proaktív Ügynök (`docs/12`, `src/agents/felkeszito/`, `src/agents/proaktiv/`) | kész, tesztelt: felkészítő csomag (háttér, Q&A, üzenetkeretek, red flagek, talking points), megszólalási javaslat (időzítést a program számolja, a naptár alapján), vezetői döntés, kézi naptár; a lánc Monitoring → Proaktív → Felkészítő működik; AI nélkül csak váz (`[KITÖLTENDŐ]`) |
-| A többi 4 ügynök | csak specifikáció; az asztaluk az irodában üres (Eseményszervező, Archívum, Közösségi média, Jogi) |
+| Eseményszervező Ügynök (`docs/13`, `src/agents/esemenyszervezo/`) | kész, tesztelt: koncepció (program számolta időpont és költség), vezetői jóváhagyás, sajtólista (CSV), meghívók a kimenő kapun át (próbaüzemben nem mennek ki), ellenőrzőlista, visszajelzés-javaslat, utómunka; AI nélkül váz |
+| A többi 3 ügynök | csak specifikáció; az asztaluk az irodában üres (Archívum, Közösségi média, Jogi és kockázat) |
 
-113 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
+126 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 
@@ -65,25 +66,26 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 1. **Levélküldő szolgáltató kiválasztása** (P6): ezzel a jóváhagyott válaszok ténylegesen elmehetnek; addig a kimenő mappába kerülnek. Rövid összehasonlítás kell hozzá (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről).
 2. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), az iCloud-híd első valódi próbája (`tools/levelhid/README.md`), AI-kulcs és a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
-3. A következő ügynök a bevezetési sorrend szerint: Eseményszervező (terv kész: `docs/13`, jóváhagyásra vár, a 8. fejezet hat pontjával); a kiegészítők (Archívum, Közösségi média, Jogi és kockázat) igény szerint. A Jogi asztal már kap belső kérdéseket (red flag, jogi gyanú), amelyek az érkezéséig várnak.
+3. A bevezetési sorrend három szakasza elkészült. Következő: a kiegészítő ügynökök igény szerint (Archívum, Közösségi média, Jogi és kockázat). **A Jogi asztal már kap belső kérdéseket** (red flag, jogi gyanú, költség- és biztonsági kérdés), amelyek az érkezéséig várnak: ezért a Jogi ügynök a legindokoltabb következő (terv előbb).
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
-## Hol tartunk, és hol folytassuk (2026-10-29 estéjén)
+## Hol tartunk, és hol folytassuk (2026-10-30)
 
-**Holnap ott kezdjük:** az Eseményszervező terve kész (`docs/13`), a tulajdonos a 8. fejezet hat pontját még nem hagyta jóvá. Jóváhagyás után építés (E1–E5). Közben bármikor előkerülhet a **levélküldő szolgáltató** kiválasztása (rövid összehasonlítás kell), az **éles telepítés** és a **telefon (ElevenLabs, a legvégén)**.
+**Ott folytatjuk:** a bevezetési sorrend mindhárom szakasza (Monitoring + Kapcsolattartó, Felkészítő + Proaktív, Eseményszervező) elkészült és tesztelt. A legközelebbi döntések a tulajdonosra várnak: a **levélküldő szolgáltató** kiválasztása (rövid összehasonlítás kell; ez teszi lehetővé a válaszok és meghívók tényleges kiküldését), az **éles telepítés** (Cloudflare-fiók, AI-kulcs, iCloud-híd első próbája), a következő ügynök (**Jogi és kockázat**: a Jogi asztalra már várnak belső kérdések), a **telefon (ElevenLabs, a legvégén)**.
 
-**A mai munkamenet döntései és eredményei** (mind fel van töltve, a `main` naprakész, 113 teszt zöld):
+**A 2026-10-29/30-i munkamenet döntései és eredményei** (mind fel van töltve, a `main` naprakész, 126 teszt zöld):
 - Postafiók: nulladik ügyfél iCloud (levélhíddal), Gmail és Exchange beállítható; először csak olvasás és tervezet; külön „Sajtó” mappa; 90 napos levélmegőrzés. Kész: `docs/11`.
 - Felkészítő és Proaktív: űrlapok, kézi naptár, csak átadásra és kérésre fut, napi 10 csomag és 5 javaslat, egy csomag öt szakasszal, a csomagkérést a felület ajánlja fel. Kész: `docs/12`.
+- Eseményszervező: az állapotmenet (koncepció jóváhagyása nélkül semmi nem indul), belső sajtólista (kézi és CSV), meghívó csak a kimenő kapun át és tételes kijelöléssel, korlátok (napi 3 koncepció, 50 meghívótervezet, eseményenként 200 meghívó), javaslat-alapú visszajelzés-követés, a személyes adatok nem mennek az AI-nak. Kész: `docs/13`.
 - Telefonhívások: ElevenLabs, a legvégén (`docs/11`, 10. fejezet).
 
 **Az architektúra, amit érdemes tudni (hogy ne kelljen újra felfedezni):**
 - Minden ügynök közös környezete: `src/cloudflare/agentctx.js` (`buildAgentCtx`): napló, asztal, átadások, kimenő kapu, AI, levéltár, dokumentumtár, naptár. Az ütemező, az API és a levélhíd-fogadó is ezt használja. Az **átadás-feldolgozók** (melyik ügynök mit csinál egy neki küldött átadással) is itt vannak, ügyfélenként; a `handoffHandlers` map csak a tesztek felülírására való.
 - Új ügynök: katalógus (`src/api/catalogue.js`, `elerheto: true`) + ügynök-mappa (`src/agents/<id>/`) + feldolgozó az `agentctx.js`-ben + API-végpontok a `src/api/router.js`-ben + asztal a `ui/app.js`-ben (a `viewAsztal` a `munka.tipus` alapján dönt) + prompt(ok) a `monitoring/prompts/`-ban.
-- **Promptok:** a `prompts` objektum kulcsai: `classify`, `synthesize`, `instruct`, `qa`, `docqa`, `keywords`, `letterClassify`, `letterReply`, `briefing`, `proposal`. Új prompt három helyre kell: `src/worker/index.js` (import), `src/dev/serve.js`, `test/helpers.js` (`readPrompts`). Ha valahol hiányzik, a hívás csendben tartalékra esik, ezért teszt kell hozzá.
+- **Promptok:** a `prompts` objektum kulcsai: `classify`, `synthesize`, `instruct`, `qa`, `docqa`, `keywords`, `letterClassify`, `letterReply`, `briefing`, `proposal`, `eventConcept`. Új prompt három helyre kell: `src/worker/index.js` (import), `src/dev/serve.js`, `test/helpers.js` (`readPrompts`). Ha valahol hiányzik, a hívás csendben tartalékra esik, ezért teszt kell hozzá.
 - **Közös védelmek, amelyeket minden új ügynöknek át kell vennie:** napi korlát (a `countSince` mintára), a tartalmat csak a vezető látja (az üzemeltető csak darabszámot), a forrásjelölés-ellenőrzés (`src/agents/common/sources.js`: `stripInvalidRefs`), `[KITÖLTENDŐ]` a nem alátámasztott részre, a „nem küldhető AI-nak” szűrés a dokumentumkeresésnél, a bemenet adat és nem utasítás (zárt műveletlista), minden döntés a naplóba.
-- **Migrációk:** `migrations/0001`–`0006` (init, iroda, átadások, dokumentumok, levelek, proaktív). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
-- **Tesztelés:** `npm test` (113, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a két új ügynökre; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
+- **Migrációk:** `migrations/0001`–`0007` (init, iroda, átadások, dokumentumok, levelek, proaktív, események). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
+- **Tesztelés:** `npm test` (126, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
 - **Felhőmunkamenet apróságai:** a Playwright előre telepített (helyi `npm install playwright` elrontja, nem kell); `tools/levelhid` külön csomag (saját `npm install`); a Playwrightnál a `has-text` kis-nagybetű-független részszövegre illeszt (pl. „Felvétel” a „felvétele” gombra is): pontos illesztéshez `:text-is(...)`.
 
 **Mi nincs még kipróbálva élesben (összefoglalva):** valódi hírforrások, valódi AI-minőség, Cloudflare Worker/D1/Access/R2 élesben, valódi iCloud/Gmail/Exchange, levélküldés, telefon. A részletek a „Korlátok” szakaszban.
@@ -96,6 +98,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - A **PDF-kinyerés** (`unpdf`) helyben, valódi PDF-en működik, a Cloudflare Workerben nem futtattuk; beolvasott (szkennelt) PDF és kép felismerése még nincs (a rendszer megmondja, hogy nincs szöveg). Az R2 (eredeti fájlok) kötése a `wrangler.toml`-ban kikommentezve; nélküle csak a kinyert szöveg marad meg.
 - A **postafiókok** (iCloud, Gmail, Exchange) valódi fiókkal nem kipróbáltak: a Gmail/Graph illesztők és a levélhíd fogadója hamis szerverrel tesztelt, a híd IMAP-része (`tools/levelhid/levelhid.mjs`) csak szintaktikailag és a hibaágon. A levélküldés nincs bekötve. Részletek: `docs/11`, 9. fejezet.
 - A **Felkészítő és a Proaktív** AI nélkül csak vázat ad (a tartalmi részek `[KITÖLTENDŐ]`); az AI-ág hamis API-val tesztelt, a minősége nem mért. A naptár kézi (iCal-import nincs). Részletek: `docs/12`, 9. fejezet.
+- Az **Eseményszervező** AI nélkül vázat ad, a sajtóanyag szövegét nem írja; a meghívó tényleges kiküldése a levélküldő kiválasztására vár; a sajtólista GDPR-ját jogász nézze át. Részletek: `docs/13`, 9. fejezet.
 - A **Cloudflare Access** aláírás-ellenőrzése helyben generált kulccsal tesztelt, valódi Access-szel nem.
 - Cloudflare ingyenes csomagján a külső kérések száma (invokációnként) szűk lehet; több hírforrásnál fizetős Workers ajánlott.
 
@@ -111,7 +114,7 @@ git config user.name ClaudeMZ && git config user.email noreply@anthropic.com
 
 # 3. Függőségek és tesztek
 npm install
-npm test                      # 113 teszt, hálózat nélkül
+npm test                      # 126 teszt, hálózat nélkül
 
 # 4. Az iroda kipróbálása a böngészőben (kitalált adatokkal, memóriában)
 npm run iroda                 # http://127.0.0.1:8787/ ;  --uzemelteto: üzemeltetői nézet
@@ -143,7 +146,7 @@ docs/09                   a dokumentumtár terve és állapota (kész)
 docs/10                   az ügynökök közötti átadások terve és felelősségi mátrixa (kész)
 docs/11                   a postafiók-réteg és a Kapcsolattartó Ügynök terve és állapota (kész, telefon nélkül)
 docs/12                   a Felkészítő és a Proaktív ügynök terve és állapota (kész)
-docs/13                   az Eseményszervező ügynök terve (jóváhagyásra vár)
+docs/13                   az Eseményszervező ügynök terve és állapota (kész)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

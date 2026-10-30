@@ -67,7 +67,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 1. **Levélküldő szolgáltató kiválasztása** (P6): ezzel a jóváhagyott válaszok ténylegesen elmehetnek; addig a kimenő mappába kerülnek. Rövid összehasonlítás kell hozzá (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről).
 2. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), az iCloud-híd első valódi próbája (`tools/levelhid/README.md`), AI-kulcs és a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
-3. A bevezetési sorrend három szakasza és a Jogi ügynök elkészült. **Hátra van két kiegészítő ügynök: Archívum és Közösségi média** (terv előbb). A tulajdonos sorrendje: előbb az összes ügynök, utána az éles telepítés, végül a részletek (pl. a levélküldő szolgáltató, a telefon).
+3. A bevezetési sorrend három szakasza és a Jogi ügynök elkészült. **Hátra van két kiegészítő ügynök: Archívum (terv kész: `docs/15`, jóváhagyásra vár, a 7. fejezet hat pontjával) és Közösségi média** (terv előbb). A tulajdonos sorrendje: előbb az összes ügynök, utána az éles telepítés, végül a részletek (pl. a levélküldő szolgáltató, a telefon).
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
 ## Hol tartunk, és hol folytassuk (2026-10-30)
@@ -152,6 +152,7 @@ docs/11                   a postafiók-réteg és a Kapcsolattartó Ügynök ter
 docs/12                   a Felkészítő és a Proaktív ügynök terve és állapota (kész)
 docs/13                   az Eseményszervező ügynök terve és állapota (kész)
 docs/14                   a Jogi és kockázat ügynök terve és állapota (kész)
+docs/15                   az Archívum ügynök terve (jóváhagyásra vár)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

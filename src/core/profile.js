@@ -44,7 +44,7 @@ export function validateProfile(raw) {
     ...p,
     nyelv: p.nyelv || 'hu',
     kulcsszavak: { szervezet: [], szemelyek: [], temak: [], kizaro: [], ...k },
-    forrasok: { rss: [], hirkereso: [], sajat: [], ...f, kozossegi: (f.kozossegi || []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim(), platform: SOURCE_PLATFORMS[s.platform] ? s.platform : 'egyeb' })) },
+    forrasok: { rss: [], hirkereso: [], sajat: [], ...f, hirkereso_motor: f.hirkereso_motor === 'bing' ? 'bing' : 'google', kozossegi: (f.kozossegi || []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim(), platform: SOURCE_PLATFORMS[s.platform] ? s.platform : 'egyeb' })) },
     vorosvonalak: p.vorosvonalak || [],
     trend,
     utemezes: { idozona: 'Europe/Budapest', ...(p.utemezes || {}) },

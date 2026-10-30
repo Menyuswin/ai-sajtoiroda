@@ -84,3 +84,21 @@ test('a források próbája mér, percenként egyszer kérhető, az utolsó sike
   assert.equal((await s.call('POST', '/api/forrasok/proba', {}, { now: new Date(t2.getTime() + 95e3) })).status, 429); // a próba után újra várni kell
   assert.equal((await s.call('GET', '/api/forrasok/allapot', undefined, { now: t2 })).data.forrasok.every(r => r.ok), true);
 });
+
+test('a hírkereső szolgáltatója állítható (Google vagy Bing); a Bing átirányító címe kibontódik; a profil menthető', async () => {
+  const { bingNewsUrl, newsSearchUrl, unwrapRedirect, collectArticles } = await import('../src/agents/monitoring/sources.js');
+  assert.match(bingNewsUrl('"receptnaptár"'), /^https:\/\/www\.bing\.com\/news\/search\?q=%22receptnapt%C3%A1r%22&format=rss/);
+  assert.match(newsSearchUrl('x'), /news\.google\.com/);
+  assert.equal(unwrapRedirect('http://www.bing.com/news/apiclick.aspx?ref=FexRss&url=https%3a%2f%2fpelda.hu%2fcikk%3fa%3d1&c=1'), 'https://pelda.hu/cikk?a=1');
+  assert.equal(unwrapRedirect('https://pelda.hu/x'), 'https://pelda.hu/x');
+  const bingProfile = { ...profile, forrasok: { ...profile.forrasok, rss: [], hirkereso: ['"Példa Kórházak"'], hirkereso_motor: 'bing' } };
+  const feed = '<rss><channel><item><title>Példa Kórházak hír</title><link>http://www.bing.com/news/apiclick.aspx?url=https%3a%2f%2fhir.example%2fa1&amp;c=1</link><pubDate>Thu, 29 Oct 2026 06:10:00 GMT</pubDate></item></channel></rss>';
+  const seen = [];
+  const r = await collectArticles(bingProfile, { fetchText: async (u) => { seen.push(u); return feed; }, now: () => NOW });
+  assert.match(seen[0], /bing\.com\/news\/search/); assert.equal(r.articles[0].url, 'https://hir.example/a1'); assert.equal(r.report[0].nev, 'Keresés: "Példa Kórházak"');
+  const s = await setup();
+  assert.equal((await s.call('PUT', '/api/profil', { forrasok: { hirkereso_motor: 'bing' } })).status, 200);
+  assert.equal((await s.call('GET', '/api/profil')).data.profil.forrasok.hirkereso_motor, 'bing');
+  assert.equal((await s.call('PUT', '/api/profil', { forrasok: { hirkereso_motor: 'rossz' } })).status, 200);
+  assert.equal((await s.call('GET', '/api/profil')).data.profil.forrasok.hirkereso_motor, 'google'); // ismeretlen érték → alapérték
+});

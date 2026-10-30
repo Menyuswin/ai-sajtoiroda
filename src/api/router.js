@@ -67,6 +67,7 @@ export function applyProfileEdit(profile, patch, role) {
   if (patch.forrasok) {
     for (const g of ['rss', 'sajat']) if (g in patch.forrasok) next.forrasok[g] = (patch.forrasok[g] || []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim() })).filter(s => s.url);
     if ('hirkereso' in patch.forrasok) next.forrasok.hirkereso = cleanList(patch.forrasok.hirkereso);
+    if ('hirkereso_motor' in patch.forrasok) next.forrasok.hirkereso_motor = patch.forrasok.hirkereso_motor === 'bing' ? 'bing' : 'google';
     if ('kozossegi' in patch.forrasok) next.forrasok.kozossegi = (Array.isArray(patch.forrasok.kozossegi) ? patch.forrasok.kozossegi : []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim(), platform: String(s.platform || 'egyeb') })).filter(s => s.url);
   }
   if ('vorosvonalak' in patch) next.vorosvonalak = cleanList(patch.vorosvonalak);

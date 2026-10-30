@@ -1051,6 +1051,7 @@
     const nev = h('input', { type: 'text', id: 'f-nev', value: p.megnevezes, maxlength: '120' });
     const kw = { szervezet: tagInput('Szervezeti nevek', p.kulcsszavak.szervezet, 'A szervezet neve és rövidítései.'), szemelyek: tagInput('Személyek', p.kulcsszavak.szemelyek, 'Vezetők, szóvivők, figyelt személyek.'), temak: tagInput('Témák', p.kulcsszavak.temak, 'Ragozott alakot is megtalál („ápolóhiány” – „ápolóhiányról”).'), kizaro: tagInput('Kizáró szavak', p.kulcsszavak.kizaro, 'Az ilyen szót tartalmazó találatot kihagyja.') };
     const keres = tagInput('Kulcsszavas keresések', p.forrasok.hirkereso, 'Hírkereső-lekérdezések; idézőjellel pontos kifejezést keres.');
+    const motor = h('select', { id: 'f-motor' }, [['google', 'Google News (felhőből gyakran 503-at ad)'], ['bing', 'Bing News']].map(([k, v]) => h('option', { value: k, text: v, ...((p.forrasok.hirkereso_motor || 'google') === k ? { selected: true } : {}) })));
     const voros = tagInput('Vörös vonalak', p.vorosvonalak, 'Ha ilyen téma megjelenik, azonnal értesítést kap, nem várja meg a reggeli szemlét.');
     let rss = p.forrasok.rss.map(s => ({ ...s }));
     const rssBox = h('div');
@@ -1086,7 +1087,7 @@
     const pf = { szolg: h('select', { id: 'f-pf-szolg' }, h('option', { value: '', text: 'Nincs (kézi felvitel)' }), Object.entries(SZOLG).map(([k, v]) => h('option', { value: k, text: v, ...(pfs.szolgaltato === k ? { selected: true } : {}) }))),
       cim: h('input', { type: 'email', id: 'f-pf-cim', value: pfs.cim || '', maxlength: '200' }), mappa: h('input', { type: 'text', id: 'f-pf-mappa', value: pfs.mappa || 'Sajtó', maxlength: '100' }), titok: h('input', { type: 'text', id: 'f-pf-titok', value: pfs.titok || '', maxlength: '64', placeholder: 'Pl.: POSTAFIOK_NULLADIK' }) };
     const mentes = guard(async () => {
-      const patch = { megnevezes: nev.value, kulcsszavak: { szervezet: kw.szervezet.get(), szemelyek: kw.szemelyek.get(), temak: kw.temak.get(), kizaro: kw.kizaro.get() }, forrasok: { rss, hirkereso: keres.get(), kozossegi: kforr.filter(s => s.url && s.url !== 'https://') }, vorosvonalak: voros.get(), utemezes: { szemle: ido.value } };
+      const patch = { megnevezes: nev.value, kulcsszavak: { szervezet: kw.szervezet.get(), szemelyek: kw.szemelyek.get(), temak: kw.temak.get(), kizaro: kw.kizaro.get() }, forrasok: { rss, hirkereso: keres.get(), hirkereso_motor: motor.value, kozossegi: kforr.filter(s => s.url && s.url !== 'https://') }, vorosvonalak: voros.get(), utemezes: { szemle: ido.value } };
       patch.kapcsolattarto = { alairas: alairas.value, hangnem: hangnem.value };
       patch.proaktiv = { szabalyok: szab.value };
       patch.kozossegi = { platformok: kozPlat.filter(x => x.el.checked).map(x => x.k), hangnem: kozHang.value, tiltott_temak: kozTilt.get(), hashtagek: kozHash.get(), emoji: kozEmoji.checked };
@@ -1100,7 +1101,7 @@
     mainSet(my, h('h1', { text: 'Beállítások' }), h('p', { class: 'sugo', text: 'Itt adhatja meg, mit figyeljen az iroda. A módosítás a következő futástól él; minden módosítás naplózódik.' }),
       h('div', { class: 'kartya' }, h('h2', { text: 'A szervezet' }), h('div', { class: 'mezo' }, h('label', { for: 'f-nev', text: 'Szervezet neve' }), nev)),
       h('div', { class: 'kartya' }, h('h2', { text: 'Kulcsszavak' }), kw.szervezet.el, kw.szemelyek.el, kw.temak.el, kw.kizaro.el),
-      h('div', { class: 'kartya' }, h('h2', { text: 'Források' }), h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Hírportálok (RSS)' }), rssBox, h('span', { class: 'sugo', text: 'Csak https:// címek adhatók meg.' })), keres.el,
+      h('div', { class: 'kartya' }, h('h2', { text: 'Források' }), h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Hírportálok (RSS)' }), rssBox, h('span', { class: 'sugo', text: 'Csak https:// címek adhatók meg.' })), keres.el, h('div', { class: 'mezo' }, h('label', { for: 'f-motor', text: 'A keresések szolgáltatója' }), motor, h('span', { class: 'sugo', text: 'Ha az egyik 503-at ad (lásd a Források állapotát), próbálja a másikat.' })),
         h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Közösségi csatornák (nyilvános RSS/Atom)' }), kforrBox, h('span', { class: 'sugo', text: 'Pl. YouTube-csatorna, subreddit, Mastodon- vagy Bluesky-fiók csatornája. Az X, Facebook, Instagram és TikTok közvetlenül nem olvasható (fizetős hozzáférést kér). A Közösségi média asztalára külön szemle készül belőlük.' }))),
       h('div', { class: 'kartya' }, h('h2', { text: 'Források állapota' }),
         h('p', { class: 'sugo', text: fs.futas.allapot === 'nincs' ? 'A Monitoring még nem futott.' : `Az utolsó futás ${korSzoveg(fs.futas.kor_perc)} volt (${fs.futas.cikk_lekert ?? '?'} cikket kért le, ebből ${fs.futas.cikk_uj ?? '?'} új és releváns; ${fs.futas.kulso_keres ?? '?'} külső kérés).` }),

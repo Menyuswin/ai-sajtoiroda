@@ -77,6 +77,19 @@ export function newsSearchUrl(query, lang = 'hu') {
   return `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${lang}&gl=${country}&ceid=${country}:${lang}`;
 }
 
+// Bing News RSS: a Google News felhőből érkező kéréseket gyakran elutasít (503). A Bing a találatot átirányító címmel adja, ezt kibontjuk.
+export function bingNewsUrl(query, lang = 'hu') {
+  const country = lang === 'hu' ? 'HU' : 'US';
+  return `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&setlang=${lang}&cc=${country}`;
+}
+export function unwrapRedirect(url) {
+  try {
+    const u = new URL(url);
+    if (/(^|\.)bing\.com$/i.test(u.hostname) && /apiclick/i.test(u.pathname) && u.searchParams.get('url')) return u.searchParams.get('url');
+  } catch { /* marad az eredeti */ }
+  return url;
+}
+
 export async function defaultFetchText(url, { timeoutMs = 10000 } = {}) {
   const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -101,7 +114,7 @@ export async function collectArticles(profile, { fetchText = defaultFetchText, n
   const jobs = [
     ...profile.forrasok.rss.map(s => ({ medium: s.nev || s.url, url: s.url, tipus: 'rss', nev: s.nev || s.url })),
     ...profile.forrasok.sajat.map(s => ({ medium: s.nev || s.url, url: s.url, tipus: 'sajat', nev: s.nev || s.url })),
-    ...profile.forrasok.hirkereso.map(q => ({ medium: 'Hírkereső', url: newsSearchUrl(q, profile.nyelv), tipus: 'hirkereso', nev: `Keresés: ${q}` })),
+    ...profile.forrasok.hirkereso.map(q => ({ medium: 'Hírkereső', url: profile.forrasok.hirkereso_motor === 'bing' ? bingNewsUrl(q, profile.nyelv) : newsSearchUrl(q, profile.nyelv), tipus: 'hirkereso', nev: `Keresés: ${q}` })),
     // Közösségi csatorna: nyilvános hírcsatornák (YouTube, Reddit, Mastodon, Bluesky stb.); a bejegyzések `csatorna: 'kozossegi'` jelölést kapnak.
     ...(profile.forrasok.kozossegi || []).map(s => ({ medium: s.nev || s.url, url: s.url, tipus: 'kozossegi', nev: s.nev || s.url, extra: { csatorna: 'kozossegi', platform: s.platform || 'egyeb' } })),
   ];
@@ -110,7 +123,7 @@ export async function collectArticles(profile, { fetchText = defaultFetchText, n
   const report = [];
   await Promise.all(jobs.map(async (j) => {
     try {
-      const items = parseFeed(await fetchText(j.url), j.medium, fetchedAt, j.extra || {});
+      const items = parseFeed(await fetchText(j.url), j.medium, fetchedAt, j.extra || {}).map(a => { const real = unwrapRedirect(a.url); return real === a.url ? a : { ...a, url: canonicalUrl(real), id: articleId(real) }; });
       if (!items.length) throw new Error('nincs cikk a csatornában');
       articles.push(...items);
       report.push({ url: j.url, nev: j.nev, tipus: j.tipus, ok: true, db: items.length });

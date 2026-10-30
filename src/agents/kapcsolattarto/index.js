@@ -113,7 +113,7 @@ const toHtml = (text) => `<body style="font-family:sans-serif">${String(text).sp
 
 // A vezető döntése egy levélről. `by`: a döntést hozó (naplóhoz); a küldés jóváhagyása a vezetőé (profil.vezeto).
 // opcio: 'valasz' | 'kesobb' → a válasz a kimenő kapun át megy (száraz módban a kimenő mappába); 'nem_valaszolunk' | 'halaszt' | 'tovabbit'.
-export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by }) {
+export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by, jogiTudomasul = false }) {
   const { log, levelek, outbox, profile, atadasok } = ctx;
   const letter = await levelek.get(id);
   if (!letter) return { status: 404, hiba: 'Nincs ilyen levél.' };
@@ -125,11 +125,14 @@ export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by })
     if (!text || text.length > 5000) return { status: 400, hiba: 'A válasz szövege 1–5000 karakter legyen.' };
     if (!subject) return { status: 400, hiba: 'A tárgy kötelező.' };
     if (hasPlaceholder(text)) return { status: 422, hiba: 'A tervezet még kitöltendő részt tartalmaz ([KITÖLTENDŐ: …]); írja meg, mielőtt jóváhagyja.' };
+    // Magas kockázatú jogi vélemény esetén a vezetőnek külön tudomásul kell vennie a figyelmeztetést (nem tilt, csak lassít).
+    const ops = letter.anyag_id && ctx.anyagok.opinionsFor ? await ctx.anyagok.opinionsFor(letter.anyag_id) : [];
+    if (ops.some(o => o.besorolas === 'magas') && !jogiTudomasul) return { status: 409, hiba: 'Erre a tervezetre magas kockázatú jogi vélemény készült. Olvassa el, és jelezze, hogy tudomásul vette a jogi figyelmeztetést, mielőtt jóváhagyja.', jogi_figyelmeztetes: true };
     if (!(await levelek.decide(id, { allapot: 'jovahagyva', by, valasz: { opcio: dontes, targy: subject, szoveg: text } }))) return { status: 409, hiba: 'Erről a levélről már döntöttek.' };
     try {
       // A címzett mindig a levél feladója; a felületről nem módosítható (nem lehet vele tetszőleges címre küldeni).
       const sent = await outbox.send({ agent: AGENT, kind: 'valasz', to: letter.felado, subject, text, html: toHtml(text), approval: { dontes: 'jovahagyva', by: profile.vezeto.email } });
-      await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'jovahagyva', opcio: dontes, kuldes: sent.id, kiment: !!sent.delivered, cimzett: letter.felado } });
+      await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'jovahagyva', opcio: dontes, jogi_tudomasul: ops.some(o => o.besorolas === 'magas') ? true : undefined, kuldes: sent.id, kiment: !!sent.delivered, cimzett: letter.felado } });
       return { status: 200, allapot: 'jovahagyva', kiment: !!sent.delivered };
     } catch (e) {
       await levelek.reopen(id);

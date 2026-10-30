@@ -97,7 +97,7 @@ log('iroda jelzés a Proaktív kártyán:', await page.locator('.asztal[data-id=
 await page.click('nav >> text=Átadások'); await page.waitForSelector('.lista li');
 log('átadások száma:', await page.locator('.lista li').count(), '|', (await page.locator('.lista li').first().innerText()).replace(/\n/g, ' / ').slice(0, 160));
 await shot('10-atadasok');
-await page.goto(BASE + '#/asztal/archivum'); await page.waitForSelector('text=Ennél az asztalnál még nem ül senki');
+await page.goto(BASE + '#/asztal/kozossegi'); await page.waitForSelector('text=Ennél az asztalnál még nem ül senki');
 log('üres asztal:', (await page.locator('.kartya').first().innerText()).slice(0, 60));
 await shot('11-ures-asztal-atadassal');
 

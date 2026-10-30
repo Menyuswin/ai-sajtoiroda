@@ -15,6 +15,7 @@ import { createDocs } from '../docs/store.js';
 import { AGENTS, agentById } from '../api/catalogue.js';
 import { createProposal, OCCASION_OF } from '../agents/proaktiv/index.js';
 import { createPackage } from '../agents/felkeszito/index.js';
+import { createOpinion, kindOfAnyag } from '../agents/jogi/index.js';
 
 // Próbákhoz: ügynök-azonosító → feldolgozó, amely felülírja a gyári feldolgozókat (üresen hagyva nem hat).
 export const handoffHandlers = new Map();
@@ -53,6 +54,14 @@ export function buildAgentCtx({ env, profile, now, prompts, llmFetch, mailbox = 
     }],
     // Az esemény szervezése a vezető indítására készül (koncepció, jóváhagyás); az átadás csak tudomásul vétel.
     ['esemenyszervezo', async () => ({ valasz: 'Tudomásul véve. Esemény csak a vezető indítására készül; a koncepció jóváhagyás után indul tovább.' })],
+    // A Jogi asztal véleményt készít az átadásban hivatkozott anyagról (tervezet, csomag, koncepció).
+    ['jogi', async (h) => {
+      if (!['kerdes', 'kerelem'].includes(h.tipus)) return { valasz: 'Tudomásul véve.' };
+      const src = h.anyag_id ? await desk.anyagok.get(h.anyag_id) : null;
+      if (!src) return { valasz: 'Az átadás nem hivatkozik vizsgálható anyagra; a Jogi asztalon kérhet véleményt anyagra vagy beillesztett szövegre.' };
+      const r = await createOpinion(ctx, { anyagId: h.anyag_id, fajta: kindOfAnyag(src.tipus), atadasId: h.id });
+      return { valasz: `Jogi vélemény: ${{ alacsony: 'alacsony', kozepes: 'közepes', magas: 'magas' }[r.besorolas]} kockázat, ${r.db} megállapítás${r.jogasz ? ', jogász bevonása javasolt' : ''}.` };
+    }],
     ['felkeszito', async (h) => {
       if (h.tipus !== 'kerelem') return { valasz: 'Tudomásul véve.' };
       const src = h.anyag_id ? await desk.anyagok.get(h.anyag_id) : null;

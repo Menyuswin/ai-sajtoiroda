@@ -18,10 +18,14 @@ export function createDesk({ db, tenantId, now = () => new Date() }) {
           .bind(id, tenantId, ugynok, tipus, cim, szoveg, html, meta ? JSON.stringify(meta) : null, allapot, now().toISOString()).run();
         return id;
       },
-      async list({ ugynok = null, limit = 50 } = {}) {
+      async opinionsFor(anyagId) {
+        const { results } = await db.prepare("SELECT id, meta_json, ido FROM anyagok WHERE tenant_id = ? AND ugynok = 'jogi' AND tipus = 'jogi_velemeny' AND json_extract(meta_json, '$.forras_anyag_id') = ? ORDER BY ido DESC, id DESC").bind(tenantId, anyagId).all();
+        return results.map(r => ({ id: r.id, ido: r.ido, ...(parse(r.meta_json) || {}) }));
+      },
+      async list({ ugynok = null, limit = 50, withMeta = false } = {}) {
         const q = ugynok ? 'SELECT * FROM anyagok WHERE tenant_id = ? AND ugynok = ? ORDER BY ido DESC, id DESC LIMIT ?' : 'SELECT * FROM anyagok WHERE tenant_id = ? ORDER BY ido DESC, id DESC LIMIT ?';
         const { results } = await db.prepare(q).bind(...(ugynok ? [tenantId, ugynok, limit] : [tenantId, limit])).all();
-        return results.map(r => mapAnyag(r, false));
+        return results.map(r => (withMeta ? { ...mapAnyag(r, false), meta: parse(r.meta_json) } : mapAnyag(r, false)));
       },
       async get(id) {
         const r = await db.prepare('SELECT * FROM anyagok WHERE tenant_id = ? AND id = ?').bind(tenantId, id).first();

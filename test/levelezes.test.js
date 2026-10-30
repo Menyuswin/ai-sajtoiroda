@@ -170,13 +170,13 @@ test('az egyéb döntések: elvetés, halasztás (később még eldönthető), t
   assert.ok((await s.log({ tipus: 'dontes' })).length >= 4);
 });
 
-test('vörös vonal: riasztás csak a vezetőnek; jogi gyanú: kérdés a Jogi asztalnak (üres: vár); kifelé semmi', async () => {
+test('vörös vonal: riasztás csak a vezetőnek; jogi gyanú: kérdés a Jogi asztalnak, amely véleményt készít; kifelé semmi', async () => {
   const s = await setup();
   await add(s, { targy: 'Hatósági eljárás az intézményben', szoveg: 'Tudomásunkra jutott, hogy hatósági eljárás indult, és feljelentést is tettek. Ügyvédjük reagáljon.' });
   const out = await s.rows('SELECT kind, cimzett FROM proba_levelek');
   assert.deepEqual(out.map(x => [x.kind, x.cimzett]), [['riasztas', LEGAL_TO()]]);
   const at = (await s.call('GET', '/api/atadasok')).data.atadasok.find(x => x.hova === 'jogi');
-  assert.equal(at.tipus, 'kerdes'); assert.equal(at.allapot, 'varakozik');
+  assert.equal(at.tipus, 'kerdes'); assert.equal(at.allapot, 'feldolgozva'); assert.match(at.valasz, /Jogi vélemény/);
   assert.equal((await s.log({ tipus: 'kimeno_elutasitva' })).length, 0);
   function LEGAL_TO() { return LEADER; }
 });

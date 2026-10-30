@@ -24,6 +24,8 @@ import { OCCASIONS } from '../agents/felkeszito/package.js';
 import { createProposal, decideProposal, DAILY_LIMIT as PROPOSAL_LIMIT } from '../agents/proaktiv/index.js';
 import { CalendarError, CAL_TYPES } from '../cloudflare/proaktiv-store.js';
 import { startOfDayIso } from '../agents/common/sources.js';
+import { createOpinion, DAILY_LIMIT as OPINION_LIMIT, MAX_TEXT as OPINION_MAX } from '../agents/jogi/index.js';
+import { CATEGORIES as RISK_CATEGORIES, KINDS as RISK_KINDS, LEVELS as RISK_LEVELS } from '../agents/jogi/analysis.js';
 import { createEvent, decideEvent, inviteCandidates, addInvites, sendInvites, setInviteResponse, createPostWork, importContacts, EventError, LIMITS_DAILY as EVENT_DAILY } from '../agents/esemenyszervezo/index.js';
 import { EVENT_FORMATS, LIMITS as EVENT_LIMITS, RESPONSES } from '../cloudflare/esemeny-store.js';
 import { validateMailbox } from '../core/profile.js';
@@ -39,6 +41,10 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), { status
 // Mit szerkeszthet az ügyfél (vezető), és mit csak az üzemeltető.
 const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true, proaktiv: true };
 const UZEMELTETO_EXTRA = { vezeto: true, nyelv: true, trend: true, megorzes: true, ai_jelzes: true, utemezes: ['szemle', 'idozona'], megjelenes: true, postafiok: true };
+
+// Az ügynökök bizalmas anyagait (levéltervezet, csomag, javaslat, koncepció, jogi vélemény) csak a vezető olvashatja.
+const SENSITIVE_TYPES = new Set(['valasz_tervezet', 'felkeszito_csomag', 'megszolalasi_javaslat', 'esemeny_koncepcio', 'esemeny_utomunka', 'jogi_velemeny']);
+const worstLevel = (list) => list.reduce((w, o) => (RISK_LEVELS.indexOf(o.besorolas) > RISK_LEVELS.indexOf(w) ? o.besorolas : w), 'alacsony');
 
 const cleanList = (a) => [...new Set((Array.isArray(a) ? a : []).map(x => String(x).trim()).filter(Boolean))];
 
@@ -194,12 +200,13 @@ async function route(request, env, deps) {
     const letterCounts = await lctx.levelek.counts();
     const openProposals = await lctx.proactive.proposals.openCount();
     const openEvents = await lctx.esemeny.events.openCount();
+    const openHighRisk = role === 'vezeto' ? (await desk.anyagok.list({ ugynok: 'jogi', limit: 100, withMeta: true })).filter(x => x.meta?.besorolas === 'magas' && !x.olvasott).length : 0;
     for (const a of AGENTS) {
       const last = a.elerheto ? (await desk.anyagok.list({ ugynok: a.id, limit: 1 }))[0] : null;
       const aktiv = a.elerheto && agentActive(profile, a.id, now());
       agents.push({ id: a.id, nev: a.nev, munkanev: a.munkanev, szakasz: a.szakasz, elerheto: a.elerheto,
         allapot: !a.elerheto ? 'ures' : aktiv ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'esemenyszervezo' ? openEvents : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
+        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'jogi' ? openHighRisk : a.id === 'esemenyszervezo' ? openEvents : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
       mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
@@ -229,6 +236,15 @@ async function route(request, env, deps) {
         utasitasok: [], anyagok: role === 'vezeto' ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok,
         munka: { tipus: 'kapcsolattarto', szamok: await lctx.levelek.counts(), postafiok: await mailboxStatus(lctx, env, profile), tartalom_lathato: role === 'vezeto',
           legutobbi: role === 'vezeto' ? (await lctx.levelek.list({ limit: 6 })) : [] } });
+    }
+    if (a.id === 'jogi') {
+      const leader = role === 'vezeto';
+      const all = await desk.anyagok.list({ ugynok: 'jogi', limit: 50, withMeta: true });
+      const sorted = [...all].sort((x, y) => RISK_LEVELS.indexOf(y.meta?.besorolas) - RISK_LEVELS.indexOf(x.meta?.besorolas));
+      return json({ ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null, utasitasok: [], anyagok: [], atadasok,
+        munka: { tipus: 'jogi', tartalom_lathato: leader, velemeny_ma: await desk.anyagok.countSince('jogi', 'jogi_velemeny', startOfDayIso(now())), korlat: OPINION_LIMIT, max_szoveg: OPINION_MAX, osszes: all.length, magas_db: all.filter(x => x.meta?.besorolas === 'magas').length,
+          kategoriak: RISK_CATEGORIES, fajtak: RISK_KINDS, velemenyek: leader ? sorted.map(x => ({ id: x.id, cim: x.cim, ido: x.ido, olvasott: x.olvasott, besorolas: x.meta?.besorolas, jogasz_javasolt: x.meta?.jogasz_javasolt, talalatok: x.meta?.talalatok, forras_anyag_id: x.meta?.forras_anyag_id, modell: x.meta?.modell })) : [],
+          vizsgalhato: leader ? (await desk.anyagok.list({ limit: 60 })).filter(x => x.ugynok !== 'jogi' && SENSITIVE_TYPES.has(x.tipus)).map(x => ({ id: x.id, cim: x.cim, tipus: x.tipus, ido: x.ido })) : [] } });
     }
     if (a.id === 'esemenyszervezo') {
       const leader = role === 'vezeto';
@@ -333,16 +349,20 @@ async function route(request, env, deps) {
   }
 
   // ---- Anyagok és rákérdezés
-  if (method === 'GET' && p === '/api/anyagok') return json({ anyagok: await desk.anyagok.list({ ugynok: url.searchParams.get('ugynok'), limit: 100 }) });
+  const visibleAnyag = (a) => role === 'vezeto' || !SENSITIVE_TYPES.has(a.tipus);
+  if (method === 'GET' && p === '/api/anyagok') return json({ anyagok: (await desk.anyagok.list({ ugynok: url.searchParams.get('ugynok'), limit: 100 })).filter(visibleAnyag) });
   if (method === 'GET' && (m = p.match(/^\/api\/anyagok\/([^/]+)$/))) {
     const anyag = await desk.anyagok.get(decodeURIComponent(m[1]));
     if (!anyag) throw new HttpError(404, 'Nincs ilyen anyag.');
+    if (!visibleAnyag(anyag)) throw new HttpError(403, 'Ezt az anyagot csak a vezető olvashatja.');
     await desk.anyagok.markRead(anyag.id);
-    return json({ anyag, uzenetek: await desk.uzenetek.list(anyag.id) });
+    const jogi = role === 'vezeto' ? await desk.anyagok.opinionsFor(anyag.id) : [];
+    return json({ anyag, uzenetek: await desk.uzenetek.list(anyag.id), jogi: jogi.length ? { besorolas: worstLevel(jogi), velemenyek: jogi.map(o => ({ id: o.id, besorolas: o.besorolas, ido: o.ido })) } : null });
   }
   if (method === 'POST' && (m = p.match(/^\/api\/anyagok\/([^/]+)\/kerdes$/))) {
     const anyag = await desk.anyagok.get(decodeURIComponent(m[1]));
     if (!anyag) throw new HttpError(404, 'Nincs ilyen anyag.');
+    if (!visibleAnyag(anyag)) throw new HttpError(403, 'Ezt az anyagot csak a vezető olvashatja.');
     const q = String((await body()).szoveg || '').trim();
     if (!q || q.length > 500) throw new HttpError(400, 'A kérdés 1–500 karakter legyen.');
     await desk.uzenetek.add(anyag.id, 'vezeto', q);
@@ -353,7 +373,7 @@ async function route(request, env, deps) {
     await log.append({ szereplo: actor, tipus: 'kerdes', hivatkozas: anyag.id, tartalom: { kerdes: q } });
     return json({ uzenetek: await desk.uzenetek.list(anyag.id) });
   }
-  if (method === 'GET' && p === '/api/jelentesek') return json({ anyagok: await desk.anyagok.list({ limit: 100 }) });
+  if (method === 'GET' && p === '/api/jelentesek') return json({ anyagok: (await desk.anyagok.list({ limit: 100 })).filter(visibleAnyag) });
 
   // ---- Dokumentumtár
   const docMeta = (d) => d;
@@ -443,11 +463,12 @@ async function route(request, env, deps) {
       await lctx.levelek.markRead(letter.id);
       const anyag = letter.anyag_id ? await desk.anyagok.get(letter.anyag_id) : null;
       if (anyag) await desk.anyagok.markRead(anyag.id);
-      return json({ level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
+      const jogiOps = letter.anyag_id ? await desk.anyagok.opinionsFor(letter.anyag_id) : [];
+      return json({ jogi: jogiOps.length ? { besorolas: worstLevel(jogiOps), anyag_id: jogiOps[0].id, jogasz_javasolt: jogiOps.some(o => o.jogasz_javasolt) } : null, level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
     }
     if ((m = p.match(/^\/api\/levelek\/([^/]+)\/dontes$/)) && method === 'POST') {
       const b = await body();
-      const r = await decideLetter(lctx, decodeURIComponent(m[1]), { dontes: b.dontes, szoveg: b.szoveg, targy: b.targy, hova: b.hova, by: actor });
+      const r = await decideLetter(lctx, decodeURIComponent(m[1]), { dontes: b.dontes, szoveg: b.szoveg, targy: b.targy, hova: b.hova, jogiTudomasul: b.jogi_tudomasul === true, by: actor });
       if (r.status !== 200) throw new HttpError(r.status, r.hiba);
       return json({ allapot: r.allapot, kiment: r.kiment === true });
     }
@@ -508,6 +529,23 @@ async function route(request, env, deps) {
       if (!(await lctx.proactive.calendar.remove(decodeURIComponent(m[1])))) throw new HttpError(404, 'Nincs ilyen naptárbejegyzés.');
       await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: decodeURIComponent(m[1]), tartalom: { esemeny: 'torles' } });
       return json({ ok: true });
+    }
+    throw new HttpError(404, 'Nem található.');
+  }
+
+  // ---- Jogi és kockázat: vélemény kérése (anyagra vagy beillesztett szövegre), a vélemények listája (a tartalmat csak a vezető látja)
+  if (p.startsWith('/api/jogi')) {
+    if (role !== 'vezeto') throw new HttpError(403, 'Ezt csak a vezető kezelheti.');
+    if (method === 'POST' && p === '/api/jogi/velemeny') {
+      const b = await body();
+      if (!b.anyag_id && !String(b.szoveg || '').trim()) throw new HttpError(400, 'Válasszon anyagot, vagy illesszen be szöveget.');
+      try { const r = await createOpinion(lctx, { anyagId: b.anyag_id ? String(b.anyag_id) : null, szoveg: b.anyag_id ? null : String(b.szoveg), fajta: RISK_KINDS[b.fajta] ? b.fajta : 'egyeb', by: actor }); return json({ id: r.id, besorolas: r.besorolas, megallapitasok: r.db, jogasz_javasolt: r.jogasz, modell: r.modell }, 201); }
+      catch (e) { if (e instanceof AgentError) throw new HttpError(e.status, e.message); throw e; }
+    }
+    if (method === 'GET' && p === '/api/jogi/velemenyek') {
+      const forras = url.searchParams.get('forras');
+      if (forras) { const ops = await desk.anyagok.opinionsFor(forras); return json({ velemenyek: ops.map(o => ({ id: o.id, besorolas: o.besorolas, ido: o.ido, jogasz_javasolt: o.jogasz_javasolt })), legrosszabb: ops.length ? worstLevel(ops) : null }); }
+      return json({ velemenyek: (await desk.anyagok.list({ ugynok: 'jogi', limit: 100 })).map(x => ({ id: x.id, cim: x.cim, ido: x.ido })) });
     }
     throw new HttpError(404, 'Nem található.');
   }

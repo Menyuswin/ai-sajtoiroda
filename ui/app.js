@@ -185,6 +185,7 @@
     if (d.munka?.tipus === 'proaktiv') { mainSet(my, head, proaktivAsztal(d, id)); return; }
     if (d.munka?.tipus === 'esemenyszervezo') { mainSet(my, head, esemenyszervezoAsztal(d, id)); return; }
     if (d.munka?.tipus === 'jogi') { mainSet(my, head, jogiAsztal(d, id)); return; }
+    if (d.munka?.tipus === 'archivum') { mainSet(my, head, archivumAsztal(d, id)); return; }
     const input = h('textarea', { id: 'utasitas', 'aria-label': 'Utasítás az ügynöknek', maxlength: '500', placeholder: 'Írja le magyarul, mit szeretne… (Ctrl+Enter: küldés)' });
     const send = guard(async () => {
       const szoveg = input.value.trim(); if (!szoveg) return;
@@ -542,6 +543,65 @@
       h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
+
+  // ---------- Archívum: keresés, idővonal, közlések
+  const openKozles = guard(async (id) => {
+    const { kozles: k } = await api('GET', `/api/archivum/kozlesek/${encodeURIComponent(id)}`);
+    const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); route(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const closeBtn = h('button', { class: 'gomb', type: 'button', onclick: close, text: 'Bezár' });
+    const overlay = h('div', { class: 'nezo' }, h('div', { class: 'lap', role: 'dialog', 'aria-modal': 'true', 'aria-label': k.cim },
+      h('div', { class: 'sor' }, h('span', { class: 'jelveny', text: 'Közlés' }), h('span', { class: 'meta', text: `${k.kiadva} · ${state.iroda ? '' : ''}${k.fajta}` }), closeBtn),
+      h('h2', { text: k.cim }),
+      h('p', { class: 'meta', text: `Címzett: ${k.cimzett_medium || '–'}${k.cimzett_domain ? ` (${k.cimzett_domain})` : ''} · jóváhagyta: ${k.jovahagyta || '–'} · ${k.kiment ? 'kiment' : 'a kimenő mappába került (próbaüzem) vagy kézzel felvitt'}` }),
+      h('pre', { class: 'level-szoveg', tabindex: '0', 'aria-label': 'A közlés szövege', text: k.szoveg }),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('DELETE', `/api/archivum/kozlesek/${encodeURIComponent(id)}`); toast('A közlés törölve.'); close(); }), text: 'A közlés törlése' }),
+        h('span', { class: 'sugo', text: 'A közlés nem módosítható, csak törölhető (a törlés naplózott).' }))));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', onKey); document.body.append(overlay); closeBtn.focus();
+  });
+
+  function archivumAsztal(d, agentId) {
+    const m = d.munka;
+    const kozlesLista = (rows) => rows.length ? h('ul', { class: 'lista' }, rows.map(k => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openKozles(k.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openKozles(k.id); } } },
+      h('strong', { text: k.cim }), h('span', { class: 'meta', text: `${k.kiadva} · ${m.fajtak[k.fajta] || k.fajta}${k.cimzett_medium ? ` · ${k.cimzett_medium}` : ''}` }), h('span', { text: k.kivonat })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' });
+    const q = h('input', { type: 'search', id: 'ar-q', placeholder: 'Téma, személy, kifejezés (pl. várólista)', ...(m.tartalom_lathato ? {} : { disabled: true }) });
+    const fajta = h('select', { id: 'ar-fajta', 'aria-label': 'Fajta' }, h('option', { value: '', text: 'Minden fajta' }), Object.entries(m.fajtak).map(([k, v]) => h('option', { value: k, text: v })));
+    const tol = h('input', { type: 'date', id: 'ar-tol', 'aria-label': 'Ettől' }), ig = h('input', { type: 'date', id: 'ar-ig', 'aria-label': 'Eddig' });
+    const talalat = h('div', { class: 'ar-talalat', 'aria-live': 'polite' });
+    const keres = guard(async () => {
+      if (!q.value.trim()) { talalat.replaceChildren(h('p', { class: 'sugo', text: 'Írjon be egy keresőszót.' })); return; }
+      const p = new URLSearchParams({ q: q.value }); if (fajta.value) p.set('fajta', fajta.value); if (tol.value) p.set('tol', tol.value); if (ig.value) p.set('ig', ig.value);
+      const r = await api('GET', `/api/archivum/kereses?${p}`);
+      talalat.replaceChildren(h('h3', { text: `Közlések (${r.kozlesek.length})` }), kozlesLista(r.kozlesek),
+        h('h3', { text: `Dokumentumok (${r.dokumentumok.length})` }), r.dokumentumok.length ? h('ul', { class: 'lista' }, r.dokumentumok.map(x => h('li', {}, h('strong', { text: x.cim }), h('span', { class: 'meta', text: x.szakasz || '' }), h('span', { text: x.kivonat })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }),
+        h('h3', { text: `Ügynökök anyagai (${r.anyagok.length})` }), r.anyagok.length ? h('ul', { class: 'lista' }, r.anyagok.map(x => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openAnyag(x.id), onkeydown: (e) => { if (e.key === 'Enter') openAnyag(x.id); } }, h('strong', { text: x.cim }), h('span', { class: 'meta', text: `${TIPUS[x.tipus] || x.tipus} · ${when(x.ido)}` })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }));
+    });
+    q.addEventListener('keydown', (e) => { if (e.key === 'Enter') keres(); });
+    const idovonal = h('div', { 'aria-live': 'polite' });
+    const idoQ = h('input', { type: 'text', id: 'ar-tema', placeholder: 'Téma az idővonalhoz' });
+    const idoGomb = guard(async () => { const r = await api('GET', `/api/archivum/idovonal?tema=${encodeURIComponent(idoQ.value)}`); idovonal.replaceChildren(r.idovonal.length ? h('ol', { class: 'lista' }, r.idovonal.map(k => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openKozles(k.id) }, h('strong', { text: `${k.kiadva}: ${k.cim}` }), h('span', { class: 'meta', text: `${m.fajtak[k.fajta] || k.fajta}${k.cimzett_medium ? ` · ${k.cimzett_medium}` : ''}` }), h('span', { text: k.kivonat })))) : h('p', { class: 'ures-szoveg', text: 'Nincs ehhez a témához közlés.' })); });
+    const keresSav = h('section', { class: 'sav', 'aria-labelledby': 'h-ak' }, h('h2', { id: 'h-ak', text: 'Keresés' }),
+      m.tartalom_lathato ? null : h('p', { class: 'sugo', text: 'Az archívum tartalmát csak a vezető látja; Ön a darabszámot látja.' }),
+      h('div', { class: 'mezo' }, h('label', { for: 'ar-q', text: 'Mit keres?' }), q), h('div', { class: 'mezo' }, h('label', { for: 'ar-fajta', text: 'Fajta' }), fajta),
+      h('div', { class: 'sor' }, h('label', { for: 'ar-tol', class: 'meta', text: 'Ettől' }), tol, h('label', { for: 'ar-ig', class: 'meta', text: 'Eddig' }), ig),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: keres, text: 'Keresés' })), talalat,
+      h('p', { class: 'sugo', text: 'Az Archívum csak belső tudásbázis: jelez és keres, kifelé semmit nem küld.' }));
+    // új közlés
+    const F = { cim: h('input', { type: 'text', id: 'ak-cim', maxlength: '200' }), datum: h('input', { type: 'date', id: 'ak-datum' }), fajta: h('select', { id: 'ak-fajta' }, Object.entries(m.fajtak).filter(([k]) => k !== 'valasz' && k !== 'meghivo').map(([k, v]) => h('option', { value: k, text: v }))),
+      medium: h('input', { type: 'text', id: 'ak-medium', maxlength: '120', placeholder: 'Nem kötelező' }), szoveg: h('textarea', { id: 'ak-szoveg', rows: '6', maxlength: String(m.max_szoveg), placeholder: 'A közlés teljes szövege' }) };
+    const felvitel = h('section', { class: 'sav', 'aria-labelledby': 'h-af' }, h('h2', { id: 'h-af', text: 'Régi közlés felvitele' }),
+      h('div', { class: 'mezo' }, h('label', { for: 'ak-cim', text: 'Cím' }), F.cim), h('div', { class: 'mezo' }, h('label', { for: 'ak-datum', text: 'Mikor adták ki?' }), F.datum), h('div', { class: 'mezo' }, h('label', { for: 'ak-fajta', text: 'Fajta' }), F.fajta),
+      h('div', { class: 'mezo' }, h('label', { for: 'ak-medium', text: 'Kinek, melyik médiumnak?' }), F.medium), h('div', { class: 'mezo' }, h('label', { for: 'ak-szoveg', text: 'Szöveg' }), F.szoveg),
+      h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: guard(async () => { await api('POST', '/api/archivum/kozlesek', { cim: F.cim.value, datum: F.datum.value, fajta: F.fajta.value, medium: F.medium.value, szoveg: F.szoveg.value }); toast('A közlés felvéve az archívumba.'); await viewAsztal(agentId); }), text: 'Felvétel' })),
+      h('p', { class: 'sugo', text: `Az archívumban ${m.kozles_db} közlés van (legfeljebb ${m.korlat}); ${m.megorzes_honap} hónap után törlődnek. A jóváhagyott levélválaszok és a kiküldött meghívók automatikusan bekerülnek.` }));
+    const lista = h('section', { class: 'sav', 'aria-labelledby': 'h-al' }, h('h2', { id: 'h-al', text: 'Idővonal és legutóbbi közlések' }),
+      m.tartalom_lathato ? [h('div', { class: 'sor' }, idoQ, h('button', { class: 'gomb', type: 'button', onclick: idoGomb, text: 'Idővonal' })), idovonal, h('h3', { text: 'Legutóbbi közlések' }), kozlesLista(m.legutobbi),
+        h('div', { class: 'sor' }, h('a', { class: 'gomb', href: state.tenant && state.iroda.ugyfelek.length > 1 ? `/api/archivum/export.csv?ugyfel=${encodeURIComponent(state.tenant)}` : '/api/archivum/export.csv', text: 'Az archívum letöltése CSV-ben' }))] : h('p', { class: 'ures-szoveg', text: 'A tartalmat csak a vezető látja.' }));
+    return [h('div', { class: 'harom' }, keresSav, felvitel, lista),
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+  }
+
   // ---------- Kapcsolattartó: az asztal és a Bejövő nézet
   const LEVEL_ALLAPOT = { uj: 'Feldolgozásra vár', tervezet_kesz: 'Tervezet kész', jovahagyva: 'Jóváhagyva', elvetve: 'Elvetve', halasztva: 'Később dönt', tovabbitva: 'Továbbítva', hiba: 'Feldolgozás sikertelen' };
   const NYITOTT = ['uj', 'tervezet_kesz', 'halasztva', 'hiba'];
@@ -622,7 +682,7 @@
   async function paintDetail(box, id, refresh) {
     let d;
     try { d = await api('GET', `/api/levelek/${encodeURIComponent(id)}`); } catch (e) { box.replaceChildren(h('div', { class: 'kartya' }, h('p', { class: 'jelveny figy', role: 'alert', text: e.message }))); return; }
-    const l = d.level, t = d.tervezet, b = l.besorolas, jg = d.jogi;
+    const l = d.level, t = d.tervezet, b = l.besorolas, jg = d.jogi, ar = d.archivum;
     const nyitott = NYITOTT.includes(l.allapot);
     const lezar = async () => { await refresh(); };
     const parts = [];
@@ -632,6 +692,8 @@
       b?.gyanus_utasitas ? h('p', { class: 'jelveny figy', role: 'alert', text: 'A levél a rendszernek szóló utasításnak tűnő szöveget tartalmaz. Az ügynök ezt nem követte (a levél tartalma adat, nem utasítás), de a levelet óvatosan kezelje.' }) : null,
       h('div', { class: 'cimke-sor' }, levelJelek(b), b?.hatarido ? h('span', { class: 'jelveny', text: `Határidő: ${b.hatarido}` }) : null, b?.hangnem === 'feszult' ? h('span', { class: 'jelveny', text: 'Feszült hangnem' }) : null),
       h('pre', { class: 'level-szoveg', tabindex: '0', 'aria-label': 'A levél szövege', text: l.szoveg }),
+      ar?.ellentmondasok?.length ? h('div', { class: 'kartya', role: 'alert' }, h('p', { class: 'jelveny figy', text: `Az Archívum ${ar.ellentmondasok.length} ponton ellentmondást jelez a korábbi közlésekkel:` }), h('ul', { class: 'lista' }, ar.ellentmondasok.map(c => h('li', {}, h('strong', { text: `${c.kiadva || ''}: ${c.kozles_cim || 'korábbi közlés'}` }), h('span', { text: `A tervezetben: „${c.uj_reszlet}”` }), h('span', { text: `Korábban: „${c.regi_reszlet}”` }), c.indoklas ? h('span', { class: 'meta', text: c.indoklas }) : null, h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: () => openKozles(c.kozles_id), text: 'A korábbi közlés megnyitása' })))))) : null,
+      ar?.korabbi?.length ? h('div', {}, h('h3', { text: 'Korábbi közlések erről' }), h('ul', { class: 'lista' }, ar.korabbi.map(k => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openKozles(k.id), onkeydown: (e) => { if (e.key === 'Enter') openKozles(k.id); } }, h('strong', { text: `${k.kiadva}: ${k.cim}` }), h('span', { class: 'meta', text: k.fajta }), h('span', { text: k.kivonat })))), (ar.megjegyzes || (!d.ai ? 'AI nélkül az Archívum nem ítél ellentmondásról: az előzmények megmutatva, az összevetés az Öné.' : null)) ? h('p', { class: 'sugo', text: ar.megjegyzes || 'AI nélkül az Archívum nem ítél ellentmondásról: az előzmények megmutatva, az összevetés az Öné.' }) : null) : null,
       jg ? h('div', { class: 'sor' }, kockazatJelveny(jg.besorolas, 'Jogi vélemény a tervezetre: '), jg.jogasz_javasolt ? h('span', { class: 'jelveny figy', text: 'Jogász bevonása javasolt' }) : null, h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(jg.anyag_id), text: 'A jogi vélemény megnyitása' }))
         : (l.anyag_id && nyitott ? h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: kerJogit(l.anyag_id, lezar), text: 'Jogi vélemény kérése a tervezetre' })) : null),
       b ? h('p', { class: 'meta', text: `Téma: ${b.tema} · ${b.indoklas}${b.bizonytalan ? ' · A besorolás bizonytalan.' : ''}` }) : null));

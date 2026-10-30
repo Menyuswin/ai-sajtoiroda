@@ -1,6 +1,6 @@
 # Az Archívum- és Tudásmenedzsment ügynök terve
 
-*Állapot: **terv, jóváhagyásra vár** (2026-10-30). Kiegészítő ügynök (`agents/06-archivum.yaml`). A Dokumentumtárra (`docs/09`) épül, és a Kapcsolattartó, a Felkészítő és a Közösségi média használja majd (`docs/10`, felelősségi mátrix).*
+*Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 8. fejezetet). Kiegészítő ügynök (`agents/06-archivum.yaml`). A Dokumentumtárra (`docs/09`) épül, és a Kapcsolattartó, a Felkészítő és a Közösségi média használja majd (`docs/10`, felelősségi mátrix).*
 
 ## 1. A cél, egy példával
 
@@ -57,3 +57,22 @@ Az Archívum a szervezet **intézményi emlékezete**: mit mondtunk ki, mikor, k
 4. **Régi közlések kézi felvitele** (cím, dátum, fajta, szöveg)? (Ajánlott.)
 5. **Megőrzés: 36 hónap**, bármikor törölhető és exportálható; legfeljebb 5000 közlés?
 6. **A tartalmat csak a vezető látja**, az üzemeltető csak darabszámot; napi 10 AI-s ellenőrzés? (Ajánlott.)
+
+## 8. Mi készült el (2026-10-30)
+
+A tulajdonos mind a hat pontot elfogadta (automatikus nyilvántartás médium és címtartomány nélküli e-mail-címmel, egy keresés, az ellentmondás-ítélet csak AI-val és idézettel, kézi felvitel, 36 hónapos megőrzés, a tartalmat csak a vezető látja).
+
+- **Közlés-nyilvántartás** (`migrations/0008`, `src/cloudflare/archivum-store.js`): a jóváhagyott levélválasz és a kiküldött meghívó **a küldés után automatikusan** bekerül (a tervezet, az elvetett és a még jóváhagyásra váró nem). A címzettnek csak a **médiuma és a címtartománya** tárolódik, a teljes e-mail-cím nem. A közlés az adatbázis szintjén **nem módosítható** (törölni csak a vezető vagy a megőrzési idő lejárta után lehet). Ugyanaz a forrás kétszer nem kerül be; a meghívószöveg ugyanahhoz az eseményhez egyszer, a megváltozott szöveg új közlésként. Korlát: 5000 közlés; megőrzés: `megorzes.kozles_honap` (alapértelmezés 36 hónap), az ütemező törli a lejártakat.
+- **Keresés:** egy keresőmező a közlések, a Dokumentumtár és az ügynökök anyagai fölött (szó alapú, ragozás-tűrő), szűrés fajtára és időszakra; **idővonal** egy témához; kézi felvitel (ellenőrzött dátum, nem lehet jövőbeli); export CSV-ben (képletkarakter-védelemmel); törlés (naplózott, a keresőindexből is).
+- **Korábbi közlések a tervezet mellett:** a Bejövő levélrészletén „Korábbi közlések erről” (a program találatai, AI nélkül is).
+- **Ellentmondás-jelzés (AI-val):** a tervezetet és a találatként előkerült korábbi közléseket a modell veti össze; a jelzés csak akkor marad meg, ha **mindkét idézet szó szerint** szerepel (a tervezetben, illetve a megadott közlésben), különben törlődik. Találatnál kiemelt figyelmeztetés a levélrészleten, és jelzés-átadás az Archívumtól a Kapcsolattartónak. **AI nélkül az Archívum nem ítél ellentmondásról**, ezt kimondja. Napi korlát: 10 ellenőrzés; hibánál vagy a korlát elérésekor az előzmények megmaradnak.
+- **Átadás-feldolgozó:** az Archívumnak szóló kérdésre kivonatos összefoglalót ad a találatokról.
+- **Hozzáférés:** a közlések és az archívum tartalma csak a vezetőnek; az üzemeltető a darabszámot látja.
+- **Felület:** Archívum asztal (keresés, régi közlés felvitele, idővonal, legutóbbi közlések, export), a közlés megnyitása törlési lehetőséggel, „Korábbi közlések erről” és az ellentmondás-figyelmeztetés a Bejövőben.
+
+**Korlátok (őszintén):**
+- Az ellentmondás-ellenőrzés **minősége nem mért** (hamis API-val tesztelt). Az idézet-ellenőrzés a hamis jelzéseket kiszűri, a **kihagyott** ellentmondásokat viszont nem: a nyugalom nem garancia.
+- A keresés **szó alapú**: a jelentés szerint hasonló, de más szavakat használó közlést nem biztos, hogy megtalálja.
+- A Felkészítő csomag és a Közösségi média még nem használja a közléseket forrásként (következő lépés); az eseménymeghívók ellentmondás-vizsgálata nincs.
+- A **nem ebben a rendszerben** kiadott közlések csak akkor vannak meg, ha a vezető felviszi őket; a visszamenőleges feltöltés kézi munka.
+- A közlések személyes adatot tartalmazhatnak (a szöveg): a megőrzési idő és a GDPR-kérdések jogászi átnézése javasolt.

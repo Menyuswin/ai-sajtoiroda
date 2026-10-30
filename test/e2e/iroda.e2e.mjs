@@ -241,6 +241,22 @@ await page.locator('.level-lista li', { hasText: 'Hatósági' }).click(); await 
 log('Bejövő jogi jelvény:', (await page.locator('.level-reszlet .jelveny:has-text("Jogi vélemény")').first().innerText()).slice(0, 60));
 await shot('27-bejovo-jogi');
 
+// Archívum: régi közlés felvitele, keresés, korábbi közlések a Bejövőben
+await page.goto(BASE + '#/asztal/archivum'); await page.waitForSelector('#ar-q');
+log('Archívum sávjai:', (await page.locator('.harom h2').allInnerTexts()).join(', '));
+await page.fill('#ak-cim', 'Nyilatkozat a várólistáról'); await page.fill('#ak-datum', '2026-07-10'); await page.selectOption('#ak-fajta', 'nyilatkozat'); await page.fill('#ak-medium', 'Hírportál');
+await page.fill('#ak-szoveg', 'A várólista 2027 végéig nem csökken, mert a kapacitás nem bővül.'); await page.click('button:text-is("Felvétel")'); await page.waitForSelector('.sav:has(h2:has-text("Idővonal")) li');
+await page.fill('#ar-q', 'várólistáról'); await page.click('button:text-is("Keresés")'); await page.waitForSelector('.ar-talalat li');
+log('archívum találatok:', (await page.locator('.ar-talalat h3').allInnerTexts()).join(' | '));
+await shot('28-archivum');
+await page.locator('.ar-talalat li').first().click(); await page.waitForSelector('.nezo .level-szoveg');
+log('közlés megnyitva:', (await page.locator('.nezo h2').innerText()), '|', (await page.locator('.nezo .meta').nth(1).innerText()).slice(0, 60));
+await page.keyboard.press('Escape');
+await page.goto(BASE + '#/bejovo'); await page.waitForSelector('.level-lista li');
+await page.locator('.level-lista li', { hasText: 'várólisták' }).click(); await page.waitForSelector('h3:has-text("Korábbi közlések erről")');
+log('Bejövő korábbi közlések:', await page.locator('h3:has-text("Korábbi közlések erről") + ul li').count(), '|', (await page.locator('h3:has-text("Korábbi közlések erről") ~ p.sugo').first().innerText()).slice(0, 70));
+await shot('29-bejovo-archivum');
+
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');
 await page.evaluate(() => navigator.serviceWorker.ready);

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 export const EVENT_TYPES = new Set([
   'cikk_besorolas', 'trendjelzes', 'voros_vonal_jelzes', 'riasztas_elkuldve', 'szemle_elkuldve',
-  'vezeto_visszajelzes', 'utasitas', 'javaslat', 'level', 'valasz_tervezet', 'csomag', 'naptar_modositas', 'kozles', 'atadas', 'dokumentum', 'dontes', 'kerdes', 'profil_modositas', 'ugynok_ki_be_kapcsolas', 'hiba', 'kimeno_elutasitva', 'futas',
+  'vezeto_visszajelzes', 'utasitas', 'javaslat', 'level', 'valasz_tervezet', 'csomag', 'naptar_modositas', 'kozles', 'atadas', 'dokumentum', 'dontes', 'kerdes', 'profil_modositas', 'ugynok_ki_be_kapcsolas', 'hiba', 'kimeno_elutasitva', 'futas', 'belepes',
 ]);
 
 export function createFileLog({ dir, tenantId, now = () => new Date() }) {

@@ -36,7 +36,7 @@
     catch { throw new Error('Nincs kapcsolat a szerverrel. A bizalmas adatok miatt az iroda kapcsolat nélkül nem mutat tartalmat; az oldal a kapcsolat visszatértével újratölthető.'); }
     const ct = res.headers.get('Content-Type') || '';
     const data = ct.includes('json') ? await res.json() : await res.text();
-    if (!res.ok) throw new Error((data && data.hiba) || `Hiba (${res.status})`);
+    if (!res.ok) { const err = new Error((data && data.hiba) || `Hiba (${res.status})`); err.status = res.status; err.belepes = data && data.belepes; throw err; }
     return data;
   }
   const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message, true); } };
@@ -77,7 +77,8 @@
         i.mod.ai === 'mock' ? h('span', { class: 'jelveny', title: 'Az AI-kapcsolat nincs bekapcsolva; szabályalapú elemzés fut.', text: 'AI nélkül (szabályalapú)' }) : null,
         i.ugyfelek.length > 1 ? h('select', { 'aria-label': 'Ügyfél', onchange: (e) => { state.tenant = e.target.value; boot(); } }, i.ugyfelek.map(u => h('option', { value: u, ...(u === i.ugyfel.id ? { selected: true } : {}), text: u }))) : null,
         installEvent ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { installEvent.prompt(); await installEvent.userChoice; installEvent = null; renderHeader((location.hash || '#/').slice(2)); }), text: 'Telepítés a gépre' }) : null,
-        h('span', { text: `${i.felhasznalo.email} (${i.felhasznalo.szerep === 'uzemelteto' ? 'üzemeltető' : 'vezető'})` })));
+        h('span', { text: `${i.felhasznalo.email} (${i.felhasznalo.szerep === 'uzemelteto' ? 'üzemeltető' : 'vezető'})` }),
+        i.mod.belepes === 'jelmondat' ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { await api('POST', '/api/kilepes', {}); state.iroda = null; $head.replaceChildren(); loginForm(); }), text: 'Kilépés' }) : null));
   }
   const isCurrent = (href, route) => (href === '#/' ? route === '' || route.startsWith('asztal') || route.startsWith('esemeny') || route === 'sajtolista' : route.startsWith(href.slice(2)));
 
@@ -87,7 +88,24 @@
       state.tenant = state.iroda.ugyfel.id;
       document.title = `${state.iroda.ugyfel.megnevezes}: sajtóiroda`;
       route();
-    } catch (e) { $main.replaceChildren(h('p', { class: 'toltes', role: 'alert', text: e.message })); }
+    } catch (e) {
+      if (e.status === 401 && e.belepes === 'jelmondat') { loginForm(); return; }
+      $main.replaceChildren(h('p', { class: 'toltes', role: 'alert', text: e.message }));
+    }
+  }
+  // Saját belépés (jelmondat). A jelmondat nem kerül tárolásra a böngészőben; a munkamenet HttpOnly süti.
+  function loginForm() {
+    const pw = h('input', { type: 'password', id: 'jelmondat', autocomplete: 'current-password', 'aria-label': 'Jelmondat', maxlength: '200' });
+    const msg = h('p', { class: 'meta', role: 'alert' });
+    const go = async () => {
+      msg.textContent = '';
+      try { await api('POST', '/api/belepes', { jelmondat: pw.value }); pw.value = ''; await boot(); }
+      catch (err) { msg.textContent = err.message; pw.value = ''; pw.focus(); }
+    };
+    pw.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') go(); });
+    $main.replaceChildren(h('div', { class: 'kartya' }, h('h1', { text: 'Belépés' }), h('p', { class: 'sugo', text: 'Írja be a jelmondatot.' }),
+      h('div', { class: 'mezo' }, h('label', { for: 'jelmondat', text: 'Jelmondat' }), pw), h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: go, text: 'Belépés' })), msg));
+    pw.focus();
   }
   const route = guard(async () => {
     if (!state.iroda) return;

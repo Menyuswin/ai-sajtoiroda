@@ -9,7 +9,7 @@ A telepítést azért bontjuk szakaszokra, mert minden szakasz **önállóan ell
 | # | Szakasz | Mit bizonyít | Kockázat |
 |---|---------|--------------|----------|
 | 1 | Cloudflare-fiók, adatbázis, első telepítés **zárva** | a Worker és a D1 él | nincs (az oldal zárva marad) |
-| 2 | Belépés (Cloudflare Access) és saját domén | csak Ön léphet be | alacsony |
+| 2 | Belépés (saját jelmondat) és saját domén | csak Ön léphet be | alacsony |
 | 3 | Nulladik ügyfél betöltése, ingyenes „mock” üzemmód | az iroda éles tárhelyen működik, AI nélkül | nincs |
 | 4 | AI-kulcs és minőségpróba (30 cikk) | az AI tényleg jól dolgozik-e | kis költség |
 | 5 | iCloud-levélhíd | a levelek beérkeznek (csak olvasás) | alacsony |
@@ -43,27 +43,20 @@ A kimenet egy `https://ai-sajtoiroda.<fiók>.workers.dev` címet ad. Ha megnyitj
 
 **Miért így:** először az üres, zárt váz kerül fel. Így az adatbázis és a Worker működését az éles adatok nélkül ellenőrizzük.
 
-## 2. Belépés: Cloudflare Access, és a saját domén
+## 2. Belépés: saját jelmondatos belépés (Access nélkül)
 
-**2/a. Domén (javaslat vitaalapnak):** egy aldomén a manyai.hu-n, pl. `iroda.manyai.hu`. A manyai.hu DNS-e már a Cloudflare-nél van, a weboldala (Pages) külön projekt, ezt nem érinti. A `wrangler.toml`-ba kerül:
-```toml
-routes = [{ pattern = "iroda.manyai.hu", custom_domain = true }]
+A Cloudflare Access ingyenes csomagja bankkártya megadását kéri, ezért a tulajdonos döntése szerint **saját belépés** készült (`src/api/session.js`). Működése: egyetlen felhasználó, egy hosszú **jelmondat** (Workers-titok), a belépés után aláírt, böngészőből nem olvasható (HttpOnly, Secure, SameSite=Strict) süti, 12 óráig érvényes. A jelmondat cseréje minden munkamenetet érvénytelenít. **5 hibás próba után 15 percre zárol** (az egész belépésre, mert egyetlen felhasználó van: a támadó így legfeljebb kizárhatja Önt 15 percre, bejutni nem tud). Minden belépési kísérlet a naplóba kerül (`belepes`).
+
+**Fontos különbség az Accesshez képest:** nincs e-mailes kód, a védelem a jelmondat erősségén múlik. Ezért **legalább 20 karakter** kell (rövidebbel a belépés nem engedi magát bekapcsolni), és legyen **6–8 véletlen szó** (pl. „korte-alma-szel-kert-nyar-hold-…”, de ne ez), amit sehol máshol nem használ. A jelmondatot jelszókezelőben tárolja. Külső ügyfeleknél később az Access vagy valódi ügyfél-azonosítás kell.
+
+Beállítás (a `wrangler.toml` `[vars]` része már tartalmazza a `SAJTOIRODA_BELEPES_EMAIL` helyét: írja be az e-mail-címét, ennek a szerepét a 3. lépés SQL-je adja):
+
+```bash
+npx wrangler secret put SAJTOIRODA_JELMONDAT     # a jelmondat beillesztése, Enter
+npx wrangler deploy
 ```
-Ezt én beírom, ha jóváhagyja a nevet; utána újra `npx wrangler deploy`. (A domén a Worker nevében az ügyfélhez kötődik: `node src/cli.js domen-sql --domen iroda.manyai.hu --ugyfel manyai-zoltan`, lásd a 3. lépést.)
 
-**2/b. Access:** Cloudflare irányítópult → **Zero Trust** (ha először jár itt, adjon egy csapatnevet, az ingyenes csomag elég, legfeljebb 50 felhasználó) → **Access → Applications → Add → Self-hosted**:
-- Application domain: `iroda.manyai.hu`
-- Policy: *Allow*, Include → *Emails* → `zoltan.manyai@icloud.com`
-- Belépési mód: *One-time PIN* (e-mailben kapott kód; ez az alapértelmezett)
-
-Mentés után az alkalmazás oldalán látja az **Application Audience (AUD) Tag** értéket, a Zero Trust főoldalán pedig a **csapat-domént** (`valami.cloudflareaccess.com`). A kettőt a `wrangler.toml` `[vars]` részébe kell írni:
-```toml
-ACCESS_TEAM_DOMAIN = "valami.cloudflareaccess.com"
-ACCESS_AUD = "a-hosszu-aud-ertek"
-```
-Majd újra `npx wrangler deploy`. Ezután az oldal megnyitásakor az e-mail-címét kéri, és kódot küld.
-
-**Miért kettős a védelem:** az Access a kapu (ki jöhet be), az iroda pedig a saját táblájából dönti el, hogy a belépő *vezető* vagy *üzemeltető*, és melyik ügyfelet látja. A kettő együtt zár.
+Ha a jövőben mégis az Access-t használja, az `ACCESS_TEAM_DOMAIN` és `ACCESS_AUD` kitöltésekor a jelmondatos belépés automatikusan kikapcsol.
 
 ## 3. A nulladik ügyfél betöltése
 
@@ -82,7 +75,7 @@ npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/domen.sql
 (Ha a SQL-t a `--file` nem fogadná, a `--command "$(…)"` forma is jó.) Ezután nyissa meg az irodát: be kell tudnia lépni, és látnia kell a nyolc asztalt. **Még mock üzemmódban vagyunk** (`SAJTOIRODA_LLM = "mock"`): a besorolás és az összefoglaló szabályalapú, a szövegek váz. Az ütemező óránként fut (`30 * * * *`); a Beállításokban megadott időpontban készül a napi szemle, a Cloudflare-ben pedig a Worker naplójában (Workers → ai-sajtoiroda → Logs) látszik a futás.
 
 **Ellenőrzőlista (3. szakasz vége):**
-- belép e-mailes kóddal, a saját ügyfelét látja;
+- belép a jelmondattal, a saját ügyfelét látja;
 - a Beállításokban látszanak a kulcsszavak és a források;
 - legkésőbb a következő óra 30. percében a Monitoring fut (Napló nézet: „futás”);
 - a jelentések a „kimenő” (próba-) mappába kerülnek, **nem mennek ki**; a Jelentések nézetben olvashatók.

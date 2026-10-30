@@ -33,7 +33,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 | Archívum Ügynök (`docs/15`, `src/agents/archivum/`) | kész, tesztelt: a kiadott közlések változtathatatlan nyilvántartása (e-mail-cím nélkül), egységes keresés, idővonal, korábbi közlések a tervezet mellett, AI-s ellentmondás-jelzés szó szerinti idézettel (AI nélkül nem ítél), megőrzés |
 | Közösségi média Ügynök (`docs/16`, `src/agents/kozossegi/`) | kész, tesztelt: posztjavaslat platformonként (Facebook, LinkedIn, Instagram, X), kommentkezelési útmutató, program által ellenőrzött platform-szabályok, automatikus jogi vélemény és Archívum-összevetés, „Másolás” és „Kiadtam” (→ Archívum „poszt”); jelzés a Monitoringtól, a Kapcsolattartótól (ismétlődő/feszült/vörös vonalas megkeresés + Bejövő-gomb), a Proaktívtól és kézi digitális jelzésből; **a Monitoring közösségi csatornái** (nyilvános RSS/Atom, a szakterületi kulcsszavak szerint) külön közösségi szemlét és igény szerinti jelentést adnak; semmit nem tesz közzé; X/Facebook/Instagram/TikTok közvetlen olvasása nincs |
 
-155 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
+159 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 
@@ -51,7 +51,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - **Platform: vegyes.** A motor Cloudflare-en (Workers + D1), a Make-lehetőség megmarad (levélréteg / leválasztott ügyfélpéldány). A Make Free csomagja (2 forgatókönyv, 1000 művelet/hó) foglalt és kevés; fizetős csomag nincs beállítva.
 - **Nulladik ügyfél:** a tulajdonos maga (`monitoring/nulladik-ugyfel.yaml`, a jelentések a `zoltan.manyai@icloud.com` címre mennének; a címzett ügyfelenként állítható).
 - **Leválaszthatóság:** a motor általános, minden ügyfélfüggő dolog a profilban van; a kiadható csomag = motor + profilsablon + promptok + naplóséma (`docs/06`, 4.8). Az ügyfél felhasználási jogot kaphat, és a saját területéhez igazíthatja.
-- **Belépés:** Cloudflare Access (e-mailes egyszeri kód); szerepek: vezető, üzemeltető. A címzettet és az AI-jelzést csak az üzemeltető módosíthatja.
+- **Belépés:** Cloudflare Access (e-mailes egyszeri kód) *vagy*, ha az Access nincs beállítva (az ingyenes csomag bankkártyát kér, a tulajdonos nem kívánja), **saját jelmondatos belépés** (`src/api/session.js`, `docs/17` 2. fejezet: egyetlen felhasználó, 12 órás aláírt süti, 5 hibás próba után 15 perc zár, naplózott); szerepek: vezető, üzemeltető. A címzettet és az AI-jelzést csak az üzemeltető módosíthatja.
 - **Commit-azonosság:** `ClaudeMZ <noreply@anthropic.com>` (a repóban beállítva: `git config user.name ClaudeMZ`, `git config user.email noreply@anthropic.com`). Az első két commit `Menyuswin` szerzővel maradt.
 
 ## Függő jóváhagyások és nyitott kérdések (ezekre vár a tulajdonos)
@@ -89,8 +89,8 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - **Promptok:** a `prompts` objektum kulcsai: `classify`, `synthesize`, `instruct`, `qa`, `docqa`, `keywords`, `letterClassify`, `letterReply`, `briefing`, `proposal`, `eventConcept`, `legal`, `consistency`, `social`. Új prompt három helyre kell: `src/worker/index.js` (import), `src/dev/serve.js`, `test/helpers.js` (`readPrompts`). Ha valahol hiányzik, a hívás csendben tartalékra esik, ezért teszt kell hozzá.
 - **Bizalmas anyag:** a `src/api/router.js` `SENSITIVE_TYPES` listája (valasz_tervezet, felkeszito_csomag, megszolalasi_javaslat, esemeny_koncepcio, esemeny_utomunka, jogi_velemeny, poszt_javaslat): az itt szereplő anyagtípusokat csak a vezető olvashatja; új, bizalmas anyagtípust ide is fel kell venni.
 - **Közös védelmek, amelyeket minden új ügynöknek át kell vennie:** napi korlát (a `countSince` mintára), a tartalmat csak a vezető látja (az üzemeltető csak darabszámot), a forrásjelölés-ellenőrzés (`src/agents/common/sources.js`: `stripInvalidRefs`), `[KITÖLTENDŐ]` a nem alátámasztott részre, a „nem küldhető AI-nak” szűrés a dokumentumkeresésnél, a bemenet adat és nem utasítás (zárt műveletlista), minden döntés a naplóba.
-- **Migrációk:** `migrations/0001`–`0009` (init, iroda, átadások, dokumentumok, levelek, proaktív, események, archívum, közösségi). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
-- **Tesztelés:** `npm test` (155, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre, `test/jogi.test.js` a Jogira, `test/archivum.test.js` az Archívumra, `test/kozossegi.test.js` a Közösségi médiára és a Monitoring közösségi csatornáira; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
+- **Migrációk:** `migrations/0001`–`0010` (init, iroda, átadások, dokumentumok, levelek, proaktív, események, archívum, közösségi, belépés). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
+- **Tesztelés:** `npm test` (159, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre, `test/jogi.test.js` a Jogira, `test/archivum.test.js` az Archívumra, `test/kozossegi.test.js` a Közösségi médiára és a Monitoring közösségi csatornáira; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
 - **Felhőmunkamenet apróságai:** a Playwright előre telepített (helyi `npm install playwright` elrontja, nem kell); `tools/levelhid` külön csomag (saját `npm install`); a Playwrightnál a `has-text` kis-nagybetű-független részszövegre illeszt (pl. „Felvétel” a „felvétele” gombra is): pontos illesztéshez `:text-is(...)`.
 
 **Mi nincs még kipróbálva élesben (összefoglalva):** valódi hírforrások, valódi AI-minőség, Cloudflare Worker/D1/Access/R2 élesben, valódi iCloud/Gmail/Exchange, levélküldés, telefon. A részletek a „Korlátok” szakaszban.
@@ -107,6 +107,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - A **Jogi ügynök** szabályalapú rétege kulcsszavas és mintaalapú (tévedhet mindkét irányba), az AI-minőség nem mért, és nem jogi tanács: a jogász nem pótolható. Részletek: `docs/14`, 8. fejezet.
 - Az **Archívum** ellentmondás-ellenőrzésének minősége nem mért; az idézet-ellenőrzés a hamis jelzést kiszűri, a kihagyottat nem; a keresés szó alapú. Részletek: `docs/15`, 8. fejezet.
 - A **Közösségi média** AI-s szövegeinek minősége és hangneme nem mért (hamis API-val tesztelt); AI nélkül csak váz. **Az X-et, a Facebookot, az Instagramot és a TikTokot az iroda nem olvassa közvetlenül** (fizetős API kell): a Monitoring közösségi csatornái csak nyilvános RSS/Atom hírcsatornákat (YouTube, Reddit, Mastodon, Bluesky stb.) látnak, a többit a vezető kézi digitális jelzésként viszi fel; valódi csatornákon nem próbáltuk. A hosszkorlátok ajánlott határok; az automatikus indítás küszöbei (3 megkeresés/7 nap, negatív és nagy elérésű jelzés, minden Monitoring-riasztás) kiindulóértékek: az első éles heteken a zajt ellenőrizni kell. Részletek: `docs/16`, 10. fejezet.
+- A **jelmondatos belépés** védelme a jelmondat erősségén múlik (nincs e-mailes kód); külső ügyfeleknek nem elég. Valódi Cloudflare-en még nem próbáltuk.
 - A **Cloudflare Access** aláírás-ellenőrzése helyben generált kulccsal tesztelt, valódi Access-szel nem.
 - Cloudflare ingyenes csomagján a külső kérések száma (invokációnként) szűk lehet; több hírforrásnál fizetős Workers ajánlott.
 
@@ -122,7 +123,7 @@ git config user.name ClaudeMZ && git config user.email noreply@anthropic.com
 
 # 3. Függőségek és tesztek
 npm install
-npm test                      # 155 teszt, hálózat nélkül
+npm test                      # 159 teszt, hálózat nélkül
 
 # 4. Az iroda kipróbálása a böngészőben (kitalált adatokkal, memóriában)
 npm run iroda                 # http://127.0.0.1:8787/ ;  --uzemelteto: üzemeltetői nézet

@@ -41,10 +41,19 @@ export async function verifyAccessJwt(token, { teamDomain, aud, fetchImpl = fetc
   } catch { return null; }
 }
 
-// { email } | { status, hiba }
+import { sessionLogin, passphraseUsable, verifySession } from './session.js';
+
+// { email, mod } | { status, hiba, belepes? }
+// Sorrend: fejlesztői próbabelépés (csak fejlesztéshez), Cloudflare Access, végül a saját belépés (jelmondat, egyetlen felhasználó).
 export async function identify(request, env, { fetchImpl, nowMs } = {}) {
   if (env.SAJTOIRODA_DEV_AUTH === '1' && env.SAJTOIRODA_DEV_USER) return { email: String(env.SAJTOIRODA_DEV_USER).toLowerCase() };
-  if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return { status: 503, hiba: 'A belépés nincs beállítva, ezért az oldal zárva van.' };
+  if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) {
+    if (sessionLogin(env) && passphraseUsable(env)) {
+      const email = await verifySession(request.headers.get('Cookie'), { secret: env.SAJTOIRODA_JELMONDAT, email: env.SAJTOIRODA_BELEPES_EMAIL, nowMs });
+      return email ? { email, mod: 'jelmondat' } : { status: 401, hiba: 'Belépés szükséges.', belepes: 'jelmondat' };
+    }
+    return { status: 503, hiba: 'A belépés nincs beállítva, ezért az oldal zárva van.' };
+  }
   const email = await verifyAccessJwt(request.headers.get('Cf-Access-Jwt-Assertion'), { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD, fetchImpl, nowMs });
-  return email ? { email } : { status: 401, hiba: 'Belépés szükséges.' };
+  return email ? { email, mod: 'access' } : { status: 401, hiba: 'Belépés szükséges.' };
 }

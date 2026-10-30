@@ -33,6 +33,7 @@ import { EVENT_FORMATS, LIMITS as EVENT_LIMITS, RESPONSES } from '../cloudflare/
 import { createPost, decidePost, recordPublished, addSignal, DAILY_LIMIT as POST_LIMIT, SIGNAL_LIMIT_DAY } from '../agents/kozossegi/index.js';
 import { PLATFORM_LIMITS } from '../agents/kozossegi/rules.js';
 import { SocialError, POST_STATES, MOODS, REACH } from '../cloudflare/kozossegi-store.js';
+import { sessionLogin, passphraseUsable, passphraseOk, issueSession, setCookie, clearCookie, createThrottle } from './session.js';
 import { validateMailbox, normalizeSocial, SOCIAL_PLATFORMS, SOURCE_PLATFORMS } from '../core/profile.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
@@ -132,6 +133,36 @@ async function bridgeIngest(request, env, deps, tenantId, now) {
   return json(result);
 }
 
+async function sessionEndpoints(request, env, deps, url, now) {
+  const headers = (cookie) => ({ ...SECURITY, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...(cookie ? { 'Set-Cookie': cookie } : {}) });
+  const reply = (data, status = 200, cookie = null) => new Response(JSON.stringify(data), { status, headers: headers(cookie) });
+  if (env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD) throw new HttpError(404, 'Nem található.');
+  if (request.headers.get('X-Requested-With') !== 'iroda') throw new HttpError(403, 'Érvénytelen kérés.');
+  const origin = request.headers.get('Origin');
+  if (origin && new URL(origin).host !== url.host) throw new HttpError(403, 'Érvénytelen kérés eredete.');
+  if (url.pathname === '/api/kilepes') return reply({ ok: true }, 200, clearCookie());
+  if (!sessionLogin(env) || !passphraseUsable(env)) throw new HttpError(503, 'A belépés nincs beállítva, ezért az oldal zárva van.');
+  if (!(request.headers.get('Content-Type') || '').includes('application/json')) throw new HttpError(415, 'JSON tartalom szükséges.');
+  let b; try { b = await request.json(); } catch { throw new HttpError(400, 'Hibás JSON.'); }
+  const access = createAccessRepo({ db: env.DB });
+  const email = String(env.SAJTOIRODA_BELEPES_EMAIL).toLowerCase();
+  const roles = await access.rolesFor(email);
+  const tenantId = (await access.tenantForHost(url.host)) || roles[0]?.tenantId;
+  const log = tenantId ? createD1Log({ db: env.DB, tenantId, now }) : null;
+  const throttle = createThrottle(env.DB, now);
+  const wait = await throttle.locked();
+  if (wait) { await log?.append({ szereplo: 'rendszer', tipus: 'belepes', tartalom: { eredmeny: 'zarolva' } }); return reply({ hiba: `Túl sok sikertelen próbálkozás. Próbálja újra ${wait} perc múlva.` }, 429); }
+  if (!(await passphraseOk(b?.jelmondat, env.SAJTOIRODA_JELMONDAT))) {
+    const f = await throttle.fail();
+    await log?.append({ szereplo: 'rendszer', tipus: 'belepes', tartalom: { eredmeny: 'hibas_jelmondat', zarolva: f.zarolva } });
+    return reply({ hiba: f.zarolva ? 'Túl sok sikertelen próbálkozás. A belépés 15 percre zárolva van.' : 'Hibás jelmondat.' }, 401);
+  }
+  if (!roles.length) return reply({ hiba: 'Ehhez az irodához nincs hozzáférése.' }, 403);
+  await throttle.ok();
+  await log?.append({ szereplo: `ember:${email}`, tipus: 'belepes', tartalom: { eredmeny: 'sikeres' } });
+  return reply({ ok: true }, 200, setCookie(await issueSession({ secret: env.SAJTOIRODA_JELMONDAT, email, nowMs: now().getTime() })));
+}
+
 export async function handleRequest(request, env, deps = {}) {
   try { return await route(request, env, deps); }
   catch (e) {
@@ -156,9 +187,12 @@ async function route(request, env, deps) {
   if (method === 'POST' && (hid = url.pathname.match(/^\/hid\/([a-z0-9][a-z0-9-]{1,62})\/levelek$/))) return bridgeIngest(request, env, deps, hid[1], now);
   if (!url.pathname.startsWith('/api/')) return json({ hiba: 'Nem található.' }, 404);
 
+  // Saját belépés (jelmondat): csak akkor él, ha a Cloudflare Access nincs beállítva.
+  if (method === 'POST' && (url.pathname === '/api/belepes' || url.pathname === '/api/kilepes')) return sessionEndpoints(request, env, deps, url, now);
+
   // Belépés és jogosultság.
   const who = await identify(request, env, { fetchImpl: deps.accessFetch, nowMs: now().getTime() });
-  if (!who.email) return json({ hiba: who.hiba }, who.status);
+  if (!who.email) return json({ hiba: who.hiba, ...(who.belepes ? { belepes: who.belepes } : {}) }, who.status);
   const access = createAccessRepo({ db: env.DB });
   const roles = await access.rolesFor(who.email);
   if (!roles.length) return json({ hiba: 'Ehhez az irodához nincs hozzáférése.' }, 403);
@@ -217,7 +251,7 @@ async function route(request, env, deps) {
         utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'jogi' ? openHighRisk : a.id === 'esemenyszervezo' ? openEvents : a.id === 'kozossegi' ? openPosts : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
-      mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
+      mod: { elo: config.live, ai: llm.mode, belepes: who.mod || 'proba' }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
       ugyfelek: roles.map(r => r.tenantId) });
   }
   if (method === 'PUT' && p === '/api/iroda/elrendezes') {

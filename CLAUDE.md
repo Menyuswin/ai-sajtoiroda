@@ -66,7 +66,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 1. **Levélküldő szolgáltató kiválasztása** (P6): ezzel a jóváhagyott válaszok ténylegesen elmehetnek; addig a kimenő mappába kerülnek. Rövid összehasonlítás kell hozzá (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről).
 2. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), az iCloud-híd első valódi próbája (`tools/levelhid/README.md`), AI-kulcs és a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
-3. A bevezetési sorrend három szakasza elkészült. Következő: a kiegészítő ügynökök igény szerint (Archívum, Közösségi média, Jogi és kockázat). **A Jogi asztal már kap belső kérdéseket** (red flag, jogi gyanú, költség- és biztonsági kérdés), amelyek az érkezéséig várnak: ezért a Jogi ügynök a legindokoltabb következő (terv előbb).
+3. A bevezetési sorrend három szakasza elkészült. Következő: a kiegészítő ügynökök igény szerint (Archívum, Közösségi média, Jogi és kockázat). **A Jogi asztal már kap belső kérdéseket** (red flag, jogi gyanú, költség- és biztonsági kérdés), amelyek az érkezéséig várnak: ezért a Jogi ügynök a legindokoltabb következő: **terv kész, jóváhagyásra vár: `docs/14`** (a 7. fejezet hat pontja). A tulajdonos sorrendje: előbb az összes ügynök, utána az éles telepítés, végül a részletek (pl. a levélküldő szolgáltató, a telefon).
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
 ## Hol tartunk, és hol folytassuk (2026-10-30)
@@ -147,6 +147,7 @@ docs/10                   az ügynökök közötti átadások terve és felelős
 docs/11                   a postafiók-réteg és a Kapcsolattartó Ügynök terve és állapota (kész, telefon nélkül)
 docs/12                   a Felkészítő és a Proaktív ügynök terve és állapota (kész)
 docs/13                   az Eseményszervező ügynök terve és állapota (kész)
+docs/14                   a Jogi és kockázat ügynök terve (jóváhagyásra vár)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

@@ -6,6 +6,7 @@ import { classifyLetter } from './classify.js';
 import { buildDraft, hasPlaceholder } from './draft.js';
 import { agentActive } from '../../core/profile.js';
 import { escapeHtml } from '../../core/text.js';
+import { noteResponse } from '../esemenyszervezo/index.js';
 
 export const AGENT = 'kapcsolattarto';
 const WHO = `ugynok:${AGENT}`;
@@ -40,6 +41,7 @@ export async function processLetter(ctx, id) {
   await levelek.setProcessed(id, { besorolas: cls, anyagId: anyagId || null, allapot: 'tervezet_kesz' });
   await log.append({ szereplo: WHO, tipus: 'valasz_tervezet', hivatkozas: id, tartalom: { anyag_id: anyagId, modell: draft.modell, forrasok: draft.forrasok.length, kockazatok: draft.kockazatok.length } });
 
+  await noteResponse(ctx, letter); // ha a feladó meghívott egy nyitott eseményre, a válasz-javaslat az esemény meghívói közt is megjelenik
   if (cls.voros_vonal) {
     const subject = `Riasztás – vörös vonalba eső megkeresés – ${profile.megnevezes}`;
     const line = `Vörös vonalba eső levél érkezett: „${letter.targy}” (${letter.felado_nev || letter.felado}). A választervezet az asztalán vár.`;

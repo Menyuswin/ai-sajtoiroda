@@ -24,6 +24,8 @@ import { OCCASIONS } from '../agents/felkeszito/package.js';
 import { createProposal, decideProposal, DAILY_LIMIT as PROPOSAL_LIMIT } from '../agents/proaktiv/index.js';
 import { CalendarError, CAL_TYPES } from '../cloudflare/proaktiv-store.js';
 import { startOfDayIso } from '../agents/common/sources.js';
+import { createEvent, decideEvent, inviteCandidates, addInvites, sendInvites, setInviteResponse, createPostWork, importContacts, EventError, LIMITS_DAILY as EVENT_DAILY } from '../agents/esemenyszervezo/index.js';
+import { EVENT_FORMATS, LIMITS as EVENT_LIMITS, RESPONSES } from '../cloudflare/esemeny-store.js';
 import { validateMailbox } from '../core/profile.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
@@ -191,12 +193,13 @@ async function route(request, env, deps) {
     const agents = [];
     const letterCounts = await lctx.levelek.counts();
     const openProposals = await lctx.proactive.proposals.openCount();
+    const openEvents = await lctx.esemeny.events.openCount();
     for (const a of AGENTS) {
       const last = a.elerheto ? (await desk.anyagok.list({ ugynok: a.id, limit: 1 }))[0] : null;
       const aktiv = a.elerheto && agentActive(profile, a.id, now());
       agents.push({ id: a.id, nev: a.nev, munkanev: a.munkanev, szakasz: a.szakasz, elerheto: a.elerheto,
         allapot: !a.elerheto ? 'ures' : aktiv ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
+        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'esemenyszervezo' ? openEvents : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
       mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
@@ -226,6 +229,12 @@ async function route(request, env, deps) {
         utasitasok: [], anyagok: role === 'vezeto' ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok,
         munka: { tipus: 'kapcsolattarto', szamok: await lctx.levelek.counts(), postafiok: await mailboxStatus(lctx, env, profile), tartalom_lathato: role === 'vezeto',
           legutobbi: role === 'vezeto' ? (await lctx.levelek.list({ limit: 6 })) : [] } });
+    }
+    if (a.id === 'esemenyszervezo') {
+      const leader = role === 'vezeto';
+      return json({ ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null, utasitasok: [], anyagok: leader ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok,
+        munka: { tipus: 'esemenyszervezo', tartalom_lathato: leader, nyitott_db: await lctx.esemeny.events.openCount(), kapcsolat_db: await lctx.esemeny.contacts.count(), formatumok: EVENT_FORMATS, korlatok: { ...EVENT_DAILY, ...EVENT_LIMITS }, koncepcio_ma: await desk.anyagok.countSince('esemenyszervezo', 'esemeny_koncepcio', startOfDayIso(now())),
+          esemenyek: leader ? await lctx.esemeny.events.list({ limit: 50 }) : [] } });
     }
     if (a.id === 'felkeszito' || a.id === 'proaktiv') {
       const leader = role === 'vezeto';
@@ -500,6 +509,101 @@ async function route(request, env, deps) {
       await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: decodeURIComponent(m[1]), tartalom: { esemeny: 'torles' } });
       return json({ ok: true });
     }
+    throw new HttpError(404, 'Nem található.');
+  }
+
+  // ---- Eseményszervező: események, sajtólista, meghívók, ellenőrzőlista, utómunka (a tartalmat csak a vezető látja és kezeli)
+  if (p.startsWith('/api/esemenyek') || p.startsWith('/api/sajtolista') || p.startsWith('/api/meghivok')) {
+    if (role !== 'vezeto') throw new HttpError(403, 'Ezt csak a vezető kezelheti.');
+    const evErr = (e) => { if (e instanceof EventError) throw new HttpError(e.status, e.message); throw e; };
+    const E = lctx.esemeny;
+    const eventOr404 = async (id) => { const ev = await E.events.get(decodeURIComponent(id)); if (!ev) throw new HttpError(404, 'Nincs ilyen esemény.'); return ev; };
+    try {
+      if (method === 'GET' && p === '/api/esemenyek') return json({ esemenyek: await E.events.list({ allapot: url.searchParams.get('allapot') || null, limit: 100 }), formatumok: EVENT_FORMATS });
+      if (method === 'POST' && p === '/api/esemenyek') {
+        const b = await body();
+        const r = await createEvent(lctx, { tema: b.tema, formatum: b.formatum || 'sajtotajekoztato', idopont: b.idopont, helyszin: b.helyszin, keret: b.keret, javaslatId: b.javaslat_id || null, by: actor });
+        return json({ id: r.id, anyag_id: r.anyagId, cim: r.cim, tullepes: r.tullepes, modell: r.modell }, 201);
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)$/)) && method === 'GET') {
+        const ev = await eventOr404(m[1]);
+        return json({ esemeny: ev, meghivok: await E.invites.list(ev.id), koncepcio: ev.koncepcio_anyag_id ? { id: ev.koncepcio_anyag_id } : null, valaszok: RESPONSES, korlatok: { ...EVENT_DAILY, ...EVENT_LIMITS }, elo: config.live });
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/dontes$/)) && method === 'POST') {
+        const ev = await eventOr404(m[1]);
+        const r = await decideEvent(lctx, ev.id, { dontes: (await body()).dontes, by: actor });
+        if (r.status !== 200) throw new HttpError(r.status, r.hiba);
+        return json({ allapot: r.allapot });
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/meghivo$/)) && method === 'PUT') {
+        const ev = await eventOr404(m[1]);
+        if (ev.allapot !== 'szervezes') throw new HttpError(409, 'A meghívó szövege a jóváhagyott, szervezés alatti eseménynél szerkeszthető.');
+        const b = await body();
+        const targy = String(b.targy ?? '').replace(/\s+/g, ' ').trim().slice(0, 300), szoveg = String(b.szoveg ?? '').trim().slice(0, 5000);
+        if (!targy || !szoveg) throw new HttpError(400, 'A tárgy és a szöveg kötelező.');
+        await E.events.set(ev.id, { meghivo_targy: targy, meghivo_szoveg: szoveg });
+        await log.append({ szereplo: actor, tipus: 'dontes', hivatkozas: ev.id, tartalom: { dontes: 'meghivo_szoveg_mentve', fajta: 'esemeny' } });
+        return json({ ok: true });
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/jeloltek$/)) && method === 'GET') {
+        const ev = await eventOr404(m[1]);
+        return json({ jeloltek: await inviteCandidates(lctx, ev.id) });
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/meghivolista$/)) && method === 'POST') {
+        const ev = await eventOr404(m[1]);
+        return json(await addInvites(lctx, ev.id, (await body()).kapcsolatok, { by: actor }), 201);
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/kuldes$/)) && method === 'POST') {
+        const ev = await eventOr404(m[1]);
+        return json(await sendInvites(lctx, ev.id, { by: actor }));
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/ellenorzolista$/)) && method === 'PUT') {
+        const ev = await eventOr404(m[1]);
+        if (!['szervezes', 'lezajlott', 'utomunka'].includes(ev.allapot)) throw new HttpError(409, 'Az ellenőrzőlista a jóváhagyott eseményhez tartozik.');
+        const raw = (await body()).tetelek;
+        if (!Array.isArray(raw) || raw.length > 40) throw new HttpError(400, 'Az ellenőrzőlista legfeljebb 40 tételből állhat.');
+        const items = raw.map((t, i) => ({ id: String(t.id || `u${i + 1}`).slice(0, 20), tetel: String(t.tetel || '').trim().slice(0, 200), felelos: String(t.felelos || '').trim().slice(0, 100), hatarido: /^\d{4}-\d{2}-\d{2}$/.test(String(t.hatarido || '')) ? t.hatarido : null, kesz: t.kesz === true })).filter(t => t.tetel);
+        await E.events.set(ev.id, { ellenorzolista: items });
+        return json({ ok: true, tetelek: items });
+      }
+      if ((m = p.match(/^\/api\/esemenyek\/([^/]+)\/utomunka$/)) && method === 'POST') {
+        const ev = await eventOr404(m[1]);
+        const r = await createPostWork(lctx, ev.id, { by: actor });
+        return json({ anyag_id: r.anyagId }, 201);
+      }
+      if ((m = p.match(/^\/api\/meghivok\/([^/]+)$/)) && method === 'PUT') {
+        await setInviteResponse(lctx, decodeURIComponent(m[1]), (await body()).valasz, { by: actor });
+        return json({ ok: true });
+      }
+      if ((m = p.match(/^\/api\/meghivok\/([^/]+)$/)) && method === 'DELETE') {
+        if (!(await E.invites.remove(decodeURIComponent(m[1])))) throw new HttpError(404, 'Nincs ilyen, még el nem küldött meghívótervezet.');
+        return json({ ok: true });
+      }
+      // ---- sajtólista
+      if (method === 'GET' && p === '/api/sajtolista') return json({ kapcsolatok: await E.contacts.list({ q: url.searchParams.get('q') || null }), korlat: EVENT_LIMITS.contacts });
+      if (method === 'GET' && p === '/api/sajtolista.csv') {
+        const rows = await E.contacts.list();
+        const cell = (v) => { let s = v == null ? '' : String(v); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
+        const out = [['nev', 'medium', 'email', 'tema', 'prioritas', 'megjegyzes', 'hozzajarulas'].map(cell).join(',')].concat(rows.map(c => [c.nev, c.medium, c.email, c.tema, c.prioritas, c.megjegyzes, c.hozzajarulas ? 'igen' : 'nem'].map(cell).join(','))).join('\r\n');
+        await log.append({ szereplo: actor, tipus: 'dokumentum', hivatkozas: 'sajtolista', tartalom: { esemeny: 'export', darab: rows.length } });
+        return new Response(out, { headers: { ...SECURITY, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="sajtolista.csv"', 'Cache-Control': 'no-store' } });
+      }
+      if (method === 'POST' && p === '/api/sajtolista') {
+        const b = await body();
+        const id = await E.contacts.add({ nev: b.nev, medium: b.medium, email: b.email, tema: b.tema, prioritas: b.prioritas ?? 2, megjegyzes: b.megjegyzes, hozzajarulas: b.hozzajarulas === true });
+        await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: id, tartalom: { esemeny: 'sajtolista_felvitel', hozzajarulas: b.hozzajarulas === true } });
+        return json({ id }, 201);
+      }
+      if (method === 'POST' && p === '/api/sajtolista/csv') {
+        const b = await body();
+        return json(await importContacts(lctx, String(b.csv || ''), { megerosites: b.hozzajarulas_megerositve === true, by: actor }), 201);
+      }
+      if ((m = p.match(/^\/api\/sajtolista\/([^/]+)$/)) && method === 'DELETE') {
+        if (!(await E.contacts.remove(decodeURIComponent(m[1])))) throw new HttpError(404, 'Nincs ilyen kapcsolat.');
+        await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: decodeURIComponent(m[1]), tartalom: { esemeny: 'sajtolista_torles' } });
+        return json({ ok: true });
+      }
+    } catch (e) { evErr(e); }
     throw new HttpError(404, 'Nem található.');
   }
 

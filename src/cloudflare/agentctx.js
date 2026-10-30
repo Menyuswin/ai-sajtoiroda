@@ -9,6 +9,7 @@ import { createHandoffs } from '../core/handoff.js';
 import { createD1Log, createD1Store, createD1DryMailer } from './d1.js';
 import { createDesk } from './desk.js';
 import { createProactiveStore } from './proaktiv-store.js';
+import { createEventStore } from './esemeny-store.js';
 import { createMailStore } from '../mail/store.js';
 import { createDocs } from '../docs/store.js';
 import { AGENTS, agentById } from '../api/catalogue.js';
@@ -41,6 +42,7 @@ export function buildAgentCtx({ env, profile, now, prompts, llmFetch, mailbox = 
     levelek: createMailStore({ db: env.DB, tenantId, now }),
     docs: createDocs({ db: env.DB, bucket: env.DOCS || null, tenantId, now }),
     proactive: createProactiveStore({ db: env.DB, tenantId, now }),
+    esemeny: createEventStore({ db: env.DB, tenantId, now }),
   };
   // Gyári feldolgozók: a megérkezett (vagy megérkezéskor kézbesített) átadásokat az ügynökök itt dolgozzák fel.
   const own = new Map([
@@ -49,6 +51,8 @@ export function buildAgentCtx({ env, profile, now, prompts, llmFetch, mailbox = 
       const r = await createProposal(ctx, { tema: topicOf(h.targy), jelzes: h.szoveg, atadasId: h.id });
       return { valasz: `Megszólalási javaslat készült: ${r.cim}` };
     }],
+    // Az esemény szervezése a vezető indítására készül (koncepció, jóváhagyás); az átadás csak tudomásul vétel.
+    ['esemenyszervezo', async () => ({ valasz: 'Tudomásul véve. Esemény csak a vezető indítására készül; a koncepció jóváhagyás után indul tovább.' })],
     ['felkeszito', async (h) => {
       if (h.tipus !== 'kerelem') return { valasz: 'Tudomásul véve.' };
       const src = h.anyag_id ? await desk.anyagok.get(h.anyag_id) : null;

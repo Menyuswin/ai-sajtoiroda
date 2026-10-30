@@ -10,11 +10,12 @@ import letterClassify from '../../monitoring/prompts/level-besorolas.md';
 import letterReply from '../../monitoring/prompts/level-valasz.md';
 import briefing from '../../monitoring/prompts/felkeszito-csomag.md';
 import proposal from '../../monitoring/prompts/proaktiv-javaslat.md';
+import eventConcept from '../../monitoring/prompts/esemeny-koncepcio.md';
 import { runScheduled } from '../cloudflare/scheduler.js';
 import { handleRequest } from '../api/router.js';
 import { ASSETS } from './ui-assets.js';
 
-const prompts = { classify, synthesize, instruct, qa, docqa, keywords, letterClassify, letterReply, briefing, proposal };
+const prompts = { classify, synthesize, instruct, qa, docqa, keywords, letterClassify, letterReply, briefing, proposal, eventConcept };
 
 export default {
   async scheduled(_event, env, ctx) {

@@ -1,5 +1,5 @@
 # Nulladik ügyfél: a tulajdonos maga. ELŐZETES profil – a kulcsszavak javaslatok, a pilot elején egyeztetendők.
-# Figyelem: a „mesterséges intelligencia” téma nagyon sok cikket hoz; a pilot első napjaiban szűkíteni kell.
+# A széles „mesterséges intelligencia” téma kikerült (túl sok zaj); szükség esetén a Beállításokban bővíthető. A névkeresések közt a receptnaptár és a recipedate is szerepel.
 schema_verzio: 1
 ugyfel_id: manyai-zoltan
 megnevezes: "Mányai Zoltán"
@@ -11,9 +11,9 @@ vezeto:
   email: "zoltan.manyai@icloud.com"   # ellenőrizendő: ide érkeznek a jelentések
 
 kulcsszavak:
-  szervezet: ["manyai.hu"]
+  szervezet: ["manyai.hu", "receptnaptár", "recipedate"]
   szemelyek: ["Mányai Zoltán"]
-  temak: ["médiafigyelés", "sajtófigyelés", "AI sajtóiroda", "mesterséges intelligencia a kommunikációban", "mesterséges intelligencia"]
+  temak: ["médiafigyelés", "sajtófigyelés", "AI sajtóiroda", "mesterséges intelligencia a kommunikációban"]
   kizaro: []
 
 versenytarsak: []
@@ -29,6 +29,8 @@ forrasok:
   hirkereso:
     - '"Mányai Zoltán"'
     - '"AI-alapú médiafigyelés"'
+    - '"receptnaptár"'
+    - '"recipedate"'
   sajat: []
 
 vorosvonalak:

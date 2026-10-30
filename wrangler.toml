@@ -4,13 +4,13 @@ main = "src/worker/index.js"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Saját aldomén (a manyai.hu DNS-e ugyanebben a Cloudflare-fiókban van).
+routes = [{ pattern = "iroda.manyai.hu", custom_domain = true }]
+
 # Óránként, a 30. percben (a szemle-időpontot a profil dönti el, időzónával).
 # A felület fájljait a telepítés előtt egy modulba csomagolja.
 [build]
 command = "node scripts/build-ui.mjs"
-
-# Saját aldomén (a manyai.hu DNS-e ugyanebben a Cloudflare-fiókban van).
-routes = [{ pattern = "iroda.manyai.hu", custom_domain = true }]
 
 [triggers]
 # A Gmail/Exchange postafiókot ez az ütemezés kérdezi le; sürgős megkeresésekhez sűrítse (pl. "*/15 * * * *"). A levélhíd (iCloud) levelei azonnal beérkeznek.

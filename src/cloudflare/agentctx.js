@@ -13,6 +13,7 @@ import { createEventStore } from './esemeny-store.js';
 import { createArchive } from './archivum-store.js';
 import { createSocialStore } from './kozossegi-store.js';
 import { createStatusStore } from './allapot-store.js';
+import { withNotifications } from './notify.js';
 import { createMailStore } from '../mail/store.js';
 import { createDocs } from '../docs/store.js';
 import { AGENTS, agentById } from '../api/catalogue.js';
@@ -36,7 +37,9 @@ export function buildAgentCtx({ env, profile, now, prompts, llmFetch, mailbox = 
   const desk = createDesk({ db: env.DB, tenantId, now });
   // Éles módban a levélküldő hiánya csak küldéskor derül ki (a többi API-hívást nem akasztja meg).
   if (config.live && strictLive) createLiveMailer(config.mailer);
-  const mailer = config.live ? { name: 'elo', send: async (msg) => createLiveMailer(config.mailer).send(msg) } : createD1DryMailer({ db: env.DB, now });
+  const baseMailer = config.live ? { name: 'elo', send: async (msg) => createLiveMailer(config.mailer).send(msg) } : createD1DryMailer({ db: env.DB, now });
+  // A riasztás (kérésre a szemle) e-mailben is megy a vezető igazolt címére; csak ha be van kapcsolva és a `send_email` kötés megvan.
+  const mailer = withNotifications({ base: baseMailer, env, profile, log, now });
   const outbox = createOutbox({ profile, mailer, log });
   let llm;
   try { llm = createLlm({ mode: env.SAJTOIRODA_LLM === 'anthropic' ? 'anthropic' : 'mock', key: config.anthropicKey, models: config.models, ...(llmFetch ? { fetchImpl: llmFetch } : {}) }); }

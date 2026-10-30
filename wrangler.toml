@@ -12,6 +12,13 @@ routes = [{ pattern = "iroda.manyai.hu", custom_domain = true }]
 [build]
 command = "node scripts/build-ui.mjs"
 
+# Belső értesítés (docs/18, A3): a riasztás e-mailben is megy a vezető IGAZOLT címére (Cloudflare Email Routing / Email Workers).
+# BEKAPCSOLÁS: 1) Cloudflare → manyai.hu → Email → Email Routing bekapcsolása; 2) a címzett (zoltan.manyai@icloud.com) igazolása a
+# „Destination addresses” alatt; 3) az alábbi [[send_email]] szakasz kikommentezése; 4) SAJTOIRODA_BELSO_ERTESITES = "1"; 5) wrangler deploy.
+# [[send_email]]
+# name = "SEND_EMAIL"
+# destination_address = "zoltan.manyai@icloud.com"
+
 [triggers]
 # A Gmail/Exchange postafiókot ez az ütemezés kérdezi le; sürgős megkeresésekhez sűrítse (pl. "*/15 * * * *"). A levélhíd (iCloud) levelei azonnal beérkeznek.
 crons = ["30 * * * *"]
@@ -40,4 +47,8 @@ SAJTOIRODA_DEV_AUTH = "0"  # a próbabelépés kizárólag fejlesztéshez való;
 ACCESS_TEAM_DOMAIN = ""    # pl. csapatnev.cloudflareaccess.com (Cloudflare Access); üresen az oldal zárva marad
 ACCESS_AUD = ""            # az Access-alkalmazás „AUD” azonosítója
 SAJTOIRODA_BELEPES_EMAIL = "zoltan.manyai@icloud.com"  # saját belépés (jelmondat): ennek a felhasználónak a szerepe; a jelmondat Workers-titok: wrangler secret put SAJTOIRODA_JELMONDAT (min. 20 karakter)
+SAJTOIRODA_BELSO_ERTESITES = "0"   # 1 = a riasztás e-mailben is megy a vezetőnek (lásd fent)
+SAJTOIRODA_ERTESITES_FELADO = "iroda@manyai.hu"   # a manyai.hu Email Routing-jának címe
+SAJTOIRODA_ERTESITES_SZEMLE = "0"   # 1 = a napi szemle értesítése is
+SAJTOIRODA_URL = "https://iroda.manyai.hu"
 SAJTOIRODA_LLM = "mock"  # "anthropic" = valódi AI (ANTHROPIC_API_KEY titokként: wrangler secret put ANTHROPIC_API_KEY)

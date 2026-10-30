@@ -1,4 +1,4 @@
-// A Proaktív Kommunikációs Stratégia Ügynök: jelzés vagy kérés → megszólalási javaslat (mikor, milyen formában, milyen üzenettel).
+// A Proaktív Kommunikációs Stratégia Munkatárs: jelzés vagy kérés → megszólalási javaslat (mikor, milyen formában, milyen üzenettel).
 // Csak javaslatot tesz; a döntés a vezetőé. Kifelé semmit nem küld, és a vezető döntése nélkül nem indít semmit.
 import { loadPrompt, extractJson } from '../../core/llm.js';
 import { gatherSources, stripInvalidRefs, startOfDayIso, AI_NOTE } from '../common/sources.js';
@@ -34,7 +34,7 @@ export function mockProposal(req, sources, calendar, day) {
   const silentRisk = red.length > 0 || /vörös|jogi|hatósági|feljelent/i.test(req.jelzes);
   return {
     lehetoseg: `${req.jelzes || req.tema}${sources.cikkek.length ? ` Kapcsolódó tárolt cikk: ${sources.cikkek.map(c => `[${c.n}]`).join(' ')}.` : ' Tárolt cikket nem találtunk a témához.'}`,
-    javaslat: { forma: 'nyilatkozat', mikor: day.datum ? `${day.datum} (${day.nap}): ${day.indok}` : day.indok, uzenet: KIT('fő üzenet; AI nélkül az ügynök nem fogalmaz üzenetet') },
+    javaslat: { forma: 'nyilatkozat', mikor: day.datum ? `${day.datum} (${day.nap}): ${day.indok}` : day.indok, uzenet: KIT('fő üzenet; AI nélkül a munkatárs nem fogalmaz üzenetet') },
     hallgatas_kockazata: { van: silentRisk, leiras: silentRisk ? 'A jelzés vörös vonalat, jogi vagy hatósági vonatkozást érint: a hallgatás is kockázat lehet, a döntéshez vezetői és jogi egyeztetés javasolt.' : 'A szabályalapú elemzés nem lát külön kockázatot a hallgatásban; ez nem jelenti, hogy nincs.' },
     alternativak: [{ forma: 'nem_szolalunk_meg', indoklas: 'Megfigyelés folytatása: a Monitoring tovább követi a témát, és új jelzésnél újra javaslat készül.' }, { forma: 'poszt', indoklas: 'Rövid, saját csatornás közlés, ha a téma nem kapott szélesebb médiafigyelmet.' }],
     kockazatok: ['Szabályalapú javaslat (nem AI): a forma és az időzítés alapértelmezés, az üzenetet a vezetőnek kell megfogalmaznia.'],
@@ -79,7 +79,7 @@ export async function createProposal(ctx, { tema, jelzes = '', atadasId = null, 
   const { profile, log, llm, now, prompts, models, anyagok, store, docs, proactive } = ctx;
   const topic = String(tema || '').replace(/\s+/g, ' ').trim().slice(0, 300);
   if (!topic) throw new AgentError(400, 'A téma kötelező.');
-  if (!agentActive(profile, AGENT, now())) throw new AgentError(409, 'A Proaktív ügynök szünetel; kapcsolja vissza, mielőtt javaslatot kér.');
+  if (!agentActive(profile, AGENT, now())) throw new AgentError(409, 'A Proaktív munkatárs szünetel; kapcsolja vissza, mielőtt javaslatot kér.');
   if ((await proactive.proposals.countSince(startOfDayIso(now()))) >= DAILY_LIMIT) {
     await log.append({ szereplo: WHO, tipus: 'hiba', tartalom: { hiba: `napi korlát (${DAILY_LIMIT} javaslat) kimerült`, tema: topic } });
     throw new AgentError(429, `A mai korlát (${DAILY_LIMIT} javaslat) kimerült; holnap újra kérhet.`);
@@ -125,7 +125,7 @@ export async function decideProposal(ctx, id, { dontes, csomag = false, by }) {
   if (!(await proactive.proposals.decide(id, { allapot: state, by }))) return { status: 409, hiba: 'Erről a javaslatról már döntöttek.' };
   await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: state, fajta: 'megszolalas', csomag_kerve: !!csomag && state === 'elfogadva' } });
   let csomagAtadas = null;
-  // „Poszt” formájú elfogadott javaslatból a Közösségi média ügynök készít platformonkénti szöveget (a döntés után; kifelé nem megy semmi).
+  // „Poszt” formájú elfogadott javaslatból a Közösségi média munkatárs készít platformonkénti szöveget (a döntés után; kifelé nem megy semmi).
   if (state === 'elfogadva') {
     const meta = p.anyag_id ? (await anyagok.get(p.anyag_id))?.meta : null;
     if (meta?.javaslat?.forma === 'poszt') await atadasok.send({ from: AGENT, to: 'kozossegi', tipus: 'kerelem', targy: `Poszt: ${p.tema}`.slice(0, 200), szoveg: 'A vezető elfogadta a „poszt” formájú megszólalási javaslatot; kérjük a platformonkénti szövegváltozatokat.', anyagId: p.anyag_id, parentId: p.atadas_id });

@@ -1,4 +1,4 @@
-// A Közösségi média ügynök adatai (D1): posztjavaslatok és digitális jelzések. Minden lekérdezés a tenant_id-vel szűr.
+// A Közösségi média munkatárs adatai (D1): posztjavaslatok és digitális jelzések. Minden lekérdezés a tenant_id-vel szűr.
 import { norm } from '../core/text.js';
 
 let seq = 0;

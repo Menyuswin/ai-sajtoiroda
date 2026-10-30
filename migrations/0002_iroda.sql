@@ -1,4 +1,4 @@
--- Az iroda: belépés, elrendezés, anyagok (az ügynökök munkái), rákérdezések, utasítások.
+-- Az iroda: belépés, elrendezés, anyagok (a munkatársak munkái), rákérdezések, utasítások.
 
 -- Ki melyik ügyfél irodáját láthatja, és milyen szerepben (a belépést a Cloudflare Access végzi, ez az engedély).
 CREATE TABLE IF NOT EXISTS felhasznalok (
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS elrendezes (
   PRIMARY KEY (email, tenant_id)
 );
 
--- Az ügynökök munkái: szemle, riasztás, jelentés, később tervezet (választervezet, kommunikációs terv, …).
+-- A munkatársak munkái: szemle, riasztás, jelentés, később tervezet (választervezet, kommunikációs terv, …).
 CREATE TABLE IF NOT EXISTS anyagok (
   id        TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS anyagok (
 );
 CREATE INDEX IF NOT EXISTS idx_anyagok_tenant ON anyagok (tenant_id, ugynok, ido);
 
--- Rákérdezések egy anyagra és az ügynök válaszai.
+-- Rákérdezések egy anyagra és a munkatárs válaszai.
 CREATE TABLE IF NOT EXISTS uzenetek (
   id        TEXT PRIMARY KEY,
   tenant_id TEXT NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS uzenetek (
 );
 CREATE INDEX IF NOT EXISTS idx_uzenetek_anyag ON uzenetek (tenant_id, anyag_id, ido);
 
--- A vezető utasításai (feladatai) az ügynököknek.
+-- A vezető utasításai (feladatai) a munkatársaknek.
 -- allapot: javaslat | vegrehajtva | elvetve | kesz | visszakerdez | hiba
 CREATE TABLE IF NOT EXISTS utasitasok (
   id          TEXT PRIMARY KEY,

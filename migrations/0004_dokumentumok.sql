@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS dokumentumok (
   meret         INTEGER NOT NULL,
   karakterek    INTEGER NOT NULL,
   szakaszok     INTEGER NOT NULL,
-  hatokor_json  TEXT,                       -- az ügynökök azonosítóinak listája; NULL = mindegyik
+  hatokor_json  TEXT,                       -- a munkatársak azonosítóinak listája; NULL = mindegyik
   ai_tiltott    INTEGER NOT NULL DEFAULT 0, -- 1 = a tartalom nem adható át AI-szolgáltatónak
   eredeti_kulcs TEXT,                       -- R2-kulcs; NULL, ha az eredeti nem őrződik meg
   feltolto      TEXT NOT NULL,

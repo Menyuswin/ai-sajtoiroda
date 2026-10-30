@@ -113,7 +113,7 @@ Hagyja futni, és naponta 5 percet szánjon rá: a szemle hasznos-e, a riasztás
 ## Ami nélkülem is a kezében van (és mire figyeljen)
 
 - **Titkok** (AI-kulcs, híd-titok, alkalmazás-jelszó) csak a `wrangler secret put` parancson át kerülnek fel, **nekem soha ne küldje el őket**, és a tárba sem kerülhetnek.
-- **Visszalépés:** az ügynökök a felületen szüneteltethetők; a Workert a Cloudflare-ben egy kattintással ki lehet kapcsolni; az alkalmazás-jelszó az Apple-nél visszavonható.
+- **Visszalépés:** a munkatársak a felületen szüneteltethetők; a Workert a Cloudflare-ben egy kattintással ki lehet kapcsolni; az alkalmazás-jelszó az Apple-nél visszavonható.
 - **Költség:** a Cloudflare Workers + D1 + Access ingyenes csomagon elindítható; az óránkénti ütemező és a hírforrás-lekérések miatt később fizetős Workers (kb. 5 USD/hó) lehet indokolt. A fő változó költség az AI-használat.
 - **Jogi nyitott kérdések** (GDPR, EU AI Act, naplótárolás, ügyfélszerződés) nem a nulladik ügyfélnél, hanem az első külső ügyfél előtt kell, hogy lezáruljanak (`docs/11`, 7–9.).
 

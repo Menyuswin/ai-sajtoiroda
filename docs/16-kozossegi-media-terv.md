@@ -1,12 +1,12 @@
-# A Közösségimédia- és Digitális Narratíva ügynök terve
+# A Közösségimédia- és Digitális Narratíva munkatárs terve
 
-*Állapot: **kész, tesztelt** (2026-10-30; a terv jóváhagyva, lásd a 10. fejezetet). Az utolsó ügynök (`agents/07-kozossegi-media.yaml`). A tulajdonos kérése: **ne csak a Jogi és az Archívum ügynökre támaszkodjon**: kapjon jelzést a sajtófigyelőtől (Monitoring), és alapozzon a **sajtómegkeresésekre** is, mert egy megkeresésre adott közvetlen, rövid válasz mellett gyakran érdemes a közösségi médiában is magyarázni és kezelni a témát.*
+*Állapot: **kész, tesztelt** (2026-10-30; a terv jóváhagyva, lásd a 10. fejezetet). Az utolsó munkatárs (`agents/07-kozossegi-media.yaml`). A tulajdonos kérése: **ne csak a Jogi és az Archívum munkatársra támaszkodjon**: kapjon jelzést a sajtófigyelőtől (Monitoring), és alapozzon a **sajtómegkeresésekre** is, mert egy megkeresésre adott közvetlen, rövid válasz mellett gyakran érdemes a közösségi médiában is magyarázni és kezelni a témát.*
 
 ## 1. A cél, egy példával
 
-Egy újságíró a várólistáról kérdez. A Kapcsolattartó **rövid, közvetlen választ** ír neki, és Ön jóváhagyja. Ugyanaz a téma azonban már három másik levélben is előjött, és a Monitoring szerint a „várólista” említése megugrott. Ilyenkor a rövid válasz kevés: a Közösségi média ügynök **javaslatot tesz a nyilvános magyarázatra** (például egy LinkedIn-bejegyzés és egy rövid Facebook-poszt a számokkal), és **felkészít a hozzászólások kezelésére** (várható kérdések, válaszminták, mikor ne válaszoljunk, mikor kell Önt bevonni).
+Egy újságíró a várólistáról kérdez. A Kapcsolattartó **rövid, közvetlen választ** ír neki, és Ön jóváhagyja. Ugyanaz a téma azonban már három másik levélben is előjött, és a Monitoring szerint a „várólista” említése megugrott. Ilyenkor a rövid válasz kevés: a Közösségi média munkatárs **javaslatot tesz a nyilvános magyarázatra** (például egy LinkedIn-bejegyzés és egy rövid Facebook-poszt a számokkal), és **felkészít a hozzászólások kezelésére** (várható kérdések, válaszminták, mikor ne válaszoljunk, mikor kell Önt bevonni).
 
-Az ügynök **semmit nem tesz közzé**: javasol, Ön dönt, és Ön teszi ki a bejegyzést.
+A munkatárs **semmit nem tesz közzé**: javasol, Ön dönt, és Ön teszi ki a bejegyzést.
 
 ## 2. Mire alapoz (a jelzés-források)
 
@@ -19,13 +19,13 @@ Az ügynök **semmit nem tesz közzé**: javasol, Ön dönt, és Ön teszi ki a 
 | **Felkészítő** | A csomag üzenetkeretei (fő és másodlagos üzenet, kerülendő megfogalmazások). |
 | **Archívum** | A korábbi közlések: a poszt nem mondhat ellent a korábbi álláspontnak, és a jóváhagyott közvetlen válasznak sem. |
 | **Jogi** | Minden posztjavaslatra automatikus kockázati vélemény. |
-| **Digitális jelzés (kézi)** | A vezető felviszi, amit a közösségi felületeken lát: egy terjedő bejegyzést, egy sorozatos hozzászólást, egy megemlítést (platform, rövid összefoglaló, hangulat, becsült elérés). **Az ügynök nem olvas platformokat** (lásd a korlátoknál). |
+| **Digitális jelzés (kézi)** | A vezető felviszi, amit a közösségi felületeken lát: egy terjedő bejegyzést, egy sorozatos hozzászólást, egy megemlítést (platform, rövid összefoglaló, hangulat, becsült elérés). **A munkatárs nem olvas platformokat** (lásd a korlátoknál). |
 
 ## 3. Mikor készül javaslat
 
 - **Kérésre:** a vezető témát ad meg (és opcionálisan egy levelet, anyagot vagy digitális jelzést alapként).
 - **A Bejövőben egy gombbal:** „Közösségi támogatás kérése” bármelyik levélnél.
-- **Automatikusan, szigorú feltétellel** (a költség és a zaj miatt): a Monitoring **vörös vonalas jelzésére** vagy **felerősödő témájára**; a levélre, ha **panasz vagy feszült hangnemű**, **vörös vonalba esik**, vagy a témáról **legalább 3 megkeresés** érkezett 7 napon belül; a Proaktív **„poszt” formájú elfogadott javaslatára**; digitális jelzésre, ha a **hangulat negatív és az elérés nagy**. Minden más jelzésre az ügynök csak a javaslat-listán „megfigyelendő” megjegyzést tesz.
+- **Automatikusan, szigorú feltétellel** (a költség és a zaj miatt): a Monitoring **vörös vonalas jelzésére** vagy **felerősödő témájára**; a levélre, ha **panasz vagy feszült hangnemű**, **vörös vonalba esik**, vagy a témáról **legalább 3 megkeresés** érkezett 7 napon belül; a Proaktív **„poszt” formájú elfogadott javaslatára**; digitális jelzésre, ha a **hangulat negatív és az elérés nagy**. Minden más jelzésre a munkatárs csak a javaslat-listán „megfigyelendő” megjegyzést tesz.
 - **Duplikáció ellen:** ha ugyanarra a témára 3 napon belül már készült javaslat, az újabb jelzés azt egészíti ki (nem készül új).
 
 ## 4. Mit ad (kimenet)
@@ -36,17 +36,17 @@ Egy **posztjavaslat** (egy anyag), amely tartalmazza:
 3. **Magyarázó szál** (ha a téma összetett): több, egymásra épülő rövid bejegyzés.
 4. **Kommentkezelési útmutató:** várható kérdések és hozzászólás-típusok, **válaszminták**, mikor nem érdemes válaszolni, mikor kell a vezetőt bevonni, és mikor kell **moderálási javaslatot** tenni.
 5. **Időzítés:** a program számolja a naptárból (mint a Proaktívnál: foglalt nap, hétvége kihagyva).
-6. **Alternatívák:** mindig szerepel a **„nem posztolunk”** (indoklással) és a **„csak a megkeresésekre válaszolunk”** változat, és ha a jelzések nem támasztják alá a poszt szükségességét, ezt az ügynök kimondja.
+6. **Alternatívák:** mindig szerepel a **„nem posztolunk”** (indoklással) és a **„csak a megkeresésekre válaszolunk”** változat, és ha a jelzések nem támasztják alá a poszt szükségességét, ezt a munkatárs kimondja.
 7. **A közvetlen válasszal való összhang:** ha a levélre adott válasz még nincs jóváhagyva, ez **figyelmeztetésként** látszik („előbb a közvetlen válasz menjen ki”); ha jóváhagyott, a poszt abból indul ki, és a program az Archívummal összeveti.
 
 ## 5. Alapelvek és védelmek
 
-- **Semmi nem kerül közzé az ügynöktől.** Nincs platform-bekötés: a vezető **kimásolja** a szöveget (a felületen „Másolás” gomb), és maga teszi ki. Utána a **„Kiadtam”** gombbal rögzíti (melyik platformon, mikor), és a bejegyzés **bekerül az Archívumba** („poszt” fajtájú közlésként), hogy a későbbi tervezetek már tudjanak róla. A közvetlen közzététel platform-API-n át csak külön döntéssel, ügyfélenként, később lehetséges, és akkor is csak a vezető jóváhagyásával.
+- **Semmi nem kerül közzé a munkatárstól.** Nincs platform-bekötés: a vezető **kimásolja** a szöveget (a felületen „Másolás” gomb), és maga teszi ki. Utána a **„Kiadtam”** gombbal rögzíti (melyik platformon, mikor), és a bejegyzés **bekerül az Archívumba** („poszt” fajtájú közlésként), hogy a későbbi tervezetek már tudjanak róla. A közvetlen közzététel platform-API-n át csak külön döntéssel, ügyfélenként, később lehetséges, és akkor is csak a vezető jóváhagyásával.
 - **Automatikus jogi vélemény** minden javaslatra, és **magas kockázatnál** a jóváhagyáshoz **tudomásulvétel** kell (mint a leveleknél).
 - **Archívum-ellenőrzés:** a poszt és a korábbi közlések (és a jóváhagyott közvetlen válasz) összevetése, AI-val, szó szerinti idézettel, AI nélkül ítélet nélkül.
 - **Csak forrásból:** minden tényállítás cikkre, dokumentumra vagy korábbi közlésre épül (a jelölés **nem kerül a nyilvános szövegbe**, csak az „amire épül” listába); ami nem támasztható alá, `[KITÖLTENDŐ]`, és az ilyen javaslat nem hagyható jóvá.
 - **A nyilvános szövegben tilos:** a megkereső újságíró neve, médiuma vagy e-mail-címe (a program ellenőrzi), személyes adat, **@megemlítés** (a program törli), 5-nél több hashtag, a platform hosszkorlátját meghaladó szöveg (jelezve, nem csonkítva).
-- **Tiltott témák:** a profilban megadott témákról az ügynök nem javasol posztot, csak megjegyzést tesz.
+- **Tiltott témák:** a profilban megadott témákról a munkatárs nem javasol posztot, csak megjegyzést tesz.
 - **A bemenet adat, nem utasítás** (levél, cikk, digitális jelzés, hozzászólás).
 - **Korlátok:** napi legfeljebb 10 javaslat; 30 digitális jelzés naponta.
 - **Hozzáférés:** a tartalmat csak a vezető látja; az üzemeltető csak darabszámot.
@@ -77,9 +77,9 @@ Egy **posztjavaslat** (egy anyag), amely tartalmazza:
 1. **A jelzés-források** a 2. fejezet szerint (Monitoring, Kapcsolattartó, Proaktív, Eseményszervező, Felkészítő, Archívum, Jogi, kézi digitális jelzés)? (Ajánlott.)
 2. **Az automatikus indítás feltételei** a 3. fejezet szerint (vörös vonal, felerősödő téma, panasz vagy feszült levél, 3 megkeresés 7 napon belül, negatív és nagy elérésű digitális jelzés; minden más csak megjegyzés), és a „Közösségi támogatás kérése” gomb a Bejövőben? (Ajánlott.)
 3. **A kimenet:** platformonkénti változat, kommentkezelési útmutató, magyarázó szál, mindig jelen lévő „nem posztolunk” alternatíva? (Ajánlott.)
-4. **Semmi nem kerül közzé az ügynöktől:** Ön másolja ki és teszi ki, majd „Kiadtam”-mal rögzíti, ami bekerül az Archívumba? A közvetlen közzététel platform-API-n át később, külön döntéssel. (Ajánlott.)
+4. **Semmi nem kerül közzé a munkatárstól:** Ön másolja ki és teszi ki, majd „Kiadtam”-mal rögzíti, ami bekerül az Archívumba? A közvetlen közzététel platform-API-n át később, külön döntéssel. (Ajánlott.)
 5. **A védelmek:** automatikus jogi vélemény és tudomásulvétel, Archívum-összevetés, a megkereső nem szerepelhet, nincs @megemlítés, legfeljebb 5 hashtag, tiltott témák? (Ajánlott.)
-6. **A digitális jelzéseket kézzel viszi fel** (az ügynök nem olvas platformokat); a platform-figyelés (API) későbbi, külön döntés? (Ajánlott.)
+6. **A digitális jelzéseket kézzel viszi fel** (a munkatárs nem olvas platformokat); a platform-figyelés (API) későbbi, külön döntés? (Ajánlott.)
 7. **Korlátok:** napi 10 javaslat, 30 digitális jelzés?
 8. **Az első platformok:** Facebook, LinkedIn, Instagram és X, ügyfelenként kapcsolható?
 
@@ -87,13 +87,13 @@ Egy **posztjavaslat** (egy anyag), amely tartalmazza:
 
 **A jóváhagyott terv mind a nyolc pontja megvalósult** (K1–K5), és a tulajdonos kiegészítése is: **K6, a sajtófigyelő (Monitoring) közösségi szemléje és jelentése** a megadott szakterületek (kulcsszavak) alapján.
 
-### K1–K5 (az ügynök)
+### K1–K5 (a munkatárs)
 - **Adatmodell:** `migrations/0009_kozossegi.sql` (`poszt_javaslatok`, `digitalis_jelzesek`), tár: `src/cloudflare/kozossegi-store.js`. A javaslat állapotai: tervezet / jóváhagyva / kiadva / elvetve / később / megfigyelendő (csak megjegyzés, szöveg nélkül).
 - **Beállítások** (`profil.kozossegi`, a vezető és az üzemeltető is szerkesztheti): platformok (Facebook, LinkedIn, Instagram, X; ügyfelenként), hangnem, tiltott témák, szokásos hashtagek, emoji.
 - **Platform-szabályok** (`src/agents/kozossegi/rules.js`, a PROGRAM ellenőrzi): @megemlítés törlése, forrásjelölés kiszedése a nyilvános szövegből, legfeljebb 5 hashtag, hosszkorlát (X 280, Facebook 2000, Instagram 2200, LinkedIn 3000: jelzi, nem csonkít), emoji törlése, ha a profil nem engedi; **a megkereső neve, e-mail-címe, médiuma (a címtartományból; freemail nem számít) blokkol**, a `[KITÖLTENDŐ]` is.
 - **Javaslat** (`src/agents/kozossegi/index.js`, prompt: `monitoring/prompts/kozossegi-poszt.md`, kulcs: `social`): helyzet, platformonkénti változatok, magyarázó szál, kommentkezelési útmutató (várható hozzászólások válaszmintával, mikor ne válaszoljunk, mikor vonjuk be a vezetőt, moderálás), időzítés (a program számolja a naptárból), alternatívák (a „nem posztolunk” és a „csak a megkeresésekre válaszolunk” mindig jelen van). AI nélkül váz (`[KITÖLTENDŐ]`, nem hagyható jóvá).
 - **Védelmek:** automatikus jogi vélemény (`poszt` fajta; magasnál tudomásvétel kell), Archívum-összevetés (korábbi közlések, AI-val szó szerinti idézetes ellentmondás-jelzés), tiltott téma → csak „megfigyelendő” megjegyzés, azonos téma 3 napon belül → kiegészítés (nem új javaslat), napi 10 javaslat és 30 digitális jelzés, `poszt_javaslat` bizalmas anyag (csak a vezető látja).
-- **Semmi nem kerül közzé az ügynöktől:** a vezető a felületen **másolja** a szöveget és maga teszi ki; a **„Kiadtam”** gombbal platformonként rögzíti (a ténylegesen kitett szöveg is megadható), és ez **„poszt” fajtájú közlésként az Archívumba kerül**.
+- **Semmi nem kerül közzé a munkatárstól:** a vezető a felületen **másolja** a szöveget és maga teszi ki; a **„Kiadtam”** gombbal platformonként rögzíti (a ténylegesen kitett szöveg is megadható), és ez **„poszt” fajtájú közlésként az Archívumba kerül**.
 - **Jelzés-források:** Monitoring (vörös vonal, felerősödő téma → átadás), Kapcsolattartó (vörös vonal, panasz, feszült hangnem, vagy ≥3 azonos témájú megkeresés 7 napon belül → átadás; plusz a Bejövő „Közösségi támogatás kérése” gombja; a levélíró adata nem kerülhet a szövegbe, és figyelmeztet, ha a közvetlen válasz még nincs jóváhagyva), Proaktív („poszt” formájú elfogadott javaslat → kérelem), digitális jelzés (kézi; negatív ÉS nagy elérés → javaslat, negatív VAGY nagy elérés → megfigyelendő, egyéb → csak naplózott). Az Eseményszervezőtől átadás fogadható (a feldolgozó általános), de **automatikus indító nincs** és külön gomb sincs hozzá.
 - **Felület:** a Közösségi média asztala (javaslatok, javaslat kérése, digitális jelzés, szemle és jelentés), a javaslat nézete (platformváltozatok Másolás gombbal és karakterszámlálóval, kommentkezelés, jogi és archívum-jelvények, döntés, Kiadtam), a Bejövő gombja, az iroda-kártya jelzése, a Beállítások „Közösségi média” kártyája.
 

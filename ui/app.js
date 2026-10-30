@@ -139,7 +139,7 @@
     let saveTimer;
     const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(guard(async () => { await api('PUT', '/api/iroda/elrendezes', { pozicio: { ...moved } }); }), 400); };
 
-    // Keskeny képernyőn (nincs alaprajz) a dolgozó ügynökök kerülnek előre.
+    // Keskeny képernyőn (nincs alaprajz) a dolgozó munkatársak kerülnek előre.
     const sorrend = window.innerWidth <= 760 ? [...ugynokok].sort((x, y) => Number(y.elerheto) - Number(x.elerheto)) : ugynokok;
     for (const a of sorrend) {
       const pos = elrendezes[a.id];
@@ -155,7 +155,7 @@
           h('a', { class: 'gomb fo', href: `#/asztal/${a.id}`, text: 'Az asztalhoz' }),
           a.olvasatlan ? h('span', { class: 'pont kek', title: 'Olvasatlan jelentés', text: `${a.olvasatlan} új` }) : null,
           a.jovahagyasra_var ? h('span', { class: 'pont', title: 'Jóváhagyásra váró javaslat', text: `${a.jovahagyasra_var} jóváhagyásra vár` }) : null,
-          a.atadas_nyitott ? h('a', { class: 'pont kek', href: `#/asztal/${a.id}`, title: 'Más ügynöktől érkezett átadás', text: `${a.atadas_nyitott} átadás` }) : null) : (a.atadas_nyitott ? h('a', { class: 'pont kek', href: `#/asztal/${a.id}`, title: 'Az átadás várja, hogy az ügynök megérkezzen', text: `${a.atadas_nyitott} átadás vár az érkezésére` }) : null));
+          a.atadas_nyitott ? h('a', { class: 'pont kek', href: `#/asztal/${a.id}`, title: 'Más munkatárstól érkezett átadás', text: `${a.atadas_nyitott} átadás` }) : null) : (a.atadas_nyitott ? h('a', { class: 'pont kek', href: `#/asztal/${a.id}`, title: 'Az átadás várja, hogy a munkatárs megérkezzen', text: `${a.atadas_nyitott} átadás vár az érkezésére` }) : null));
       const card = h('article', { class: `asztal${a.elerheto ? '' : ' ures-asztal'}`, 'data-id': a.id }, fogo, body);
       card.style.left = `${pos.x}px`; card.style.top = `${pos.y}px`;
       floor.append(card);
@@ -183,7 +183,7 @@
     });
   }
 
-  // ---------- egy ügynök asztala
+  // ---------- egy munkatárs asztala
   const UT_CIMKE = { javaslat: 'Jóváhagyásra vár', vegrehajtva: 'Végrehajtva', elvetve: 'Elvetve', kesz: 'Kész', visszakerdez: 'Visszakérdezés', hiba: 'Nem sikerült' };
   const TIPPEK = ['Javasolj kulcsszavakat a feltöltött dokumentumok alapján', 'Figyeld a várólista témát is', 'Mi történt a héten az ápolóhiány körül?', 'Szólj azonnal, ha a vezérigazgató nevét említik', 'Szüneteltesd 2026-11-05-ig'];
   async function viewAsztal(id, my = routeToken) {
@@ -193,9 +193,9 @@
       h('a', { class: 'gomb vissza', href: '#/', text: '← Iroda' }),
       h('div', {}, h('h1', { text: a.nev }), h('div', { class: 'munkanev', text: a.munkanev })),
       h('span', { class: 'allapot' }, h('span', { class: `fenyjel ${d.allapot}` }), ALLAPOT[d.allapot] + (d.szunet_ig ? ` (${d.szunet_ig}-ig)` : '')),
-      a.elerheto ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { await api('PUT', `/api/ugynok/${id}/allapot`, { aktiv: d.allapot !== 'dolgozik' }); toast(d.allapot === 'dolgozik' ? 'Az ügynök szünetel.' : 'Az ügynök újra dolgozik.'); await viewAsztal(id); renderHeader(`asztal/${id}`); }), text: d.allapot === 'dolgozik' ? 'Szünet' : 'Munka újraindítása' }) : null);
+      a.elerheto ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { await api('PUT', `/api/ugynok/${id}/allapot`, { aktiv: d.allapot !== 'dolgozik' }); toast(d.allapot === 'dolgozik' ? 'A munkatárs szünetel.' : 'A munkatárs újra dolgozik.'); await viewAsztal(id); renderHeader(`asztal/${id}`); }), text: d.allapot === 'dolgozik' ? 'Szünet' : 'Munka újraindítása' }) : null);
     if (!a.elerheto) {
-      mainSet(my, head, h('div', { class: 'kartya' }, h('p', { text: 'Ennél az asztalnál még nem ül senki. Az ügynök a bevezetési sorrend szerint kerül sorra; addig az asztal üres, de a többi ügynök már küldhet ide átadást: az várakozik, és az ügynök megérkezésekor kézbesül.' })),
+      mainSet(my, head, h('div', { class: 'kartya' }, h('p', { text: 'Ennél az asztalnál még nem ül senki. A munkatárs a bevezetési sorrend szerint kerül sorra; addig az asztal üres, de a többi munkatárs már küldhet ide átadást: az várakozik, és a munkatárs megérkezésekor kézbesül.' })),
         h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások' }), atadasLista(d.atadasok, id, () => viewAsztal(id))));
       return;
     }
@@ -206,7 +206,7 @@
     if (d.munka?.tipus === 'jogi') { mainSet(my, head, jogiAsztal(d, id)); return; }
     if (d.munka?.tipus === 'archivum') { mainSet(my, head, archivumAsztal(d, id)); return; }
     if (d.munka?.tipus === 'kozossegi') { mainSet(my, head, kozossegiAsztal(d, id)); return; }
-    const input = h('textarea', { id: 'utasitas', 'aria-label': 'Utasítás az ügynöknek', maxlength: '500', placeholder: 'Írja le magyarul, mit szeretne… (Ctrl+Enter: küldés)' });
+    const input = h('textarea', { id: 'utasitas', 'aria-label': 'Utasítás a munkatársnak', maxlength: '500', placeholder: 'Írja le magyarul, mit szeretne… (Ctrl+Enter: küldés)' });
     const send = guard(async () => {
       const szoveg = input.value.trim(); if (!szoveg) return;
       const r = await api('POST', `/api/ugynok/${id}/utasitas`, { szoveg });
@@ -224,12 +224,12 @@
             h('button', { class: 'gomb fo', type: 'button', onclick: guard(async () => { const r = await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'jovahagyva' }); toast(r.allapot === 'vegrehajtva' ? 'Végrehajtva.' : `Nem sikerült: ${r.valasz}`, r.allapot !== 'vegrehajtva'); await viewAsztal(id); }), text: 'Jóváhagyom' }),
             h('button', { class: 'gomb rossz', type: 'button', onclick: guard(async () => { await api('POST', `/api/utasitasok/${encodeURIComponent(u.id)}/dontes`, { dontes: 'elvetve' }); toast('Elvetve.'); await viewAsztal(id); }), text: 'Elvetem' })) : null,
           u.anyag_id ? h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(u.anyag_id), text: 'Megnyitás' })) : null)])
-        : h('p', { class: 'ures-szoveg', text: 'Még nem adott utasítást ennek az ügynöknek.' }));
+        : h('p', { class: 'ures-szoveg', text: 'Még nem adott utasítást ennek a munkatársnak.' }));
     const utasitasSav = h('section', { class: 'sav', 'aria-labelledby': 'h-ut' }, h('h2', { id: 'h-ut', text: 'Utasítás' }), szal,
       h('div', { class: 'urlap-sor' }, input,
         h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: send, text: 'Küldés' })),
         h('div', { class: 'tippek', 'aria-label': 'Példák' }, TIPPEK.map(t => h('button', { class: 'tipp', type: 'button', onclick: () => { input.value = t; input.focus(); }, text: t })))),
-      h('p', { class: 'sugo' }, 'Az ügynök a módosításokat javaslatként mutatja, és csak az Ön jóváhagyása után hajtja végre. Kifelé nem küld semmit.'));
+      h('p', { class: 'sugo' }, 'A munkatárs a módosításokat javaslatként mutatja, és csak az Ön jóváhagyása után hajtja végre. Kifelé nem küld semmit.'));
 
     const m = d.munka, tot = Math.max(1, m.hangnem.pozitiv + m.hangnem.semleges + m.hangnem.negativ);
     const sav = (cls, n) => { const i = h('i', { class: cls, title: `${n}` }); i.style.width = `${(n / tot) * 100}%`; return i; };
@@ -244,11 +244,11 @@
     const anyagSav = h('section', { class: 'sav', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Jelentések' }),
       d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
     mainSet(my, head, h('div', { class: 'harom' }, utasitasSav, munkaSav, anyagSav),
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, id, () => viewAsztal(id))));
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, id, () => viewAsztal(id))));
     szal.scrollTop = szal.scrollHeight;
   }
   const CSOPORT = { szervezet: 'szervezet', szemelyek: 'személy', temak: 'téma', kizaro: 'kizáró szó' };
-  // Kulcsszójavaslat: tételenként kijelölhető, mit vegyen fel az ügynök.
+  // Kulcsszójavaslat: tételenként kijelölhető, mit vegyen fel a munkatárs.
   function kijelolo(u, agentId) {
     const boxes = u.muvelet.parameterek.tetelek.map((t, i) => ({ t, i, el: h('input', { type: 'checkbox', id: `t-${u.id}-${i}`, checked: true }) }));
     return h('div', { class: 'kijelolo' },
@@ -265,7 +265,7 @@
   const TIPUS = { szemle: 'Szemle', riasztas: 'Riasztás', jelentes: 'Jelentés', valasz_tervezet: 'Választervezet', esemeny_koncepcio: 'Eseménykoncepció', esemeny_utomunka: 'Utómunka', jogi_velemeny: 'Jogi vélemény', felkeszito_csomag: 'Felkészítő csomag', megszolalasi_javaslat: 'Megszólalási javaslat', poszt_javaslat: 'Posztjavaslat', kozossegi_szemle: 'Közösségi szemle', kozossegi_jelentes: 'Közösségi jelentés' };
   const AT_TIPUS = { jelzes: 'Jelzés', kerelem: 'Kérelem', anyag_atadas: 'Anyag-átadás', kerdes: 'Kérdés' };
   const AT_ALLAPOT = { varakozik: 'Vár a címzettre', kezbesitve: 'Kézbesítve', feldolgozva: 'Feldolgozva', lezarva: 'Lezárva', megallitva: 'Megállítva', lejart: 'Lejárt' };
-  const rovid = (id) => (state.iroda.ugynokok.find(a => a.id === id)?.nev || id).replace(/ Ügynök$/, '');
+  const rovid = (id) => (state.iroda.ugynokok.find(a => a.id === id)?.nev || id).replace(/ Munkatárs$/, '');
   // Átadások listája. `self`: melyik asztalnál nézzük (irány jelzéséhez); nélküle az összes.
   function atadasLista(items, self, refresh) {
     if (!items.length) return h('p', { class: 'ures-szoveg', text: 'Még nem volt átadás.' });
@@ -283,7 +283,7 @@
     const holder = h('div', { class: 'kartya' });
     const load = guard(async () => { const { atadasok } = await api('GET', `/api/atadasok${filter.value ? `?allapot=${filter.value}` : ''}`); holder.replaceChildren(atadasLista(atadasok, null, load)); });
     filter.addEventListener('change', load);
-    mainSet(my, h('h1', { text: 'Átadások' }), h('p', { class: 'sugo', text: 'Így dolgoznak együtt az ügynökök: egymásnak jelzést, kérelmet, anyagot vagy kérdést adnak át. Minden átadás itt látszik, bármelyiket megállíthatja. Kifelé semmi nem megy, az átadás csak belső.' }), h('div', { class: 'sor' }, filter), holder);
+    mainSet(my, h('h1', { text: 'Átadások' }), h('p', { class: 'sugo', text: 'Így dolgoznak együtt a munkatársak: egymásnak jelzést, kérelmet, anyagot vagy kérdést adnak át. Minden átadás itt látszik, bármelyiket megállíthatja. Kifelé semmi nem megy, az átadás csak belső.' }), h('div', { class: 'sor' }, filter), holder);
     await load();
   }
   function anyagLista(anyagok) {
@@ -345,9 +345,9 @@
       d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs csomag.' }));
     const info = h('section', { class: 'sav', 'aria-labelledby': 'h-ho' }, h('h2', { id: 'h-ho', text: 'Mit tartalmaz egy csomag?' }),
       h('ol', { class: 'lista' }, ['Háttér és helyzetkép, idővonal, érintettek, források', 'Kérdés-válasz lista: legvalószínűbb, legkellemetlenebb, legstratégiaibb', 'Üzenetkeretek: fő, másodlagos, kerülendő', 'Red flagek (jogi és vörös vonalas pontok)', 'Talking points, legfeljebb egy oldal'].map(t => h('li', { text: t }))),
-      h('p', { class: 'sugo', text: 'Red flag esetén az iroda belső kérdést küld a Jogi asztalnak. A Proaktív ügynök elfogadott javaslatából is érkezhet kérelem ide.' }));
+      h('p', { class: 'sugo', text: 'Red flag esetén az iroda belső kérdést küld a Jogi asztalnak. A Proaktív munkatárs elfogadott javaslatából is érkezhet kérelem ide.' }));
     return [h('div', { class: 'harom' }, urlap, lista, info),
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
   function proaktivAsztal(d, agentId) {
@@ -372,7 +372,7 @@
         if (!tema.value.trim()) { toast('Adja meg a témát.', true); return; }
         const r = await api('POST', '/api/proaktiv/javaslat', { tema: tema.value, jelzes: jelzes.value }); toast('Elkészült a javaslat.'); await viewAsztal(agentId); openAnyag(r.anyag_id);
       }), text: 'Javaslat készítése' }), h('span', { class: 'meta', text: `Ma: ${m.javaslat_ma}/${m.korlat} javaslat` })),
-      h('p', { class: 'sugo', text: 'Az ügynök javaslatot tesz: mikor, milyen formában, milyen üzenettel, és mi a hallgatás kockázata. A döntés az Öné, a döntés előtt semmi nem indul el.' }),
+      h('p', { class: 'sugo', text: 'A munkatárs javaslatot tesz: mikor, milyen formában, milyen üzenettel, és mi a hallgatás kockázata. A döntés az Öné, a döntés előtt semmi nem indul el.' }),
       h('p', { class: 'sugo', text: m.szabalyok ? `A szervezet időzítési szabályai: ${m.szabalyok}` : 'Időzítési szabályokat (pl. „pénteken délután nem szólalunk meg”) a Beállításokban adhat meg.' }));
     // naptár
     const datum = h('input', { type: 'date', id: 'nt-datum' }), cim = h('input', { type: 'text', id: 'nt-cim', maxlength: '200', placeholder: 'Esemény neve' });
@@ -385,7 +385,7 @@
         h('p', { class: 'sugo', text: 'A „vezetői” és „saját” bejegyzés foglalt napnak számít az időzítési ajánlásnál; a külső esemény csak támpont.' })] : h('p', { class: 'sugo', text: 'A naptárat csak a vezető látja.' }));
     const anyagSav = h('section', { class: 'sav teljes', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Elkészült anyagok' }), d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
     return [h('div', { class: 'harom' }, javSav, kerPont, naptarSav), anyagSav,
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
 
@@ -409,7 +409,7 @@
       h('div', { class: 'mezo' }, h('label', { for: 'ev-tema', text: 'Téma' }), tema), h('div', { class: 'mezo' }, h('label', { for: 'ev-fmt', text: 'Formátum' }), fmt),
       h('div', { class: 'mezo' }, h('label', { for: 'ev-ido', text: 'Időpont (ha már megvan)' }), ido), h('div', { class: 'mezo' }, h('label', { for: 'ev-hely', text: 'Helyszín' }), hely), h('div', { class: 'mezo' }, h('label', { for: 'ev-keret', text: 'Költségkeret' }), keret),
       h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: keszit, text: 'Koncepció készítése' }), h('span', { class: 'meta', text: `Ma: ${m.koncepcio_ma}/${m.korlatok.concepts} koncepció` })),
-      h('p', { class: 'sugo', text: 'Az ügynök koncepciót készít (cél, célközönség, időpont, helyszín-szempontok, költségbecslés). Amíg Ön nem hagyja jóvá, meghívó nem készül és nem megy ki.' }));
+      h('p', { class: 'sugo', text: 'A munkatárs koncepciót készít (cél, célközönség, időpont, helyszín-szempontok, költségbecslés). Amíg Ön nem hagyja jóvá, meghívó nem készül és nem megy ki.' }));
     const lista = h('section', { class: 'sav', 'aria-labelledby': 'h-ev' }, h('h2', { id: 'h-ev', text: 'Események' }),
       !m.tartalom_lathato ? h('p', { class: 'sugo', text: `Jóváhagyásra váró koncepció: ${m.nyitott_db}. A tartalmat csak a vezető látja.` })
         : m.esemenyek.length ? h('ul', { class: 'lista' }, m.esemenyek.map(e => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => { location.hash = `#/esemeny/${encodeURIComponent(e.id)}`; }, onkeydown: (ev) => { if (ev.key === 'Enter') location.hash = `#/esemeny/${encodeURIComponent(e.id)}`; } },
@@ -420,7 +420,7 @@
       h('p', { class: 'sugo', text: 'Csak a hozzájárulás-jelöléssel rendelkező kapcsolat hívható meg. A név és az e-mail-cím az AI-nak nem megy át.' }));
     return [h('div', { class: 'harom' }, lista, urlap, sl),
       h('section', { class: 'sav teljes', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Elkészült anyagok' }), d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' })),
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
   async function viewEsemeny(id, my = routeToken) {
@@ -563,7 +563,7 @@
     const sEler = h('select', { id: 'dj-eler' }, Object.entries(m['elerések']).map(([k, v]) => h('option', { value: k, text: v })));
     const sUrl = h('input', { type: 'url', id: 'dj-url', maxlength: '500', placeholder: 'https://… (nem kötelező)' });
     const jelzesek = h('section', { class: 'sav', 'aria-labelledby': 'h-kd' }, h('h2', { id: 'h-kd', text: 'Digitális jelzés felvitele' }),
-      h('p', { class: 'sugo', text: 'Az ügynök nem olvassa a közösségi platformokat (az X, a Facebook, az Instagram és a TikTok fizetős hozzáférést kér). Amit Ön lát, azt itt viheti fel; csak a negatív hangulatú és nagy elérésű jelzés indít automatikusan javaslatot.' }),
+      h('p', { class: 'sugo', text: 'A munkatárs nem olvassa a közösségi platformokat (az X, a Facebook, az Instagram és a TikTok fizetős hozzáférést kér). Amit Ön lát, azt itt viheti fel; csak a negatív hangulatú és nagy elérésű jelzés indít automatikusan javaslatot.' }),
       h('div', { class: 'mezo' }, h('label', { for: 'dj-plat', text: 'Platform' }), sPlat), h('div', { class: 'mezo' }, h('label', { for: 'dj-ossz', text: 'Összefoglaló' }), sOssz),
       h('div', { class: 'sor' }, h('label', { for: 'dj-hang', class: 'meta', text: 'Hangulat' }), sHang, h('label', { for: 'dj-eler', class: 'meta', text: 'Elérés' }), sEler), h('div', { class: 'mezo' }, h('label', { for: 'dj-url', text: 'Hivatkozás' }), sUrl),
       h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: guard(async () => {
@@ -581,8 +581,8 @@
       d.anyagok.length ? h('ul', { class: 'lista' }, d.anyagok.map(a => h('li', { class: `kattinthato${a.olvasott ? '' : ' olvasatlan'}`, tabindex: '0', role: 'button', onclick: () => openAnyag(a.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAnyag(a.id); } } }, h('strong', { text: a.cim }), h('span', { class: 'meta', text: `${TIPUS[a.tipus] || a.tipus} · ${when(a.ido)}` })))) : h('p', { class: 'ures-szoveg', text: 'Még nincs közösségi szemle.' }),
       h('div', { class: 'sor' }, jTema, jNap, h('button', { class: 'gomb', type: 'button', ...(m.tartalom_lathato ? {} : { disabled: true }), onclick: guard(async () => { const r = await api('POST', '/api/kozossegi/jelentes', { tema: jTema.value, napok: Number(jNap.value) }); toast(r.megjegyzes || `Elkészült: ${r.cim} (${r.darab} bejegyzés).`, !!r.megjegyzes); await viewAsztal(agentId); openAnyag(r.anyag_id); }), text: 'Jelentés kérése' })));
     return [h('div', { class: 'harom' }, lista, javaslat, jelzesek), jelentesek,
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId))),
-      h('p', { class: 'sugo', text: 'Az ügynök semmit nem tesz közzé: Ön másolja ki a jóváhagyott szöveget, kiteszi, majd a „Kiadtam” gombbal rögzíti; a bejegyzés bekerül az Archívumba.' })];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId))),
+      h('p', { class: 'sugo', text: 'A munkatárs semmit nem tesz közzé: Ön másolja ki a jóváhagyott szöveget, kiteszi, majd a „Kiadtam” gombbal rögzíti; a bejegyzés bekerül az Archívumba.' })];
   }
 
   async function viewPoszt(id, my = routeToken) {
@@ -633,7 +633,7 @@
       nyitott ? h('div', { class: 'kartya' }, h('h3', { text: 'Döntés' }),
         jogi.legrosszabb === 'magas' ? h('label', { class: 'cimke', for: 'kp-jogi-ok' }, jogiOk, ' Láttam a jogi figyelmeztetést (magas kockázat), és tudomásul veszem.') : null,
         h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: dontes('elfogad'), text: 'Elfogadom' }), h('button', { class: 'gomb rossz', type: 'button', onclick: dontes('elvet'), text: 'Elvetem' }), j.allapot !== 'kesobb' ? h('button', { class: 'gomb', type: 'button', onclick: dontes('kesobb'), text: 'Később döntök' }) : null),
-        h('p', { class: 'sugo', text: 'Az ügynök semmit nem tesz közzé. Elfogadás után Ön másolja ki a szöveget, teszi ki, és rögzíti a „Kiadtam” gombbal.' })) : h('p', { class: 'meta', text: `${POSZT_ALLAPOT[j.allapot]}${j.dontes_by ? ` · ${j.dontes_by}` : ''}${j.dontes_ido ? ` · ${when(j.dontes_ido)}` : ''}` }),
+        h('p', { class: 'sugo', text: 'A munkatárs semmit nem tesz közzé. Elfogadás után Ön másolja ki a szöveget, teszi ki, és rögzíti a „Kiadtam” gombbal.' })) : h('p', { class: 'meta', text: `${POSZT_ALLAPOT[j.allapot]}${j.dontes_by ? ` · ${j.dontes_by}` : ''}${j.dontes_ido ? ` · ${when(j.dontes_ido)}` : ''}` }),
       h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: () => openAnyag(j.anyag_id), text: 'A teljes javaslat szövege' })));
     function m_platform(p) { return { facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', x: 'X' }[p] || p; }
   }
@@ -664,9 +664,9 @@
       }), text: 'Vélemény készítése' }), h('span', { class: 'meta', text: `Ma: ${m.velemeny_ma}/${m.korlat}` })));
     const info = h('section', { class: 'sav', 'aria-labelledby': 'h-ji' }, h('h2', { id: 'h-ji', text: 'Mit néz, és mit nem?' }),
       h('ul', { class: 'lista' }, Object.values(m.kategoriak).map(k => h('li', { text: k }))),
-      h('p', { class: 'sugo', text: 'Az ügynök jelez, de nem helyettesíti a jogászt: nem jogi tanács, és törvényhelyet nem hivatkozik. A szabályalapú vizsgálat adja a besorolás alsó határát, az AI ezt csak emelheti. Minden megállapítás a szöveg szó szerinti részletére hivatkozik. Magas kockázatnál riasztást kap, és a levél jóváhagyásánál külön tudomásul kell vennie a figyelmeztetést.' }));
+      h('p', { class: 'sugo', text: 'A munkatárs jelez, de nem helyettesíti a jogászt: nem jogi tanács, és törvényhelyet nem hivatkozik. A szabályalapú vizsgálat adja a besorolás alsó határát, az AI ezt csak emelheti. Minden megállapítás a szöveg szó szerinti részletére hivatkozik. Magas kockázatnál riasztást kap, és a levél jóváhagyásánál külön tudomásul kell vennie a figyelmeztetést.' }));
     return [h('div', { class: 'harom' }, lista, urlap, info),
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
 
@@ -701,7 +701,7 @@
       const r = await api('GET', `/api/archivum/kereses?${p}`);
       talalat.replaceChildren(h('h3', { text: `Közlések (${r.kozlesek.length})` }), kozlesLista(r.kozlesek),
         h('h3', { text: `Dokumentumok (${r.dokumentumok.length})` }), r.dokumentumok.length ? h('ul', { class: 'lista' }, r.dokumentumok.map(x => h('li', {}, h('strong', { text: x.cim }), h('span', { class: 'meta', text: x.szakasz || '' }), h('span', { text: x.kivonat })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }),
-        h('h3', { text: `Ügynökök anyagai (${r.anyagok.length})` }), r.anyagok.length ? h('ul', { class: 'lista' }, r.anyagok.map(x => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openAnyag(x.id), onkeydown: (e) => { if (e.key === 'Enter') openAnyag(x.id); } }, h('strong', { text: x.cim }), h('span', { class: 'meta', text: `${TIPUS[x.tipus] || x.tipus} · ${when(x.ido)}` })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }));
+        h('h3', { text: `Munkatársak anyagai (${r.anyagok.length})` }), r.anyagok.length ? h('ul', { class: 'lista' }, r.anyagok.map(x => h('li', { class: 'kattinthato', tabindex: '0', role: 'button', onclick: () => openAnyag(x.id), onkeydown: (e) => { if (e.key === 'Enter') openAnyag(x.id); } }, h('strong', { text: x.cim }), h('span', { class: 'meta', text: `${TIPUS[x.tipus] || x.tipus} · ${when(x.ido)}` })))) : h('p', { class: 'ures-szoveg', text: 'Nincs találat.' }));
     });
     q.addEventListener('keydown', (e) => { if (e.key === 'Enter') keres(); });
     const idovonal = h('div', { 'aria-live': 'polite' });
@@ -725,7 +725,7 @@
       m.tartalom_lathato ? [h('div', { class: 'sor' }, idoQ, h('button', { class: 'gomb', type: 'button', onclick: idoGomb, text: 'Idővonal' })), idovonal, h('h3', { text: 'Legutóbbi közlések' }), kozlesLista(m.legutobbi),
         h('div', { class: 'sor' }, h('a', { class: 'gomb', href: state.tenant && state.iroda.ugyfelek.length > 1 ? `/api/archivum/export.csv?ugyfel=${encodeURIComponent(state.tenant)}` : '/api/archivum/export.csv', text: 'Az archívum letöltése CSV-ben' }))] : h('p', { class: 'ures-szoveg', text: 'A tartalmat csak a vezető látja.' }));
     return [h('div', { class: 'harom' }, keresSav, felvitel, lista),
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
   // ---------- Kapcsolattartó: az asztal és a Bejövő nézet
@@ -759,11 +759,11 @@
       pf.utolso_siker ? h('p', { class: 'meta', text: `Utolsó sikeres beolvasás: ${when(pf.utolso_siker)}` }) : null,
       pf.utolso_hiba ? h('p', { class: 'jelveny figy', role: 'alert', text: `Utolsó hiba (${when(pf.utolso_hiba_ido)}): ${pf.utolso_hiba}` }) : null,
       h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { const r = await api('POST', '/api/postafiok/beolvasas', {}); toast(r.hiba ? `Hiba: ${r.hiba}` : `Beolvasva: ${r.fogadott || 0} új levél.`, !!r.hiba); await viewAsztal(agentId); }), text: 'Beolvasás most' })),
-      h('p', { class: 'sugo', text: 'Az ügynök a postafiókot csak olvassa. Kifelé semmit nem küld: a választervezet a Bejövőben vár az Ön döntésére.' }));
+      h('p', { class: 'sugo', text: 'A munkatárs a postafiókot csak olvassa. Kifelé semmit nem küld: a választervezet a Bejövőben vár az Ön döntésére.' }));
     const anyagSav = h('section', { class: 'sav', 'aria-labelledby': 'h-je' }, h('h2', { id: 'h-je', text: 'Tervezetek' }),
       d.anyagok.length ? anyagLista(d.anyagok) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült tervezet.' }));
     return [h('div', { class: 'harom' }, szamSav, pfSav, anyagSav),
-      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más ügynökökkel' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
+      h('section', { class: 'sav teljes', 'aria-labelledby': 'h-at' }, h('h2', { id: 'h-at', text: 'Átadások más munkatársakkal' }), atadasLista(d.atadasok, agentId, () => viewAsztal(agentId)))];
   }
 
   async function viewBejovo(openId, my = routeToken) {
@@ -815,7 +815,7 @@
     parts.push(h('div', { class: 'kartya' },
       h('div', { class: 'sor' }, h('span', { class: 'jelveny', text: LEVEL_ALLAPOT[l.allapot] }), h('span', { class: 'meta', text: `Érkezett: ${when(l.ido)} · ${l.forras === 'kezi' ? 'kézzel felvitt' : l.forras === 'hid' ? 'levélhídról' : 'postafiókból'}` })),
       h('h2', { text: l.targy }), h('p', { class: 'meta', text: `Feladó: ${l.felado_nev ? `${l.felado_nev} <${l.felado}>` : l.felado}` }),
-      b?.gyanus_utasitas ? h('p', { class: 'jelveny figy', role: 'alert', text: 'A levél a rendszernek szóló utasításnak tűnő szöveget tartalmaz. Az ügynök ezt nem követte (a levél tartalma adat, nem utasítás), de a levelet óvatosan kezelje.' }) : null,
+      b?.gyanus_utasitas ? h('p', { class: 'jelveny figy', role: 'alert', text: 'A levél a rendszernek szóló utasításnak tűnő szöveget tartalmaz. A munkatárs ezt nem követte (a levél tartalma adat, nem utasítás), de a levelet óvatosan kezelje.' }) : null,
       h('div', { class: 'cimke-sor' }, levelJelek(b), b?.hatarido ? h('span', { class: 'jelveny', text: `Határidő: ${b.hatarido}` }) : null, b?.hangnem === 'feszult' ? h('span', { class: 'jelveny', text: 'Feszült hangnem' }) : null),
       h('pre', { class: 'level-szoveg', tabindex: '0', 'aria-label': 'A levél szövege', text: l.szoveg }),
       ar?.ellentmondasok?.length ? h('div', { class: 'kartya', role: 'alert' }, h('p', { class: 'jelveny figy', text: `Az Archívum ${ar.ellentmondasok.length} ponton ellentmondást jelez a korábbi közlésekkel:` }), h('ul', { class: 'lista' }, ar.ellentmondasok.map(c => h('li', {}, h('strong', { text: `${c.kiadva || ''}: ${c.kozles_cim || 'korábbi közlés'}` }), h('span', { text: `A tervezetben: „${c.uj_reszlet}”` }), h('span', { text: `Korábban: „${c.regi_reszlet}”` }), c.indoklas ? h('span', { class: 'meta', text: c.indoklas }) : null, h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: () => openKozles(c.kozles_id), text: 'A korábbi közlés megnyitása' })))))) : null,
@@ -874,7 +874,7 @@
   async function viewJelentesek(my = routeToken) {
     const { anyagok } = await api('GET', '/api/jelentesek');
     const nevek = Object.fromEntries(state.iroda.ugynokok.map(a => [a.id, a.nev]));
-    mainSet(my, h('h1', { text: 'Jelentések' }), h('p', { class: 'sugo', text: 'Az összes ügynök elkészült anyaga időrendben.' }),
+    mainSet(my, h('h1', { text: 'Jelentések' }), h('p', { class: 'sugo', text: 'Az összes munkatárs elkészült anyaga időrendben.' }),
       anyagok.length ? h('div', { class: 'kartya' }, h('ul', { class: 'lista' }, anyagok.map(a => h('li', { class: `kattinthato${a.olvasott ? '' : ' olvasatlan'}`, tabindex: '0', role: 'button', onclick: () => openAnyag(a.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAnyag(a.id); } } },
         h('strong', { text: a.cim }), h('span', { class: 'meta', text: `${nevek[a.ugynok] || a.ugynok} · ${TIPUS[a.tipus] || a.tipus} · ${when(a.ido)}` }))))) : h('p', { class: 'ures-szoveg', text: 'Még nincs elkészült anyag.' }));
   }
@@ -884,7 +884,7 @@
   async function viewDokumentumok(my = routeToken) {
     const d = await api('GET', '/api/dokumentumok');
     const kat = d.kategoriak;
-    const nevek = Object.fromEntries(d.ugynokok.map(a => [a.id, a.nev.replace(/ Ügynök$/, '')]));
+    const nevek = Object.fromEntries(d.ugynokok.map(a => [a.id, a.nev.replace(/ Munkatárs$/, '')]));
     const refresh = () => viewDokumentumok();
 
     // -- feltöltés
@@ -946,7 +946,7 @@
         h('span', { class: 'meta', text: `${kat[x.kategoria]} · ${x.fajlnev} · ${meret(x.meret)} · ${x.szakaszok} szakasz · ${x.feltolto.replace(/^ember:/, '')} · ${when(x.ido)}` }),
         h('div', { class: 'sor' },
           x.ai_tiltott ? h('span', { class: 'jelveny figy', text: 'Nem küldhető AI-nak' }) : null,
-          h('span', { class: 'jelveny', text: x.hatokor ? `Használja: ${x.hatokor.map(i => nevek[i] || i).join(', ')}` : 'Minden ügynök használhatja' }),
+          h('span', { class: 'jelveny', text: x.hatokor ? `Használja: ${x.hatokor.map(i => nevek[i] || i).join(', ')}` : 'Minden munkatárs használhatja' }),
           !x.eredeti ? h('span', { class: 'jelveny', title: 'Az eredeti fájl nincs megőrizve, csak a kinyert szöveg.', text: 'Csak szöveg' }) : null),
         h('div', { class: 'sor' },
           h('button', { class: 'gomb', type: 'button', onclick: () => openDok(x.id, refresh), text: 'Megnyitás és beállítások' }),
@@ -956,12 +956,12 @@
     renderList(d);
 
     mainSet(my, h('h1', { text: 'Dokumentumtár' }),
-      h('p', { class: 'sugo', text: 'Az itt tárolt dokumentumokból dolgoznak az ügynökök: a válaszaik mellett mindig látszik, melyik dokumentum melyik részére támaszkodtak.' }),
+      h('p', { class: 'sugo', text: 'Az itt tárolt dokumentumokból dolgoznak a munkatársak: a válaszaik mellett mindig látszik, melyik dokumentum melyik részére támaszkodtak.' }),
       d.eredeti_megorzes ? null : h('p', { class: 'sugo', role: 'note', text: 'Az eredeti fájlok tárolása nincs bekapcsolva: csak a kinyert szöveg marad meg, az eredeti nem tölthető vissza.' }),
       h('div', { class: 'kartya' }, h('h2', { text: 'Feltöltés' }), drop, fileInput,
         h('div', { class: 'mezo' }, h('label', { for: 'f-kat', text: 'Kategória' }), katSel),
         h('div', { class: 'mezo' }, h('label', { for: 'f-cim', text: 'Cím' }), cimIn),
-        h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Melyik ügynökök használhatják?' }), h('label', {}, mind, ' Mindegyik'), agentWrap),
+        h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Melyik munkatársak használhatják?' }), h('label', {}, mind, ' Mindegyik'), agentWrap),
         h('div', { class: 'mezo' }, h('label', {}, aiBox, ' Nem küldhető AI-nak'), h('span', { class: 'sugo', text: d.ai ? 'Az AI be van kapcsolva: a nem jelölt dokumentumok részletei az AI-szolgáltatóhoz kerülhetnek.' : 'Az AI most nincs bekapcsolva. Bekapcsolás után a nem jelölt dokumentumok részletei az AI-szolgáltatóhoz kerülhetnek; a jelölt dokumentum tartalma sosem.' })),
         eredmeny),
       h('div', { class: 'kartya' }, h('h2', { text: 'Kérdés a dokumentumokból' }), kerdes, h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: kerd, text: 'Kérdés küldése' })), valasz),
@@ -980,7 +980,7 @@
     const ks = h('select', { id: 'd-kat' }, Object.entries(kat).map(([k, v]) => h('option', { value: k, ...(k === x.kategoria ? { selected: true } : {}), text: v })));
     const mind = h('input', { type: 'checkbox', id: 'd-mind', ...(x.hatokor ? {} : { checked: true }) });
     const boxes = meta.ugynokok.map(a => ({ a, el: h('input', { type: 'checkbox', id: `d-a-${a.id}`, ...(x.hatokor?.includes(a.id) ? { checked: true } : {}) }) }));
-    const wrap = h('div', { class: `cimkek${x.hatokor ? '' : ' rejtett'}` }, boxes.map(({ a, el }) => h('label', { class: 'cimke', for: `d-a-${a.id}` }, el, ` ${a.nev.replace(/ Ügynök$/, '')}`)));
+    const wrap = h('div', { class: `cimkek${x.hatokor ? '' : ' rejtett'}` }, boxes.map(({ a, el }) => h('label', { class: 'cimke', for: `d-a-${a.id}` }, el, ` ${a.nev.replace(/ Munkatárs$/, '')}`)));
     mind.addEventListener('change', () => wrap.classList.toggle('rejtett', mind.checked));
     const ai = h('input', { type: 'checkbox', id: 'd-ai', ...(x.ai_tiltott ? { checked: true } : {}) });
     const mentes = guard(async () => {
@@ -994,7 +994,7 @@
       h('h2', { text: x.cim }),
       h('div', { class: 'mezo' }, h('label', { for: 'd-cim', text: 'Cím' }), cim),
       h('div', { class: 'mezo' }, h('label', { for: 'd-kat', text: 'Kategória' }), ks),
-      h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Melyik ügynökök használhatják?' }), h('label', {}, mind, ' Mindegyik'), wrap),
+      h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Melyik munkatársak használhatják?' }), h('label', {}, mind, ' Mindegyik'), wrap),
       h('div', { class: 'mezo' }, h('label', {}, ai, ' Nem küldhető AI-nak')),
       h('div', { class: 'sor' }, h('button', { class: 'gomb fo', type: 'button', onclick: mentes, text: 'Mentés' })),
       h('h3', { text: `Szakaszok (${x.szakaszLista.length})` }),
@@ -1017,7 +1017,7 @@
     });
     filter.addEventListener('change', load);
     const csvLink = h('a', { class: 'gomb', href: state.tenant && state.iroda.ugyfelek.length > 1 ? `/api/naplo.csv?ugyfel=${encodeURIComponent(state.tenant)}&limit=500` : '/api/naplo.csv?limit=500', text: 'Letöltés CSV-ben' });
-    mainSet(my, h('h1', { text: 'Napló' }), h('p', { class: 'sugo', text: 'Minden javaslat és döntés itt van: ki mit kért, mit javasolt az ügynök, és mit hagyott jóvá. A napló nem módosítható.' }), h('div', { class: 'sor' }, filter, csvLink), holder);
+    mainSet(my, h('h1', { text: 'Napló' }), h('p', { class: 'sugo', text: 'Minden javaslat és döntés itt van: ki mit kért, mit javasolt a munkatárs, és mit hagyott jóvá. A napló nem módosítható.' }), h('div', { class: 'sor' }, filter, csvLink), holder);
     await load();
   }
 
@@ -1063,7 +1063,7 @@
     const koz = p.kozossegi || { platformok: [], hangnem: '', tiltott_temak: [], hashtagek: [], emoji: false };
     const kozPlat = Object.entries(p.platformok).map(([k, v]) => ({ k, el: h('input', { type: 'checkbox', id: `f-kp-${k}`, ...(koz.platformok.includes(k) ? { checked: true } : {}) }), v }));
     const kozHang = h('textarea', { id: 'f-kozhang', rows: '3', maxlength: '300', placeholder: 'Pl.: közvetlen, de nem barátkozó; tárgyilagos' }); kozHang.value = koz.hangnem || '';
-    const kozTilt = tagInput('Tiltott témák', koz.tiltott_temak || [], 'Ezekről az ügynök nem javasol posztot, csak megjegyzést tesz.');
+    const kozTilt = tagInput('Tiltott témák', koz.tiltott_temak || [], 'Ezekről a munkatárs nem javasol posztot, csak megjegyzést tesz.');
     const kozHash = tagInput('Szokásos hashtagek', koz.hashtagek || [], 'Legfeljebb 5 kerül egy posztba.');
     const kozEmoji = h('input', { type: 'checkbox', id: 'f-kozemoji', ...(koz.emoji ? { checked: true } : {}) });
     const ido = h('input', { type: 'time', id: 'f-ido', value: p.utemezes.szemle || '07:30' });
@@ -1107,7 +1107,7 @@
         h('fieldset', { class: 'opciok' }, h('legend', { text: 'Platformok, ahol posztol' }), kozPlat.map(({ el, v }) => h('label', { for: el.id, class: 'cimke' }, el, ` ${v}`))),
         h('div', { class: 'mezo' }, h('label', { for: 'f-kozhang', text: 'A posztok hangneme' }), kozHang), kozTilt.el, kozHash.el,
         h('label', { class: 'cimke', for: 'f-kozemoji' }, kozEmoji, ' Emoji engedélyezett'),
-        h('p', { class: 'sugo', text: 'A Közösségi média ügynök csak javasol; semmit nem tesz közzé.' })),
+        h('p', { class: 'sugo', text: 'A Közösségi média munkatárs csak javasol; semmit nem tesz közzé.' })),
       h('div', { class: 'kartya' }, h('h2', { text: 'Postafiók' }),
         op ? [h('div', { class: 'mezo' }, h('label', { for: 'f-pf-szolg', text: 'Szolgáltató' }), pf.szolg), h('div', { class: 'mezo' }, h('label', { for: 'f-pf-cim', text: 'A sajtós postafiók címe' }), pf.cim),
           h('div', { class: 'mezo' }, h('label', { for: 'f-pf-mappa', text: 'Mappa vagy címke, amelyet az iroda olvas' }), pf.mappa, h('span', { class: 'sugo', text: 'Csak ezt a mappát olvassa, a postafiók többi része nem kerül be a rendszerbe.' })),

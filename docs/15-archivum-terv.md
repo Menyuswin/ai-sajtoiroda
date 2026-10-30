@@ -1,6 +1,6 @@
-# Az Archívum- és Tudásmenedzsment ügynök terve
+# Az Archívum- és Tudásmenedzsment munkatárs terve
 
-*Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 8. fejezetet). Kiegészítő ügynök (`agents/06-archivum.yaml`). A Dokumentumtárra (`docs/09`) épül, és a Kapcsolattartó, a Felkészítő és a Közösségi média használja majd (`docs/10`, felelősségi mátrix).*
+*Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 8. fejezetet). Kiegészítő munkatárs (`agents/06-archivum.yaml`). A Dokumentumtárra (`docs/09`) épül, és a Kapcsolattartó, a Felkészítő és a Közösségi média használja majd (`docs/10`, felelősségi mátrix).*
 
 ## 1. A cél, egy példával
 
@@ -13,7 +13,7 @@ Az Archívum a szervezet **intézményi emlékezete**: mit mondtunk ki, mikor, k
 1. **Kiadott közlések nyilvántartása (új).** Minden, ami a vezető jóváhagyásával **tényleg kiment vagy kimenő mappába került**: a jóváhagyott levélválasz és a meghívó. A nyilvántartásban: dátum, fajta, tárgy, **teljes szöveg**, a címzett **médiuma és címtartománya** (nem a teljes e-mail-cím), a jóváhagyó, a forrás-anyag. A közlés innentől **nem módosítható**, csak a megőrzési idő után törölhető.
 2. **Kézzel felvitt korábbi közlések:** a vezető bevihet régi nyilatkozatot, interjút, sajtóközleményt (cím, dátum, fajta, szöveg), hogy az előzmény meglegyen akkor is, ha nem ebben a rendszerben született.
 3. **A Dokumentumtár** („nyilatkozat”, „irányelv”, „háttéranyag”, „sajtóanyag” kategóriák): az Archívum ezekben is keres, a meglévő hatókör- és „nem küldhető AI-nak” szabályok szerint.
-4. **Az ügynökök elkészült anyagai** (csomag, koncepció, utómunka, jogi vélemény) megmaradnak a Jelentésekben; az Archívum **nem másolja** őket, de a keresés megtalálja a címüket és a szövegüket, a bizalmas anyagtípusokra érvényes hozzáférési szabállyal.
+4. **A munkatársak elkészült anyagai** (csomag, koncepció, utómunka, jogi vélemény) megmaradnak a Jelentésekben; az Archívum **nem másolja** őket, de a keresés megtalálja a címüket és a szövegüket, a bizalmas anyagtípusokra érvényes hozzáférési szabállyal.
 
 ## 3. Mit csinál
 
@@ -22,7 +22,7 @@ Az Archívum a szervezet **intézményi emlékezete**: mit mondtunk ki, mikor, k
 - **Korábbi közlések a tervezet mellett (program, AI nélkül is):** amikor a Kapcsolattartó választervezetet vagy a Felkészítő csomagot készít, a program kikeresi a témához tartozó korábbi közléseket, és a Bejövő levélrészletén **„Korábbi közlések erről”** listaként mutatja. Ez olcsó, és az embernek ad támpontot.
 - **Ellentmondás-ellenőrzés (AI-val):** ha vannak korábbi közlések, és az AI be van kapcsolva, az Archívum összeveti a tervezetet velük, és csak **szó szerinti idézetekkel** jelez ellentmondást: a tervezet egy részlete és a korábbi közlés egy részlete (a program ellenőrzi, hogy mindkét idézet valóban szerepel). Találatnál **jelzés a Kapcsolattartónak** (átadás), a levélrészleten kiemelt figyelmeztetés, és a vezető látja.
 - **AI nélkül nem ítél ellentmondásról.** Szabályalapú tartalékként csak megmutatja a kapcsolódó korábbi közléseket, és ezt kimondja. (Az ellentmondás jelentéstani kérdés; kulcsszavakkal megbízhatatlan, és hamis nyugalmat adna.)
-- **Kérdés az Archívumhoz:** a Kapcsolattartó, a Felkészítő vagy a Jogi ügynök átadásban kérdezhet („mit közöltünk a várólistáról az elmúlt évben?”); a válasz forrásjelölt kivonat.
+- **Kérdés az Archívumhoz:** a Kapcsolattartó, a Felkészítő vagy a Jogi munkatárs átadásban kérdezhet („mit közöltünk a várólistáról az elmúlt évben?”); a válasz forrásjelölt kivonat.
 - **Megőrzés és törlés:** a közlések a profilban megadott ideig maradnak (javaslat: **36 hónap**), utána törlődnek; a vezető bármelyiket törölheti, az Archívum exportálható. A törlés naplózott.
 
 ## 4. Alapelvek
@@ -63,7 +63,7 @@ Az Archívum a szervezet **intézményi emlékezete**: mit mondtunk ki, mikor, k
 A tulajdonos mind a hat pontot elfogadta (automatikus nyilvántartás médium és címtartomány nélküli e-mail-címmel, egy keresés, az ellentmondás-ítélet csak AI-val és idézettel, kézi felvitel, 36 hónapos megőrzés, a tartalmat csak a vezető látja).
 
 - **Közlés-nyilvántartás** (`migrations/0008`, `src/cloudflare/archivum-store.js`): a jóváhagyott levélválasz és a kiküldött meghívó **a küldés után automatikusan** bekerül (a tervezet, az elvetett és a még jóváhagyásra váró nem). A címzettnek csak a **médiuma és a címtartománya** tárolódik, a teljes e-mail-cím nem. A közlés az adatbázis szintjén **nem módosítható** (törölni csak a vezető vagy a megőrzési idő lejárta után lehet). Ugyanaz a forrás kétszer nem kerül be; a meghívószöveg ugyanahhoz az eseményhez egyszer, a megváltozott szöveg új közlésként. Korlát: 5000 közlés; megőrzés: `megorzes.kozles_honap` (alapértelmezés 36 hónap), az ütemező törli a lejártakat.
-- **Keresés:** egy keresőmező a közlések, a Dokumentumtár és az ügynökök anyagai fölött (szó alapú, ragozás-tűrő), szűrés fajtára és időszakra; **idővonal** egy témához; kézi felvitel (ellenőrzött dátum, nem lehet jövőbeli); export CSV-ben (képletkarakter-védelemmel); törlés (naplózott, a keresőindexből is).
+- **Keresés:** egy keresőmező a közlések, a Dokumentumtár és a munkatársak anyagai fölött (szó alapú, ragozás-tűrő), szűrés fajtára és időszakra; **idővonal** egy témához; kézi felvitel (ellenőrzött dátum, nem lehet jövőbeli); export CSV-ben (képletkarakter-védelemmel); törlés (naplózott, a keresőindexből is).
 - **Korábbi közlések a tervezet mellett:** a Bejövő levélrészletén „Korábbi közlések erről” (a program találatai, AI nélkül is).
 - **Ellentmondás-jelzés (AI-val):** a tervezetet és a találatként előkerült korábbi közléseket a modell veti össze; a jelzés csak akkor marad meg, ha **mindkét idézet szó szerint** szerepel (a tervezetben, illetve a megadott közlésben), különben törlődik. Találatnál kiemelt figyelmeztetés a levélrészleten, és jelzés-átadás az Archívumtól a Kapcsolattartónak. **AI nélkül az Archívum nem ítél ellentmondásról**, ezt kimondja. Napi korlát: 10 ellenőrzés; hibánál vagy a korlát elérésekor az előzmények megmaradnak.
 - **Átadás-feldolgozó:** az Archívumnak szóló kérdésre kivonatos összefoglalót ad a találatokról.

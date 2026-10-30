@@ -10,7 +10,7 @@ const huf = (n) => `${Math.round(n).toLocaleString('hu-HU')} Ft`;
 
 export function mockConcept(req) {
   return {
-    cel: KIT('az esemény célja; AI nélkül az ügynök nem fogalmaz célt'),
+    cel: KIT('az esemény célja; AI nélkül a munkatárs nem fogalmaz célt'),
     kozonseg: KIT('célközönség'),
     helyszin_szempontok: ['Megközelíthetőség (tömegközlekedés, parkolás)', 'Akadálymentesség', 'Hang- és képtechnika, internet', 'Kapacitás a várt létszámhoz'],
     koltseg_tetelek: ['Helyszín', 'Technika', 'Étkeztetés', 'Sajtóanyag-csomag', 'Egyéb'].map(t => ({ tetel: t, osszeg: null, megjegyzes: '' })),

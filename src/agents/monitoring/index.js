@@ -1,7 +1,7 @@
-// A Monitoring Ügynök folyamata.
+// A Monitoring Munkatárs folyamata.
 //   mode 'digest': gyűjtés → szűrés → besorolás → trend → riasztás (ha van) → napi szemle a vezetőnek
 //   mode 'check' : ugyanez, de CSAK riasztás (óránkénti ellenőrzéshez); szemle nem készül
-// Az ügynök kifelé nem kommunikál: egyetlen kimenete a vezetőnek szóló belső jelentés / riasztás.
+// A munkatárs kifelé nem kommunikál: egyetlen kimenete a vezetőnek szóló belső jelentés / riasztás.
 import { dedupe } from './dedupe.js';
 import { filterArticles } from './filter.js';
 import { classifyArticle } from './classify.js';
@@ -19,7 +19,7 @@ const MAX_CLASSIFY_PER_RUN = 80; // költségkorlát futásonként
 export async function run(ctx, { mode = 'digest' } = {}) {
   const { profile, log, store, outbox, llm, now, fetchText, prompts, models } = ctx;
   if (!agentActive(profile, AGENT, now())) {
-    await log.append({ szereplo: 'rendszer', tipus: 'futas', tartalom: { mode, kimenet: 'kihagyva: az ügynök ki van kapcsolva' } });
+    await log.append({ szereplo: 'rendszer', tipus: 'futas', tartalom: { mode, kimenet: 'kihagyva: a munkatárs ki van kapcsolva' } });
     return { skipped: true };
   }
 

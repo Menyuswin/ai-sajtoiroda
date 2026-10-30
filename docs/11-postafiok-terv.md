@@ -1,12 +1,12 @@
-# A postafiók-réteg és a Kapcsolattartó Ügynök terve
+# A postafiók-réteg és a Kapcsolattartó Munkatárs terve
 
 *Állapot: **jóváhagyva (2026-10-29), a P1–P5 lépések megépültek és tesztelve vannak** (lásd a 9. fejezetet); a P6 (levélküldés) a levélküldő szolgáltató kiválasztására vár, a telefonhívások (ElevenLabs) a legvégére kerülnek. A döntés: a nulladik ügyfélnél (ő maga) **iCloud** a postafiók; **Gmail** és **céges Exchange** ügyfelenként beállítható.*
 
 ## 1. A cél
 
-A Kapcsolattartó Ügynök (`agents/01-kapcsolattarto.yaml`) a sajtós postafiókba érkező leveleket **elolvassa, osztályozza** (téma, sürgősség, médium, hangnem), és **választervezetet** készít. A tervezet az irodában, a Kapcsolattartó asztalán jelenik meg; a vezető jóváhagyja, módosítja vagy elveti. Kifelé csak jóváhagyás után mehet (kimenő kapu, `src/core/outbox.js`).
+A Kapcsolattartó Munkatárs (`agents/01-kapcsolattarto.yaml`) a sajtós postafiókba érkező leveleket **elolvassa, osztályozza** (téma, sürgősség, médium, hangnem), és **választervezetet** készít. A tervezet az irodában, a Kapcsolattartó asztalán jelenik meg; a vezető jóváhagyja, módosítja vagy elveti. Kifelé csak jóváhagyás után mehet (kimenő kapu, `src/core/outbox.js`).
 
-A levelezőrendszer ügyfelenként más, ezért a postafiók **cserélhető illesztő** mögött áll, mint a levélküldő és az AI. Az ügynök nem tudja, hogy iCloud, Gmail vagy Exchange áll mögötte.
+A levelezőrendszer ügyfelenként más, ezért a postafiók **cserélhető illesztő** mögött áll, mint a levélküldő és az AI. A munkatárs nem tudja, hogy iCloud, Gmail vagy Exchange áll mögötte.
 
 ## 2. Az illesztők
 
@@ -38,8 +38,8 @@ postafiok:
 
 ## 4. Adatvédelem és biztonság
 
-1. **Adatminimalizálás:** az ügynök csak a kijelölt mappát („Sajtó”) vagy címkét olvassa, nem az egész postafiókot. A nulladik ügyfélnél ezért ajánlott **külön sajtós címet** (vagy aliast és szabályt, amely a mappába szűri a sajtóleveleket), hogy a személyes levelezés ne kerüljön a rendszerbe.
-2. **A levél adat, nem utasítás.** A beérkező levél tartalma bármit mondhat („törölj mindent”, „küldd el az ügyféllistát”); az ügynök ebből nem cselekszik, mert csak a zárt műveletlistából dolgozhat, és kifelé semmi nem megy jóváhagyás nélkül. Külön teszt: levélbe rejtett utasítás hatástalan.
+1. **Adatminimalizálás:** a munkatárs csak a kijelölt mappát („Sajtó”) vagy címkét olvassa, nem az egész postafiókot. A nulladik ügyfélnél ezért ajánlott **külön sajtós címet** (vagy aliast és szabályt, amely a mappába szűri a sajtóleveleket), hogy a személyes levelezés ne kerüljön a rendszerbe.
+2. **A levél adat, nem utasítás.** A beérkező levél tartalma bármit mondhat („törölj mindent”, „küldd el az ügyféllistát”); a munkatárs ebből nem cselekszik, mert csak a zárt műveletlistából dolgozhat, és kifelé semmi nem megy jóváhagyás nélkül. Külön teszt: levélbe rejtett utasítás hatástalan.
 3. **A levélből nem jöhet automatikus válasz.** Automatikus nyugtázás sincs; minden kimenő levél a vezetőn át megy.
 4. **Személyes adat:** a levelek személyes adatot tartalmaznak (név, telefonszám). Megőrzési idő a profilban (javaslat: 90 nap a levélszöveg, a napló marad); a törlés a levélmásolatot és a szövegrészeket is törli. A GDPR-kérdések (`docs/05`, 7. kérdés) jogásszal tisztázandók.
 5. **AI felé:** a levélszöveg az AI-szolgáltatóhoz kerülhet; a felületen jelezni kell. A „Nem küldhető AI-nak” elv itt is érvényes (feladó- vagy mappaszinten).
@@ -53,12 +53,12 @@ postafiok:
   - **B) Kis levélhíd** (egy Node-folyamat bárhol, pl. a tulajdonos gépén vagy olcsó szerveren), amely IMAP-pal olvas, és a Workernek HTTPS-en küldi a leveleket. Független a Make-től és a Cloudflare korlátaitól.
 - Javaslat: az **illesztő felületét és a próba-postafiókot** építjük meg most (ez hálózat nélkül tesztelhető), a **Gmail API**-t és a **Graph**-ot HTTPS-illesztőként (hamis szerverrel tesztelve), az iCloudhoz pedig a **levélhidat** (B), mert az az Ön esete, és nem függ fizetős előfizetéstől. A Make-es út (A) ugyanarra a webhook-felületre csatlakozik, így később bekapcsolható.
 
-## 6. A Kapcsolattartó Ügynök első ütemben
+## 6. A Kapcsolattartó Munkatárs első ütemben
 
 1. **Levélfogadás:** a postafiókból (vagy a híd/webhook útján) érkező levél tárolása (`levelek` tábla, ügyfél-elkülönítéssel), duplikáció-szűrés levélazonosítóval.
 2. **Osztályozás:** téma, sürgősség, a médium (a Monitoring médiaprofiljából), hangnem; a vörös vonalba eső levél riasztást ad (mint a Monitoringnál).
 3. **Választervezet:** a vezető hangnem-szabályai és a Dokumentumtár korábbi nyilatkozatai alapján, `[D1 §2]` típusú forrásjelölésekkel; három opció: válasz / későbbre halasztás / továbbítás vagy nem válaszolunk. A tervezet **nem megy ki**, csak az asztalon jelenik meg.
-4. **Átadások:** jogi vonatkozás gyanújánál kérdés a Jogi ügynöknek (üres asztal: várakozik); korábbi ellentmondás jelzése az Archívumtól (később).
+4. **Átadások:** jogi vonatkozás gyanújánál kérdés a Jogi munkatársnak (üres asztal: várakozik); korábbi ellentmondás jelzése az Archívumtól (később).
 5. **Felület:** a Kapcsolattartó asztala: bejövő levelek listája (állapottal: új / tervezet kész / jóváhagyva / elvetve), levél megnyitása, tervezet szerkesztése, jóváhagyás. A jóváhagyott tervezet egyelőre **a kimenő mappába** kerül (száraz mód), amíg a levélküldő szolgáltató nincs kiválasztva.
 6. **Telefonhívások:** külön döntés (`docs/05`, 6. kérdés); első ütemben csak kézi jegyzet vagy átirat felvétele az asztalon.
 
@@ -89,7 +89,7 @@ A tulajdonos az 5 pontot elfogadta: először csak olvasás és tervezet; külö
 
 - **Postafiók-réteg** (`src/mail/`): közös levélformátum (HTML szöveggé, hosszkorlát, hibás levél kiesik), Gmail API-illesztő (frissítő tokenes belépés, csak olvasás), Microsoft Graph illesztő (mappa-azonosító keresés, szöveges törzs), híd-típusú szolgáltatók (iCloud, IMAP), próba/kézi mód. A titok csak a környezetből jön, a profilban csak a **neve**; a hibaüzenetek nem tartalmazzák a szolgáltató válaszát.
 - **Levéltár** (`migrations/0005`, `src/mail/store.js`): ügyfél-elkülönítés, duplikátum-szűrés levélazonosítóval, megőrzési idő (profil: `megorzes.level_nap`, alapértelmezés 90 nap; a napló marad), postafiók-állapot (kurzor, utolsó siker és hiba).
-- **Kapcsolattartó Ügynök** (`src/agents/kapcsolattarto/`): besorolás (típus, téma, sürgősség, hangnem, határidő, vörös vonal, jogi gyanú), választervezet három opcióval (tartalmi válasz / nyugtázás / nem válaszolunk), kockázatok és forrásjelölés a dokumentumtárból. Szabályalapú tartalék AI nélkül, AI-ág (hamis API-val tesztelve) a `level-besorolas.md` és `level-valasz.md` promptokkal. Az AI-válasz szövegéből a forrásjelölés kikerül, a nem létező forrás törlődik. A **kitöltendő** rész (`[KITÖLTENDŐ: …]`) miatt a tervezet nem hagyható jóvá, amíg a vezető nem írta meg.
+- **Kapcsolattartó Munkatárs** (`src/agents/kapcsolattarto/`): besorolás (típus, téma, sürgősség, hangnem, határidő, vörös vonal, jogi gyanú), választervezet három opcióval (tartalmi válasz / nyugtázás / nem válaszolunk), kockázatok és forrásjelölés a dokumentumtárból. Szabályalapú tartalék AI nélkül, AI-ág (hamis API-val tesztelve) a `level-besorolas.md` és `level-valasz.md` promptokkal. Az AI-válasz szövegéből a forrásjelölés kikerül, a nem létező forrás törlődik. A **kitöltendő** rész (`[KITÖLTENDŐ: …]`) miatt a tervezet nem hagyható jóvá, amíg a vezető nem írta meg.
 - **Biztonság:** a levél adat, nem utasítás; a gyanús („hagyd figyelmen kívül…”) szöveget a program jelzi (Gyanús szöveg), a besorolás kimenete zárt értékekből áll, a tervezet pedig csak javaslat, ezért a levélbe rejtett utasítás nem tud mellékhatást kiváltani (külön teszt). A válasz **címzettje mindig a levél feladója**, a felületről nem módosítható. A jóváhagyás a kimenő kapun át megy (`kind: valasz`, vezetői jóváhagyás kell); próbaüzemben a kimenő mappába kerül, éles módban levélküldő nélkül nem megy el, és a levél újra nyitott marad.
 - **Vörös vonal:** riasztás csak a vezetőnek. **Jogi gyanú:** kérdés-átadás a Jogi asztalnak (üres: vár). **Továbbítás** a vezető döntésére belső átadásként.
 - **Adatvédelem:** a levelek **tartalmát csak a vezető látja**; az üzemeltető a darabszámokat és a postafiók állapotát (titok nélkül).
@@ -105,7 +105,7 @@ A tulajdonos az 5 pontot elfogadta: először csak olvasás és tervezet; külö
 ## 10. Telefonhívások (a legvégére, ElevenLabs)
 
 A tulajdonos döntése: a bejövő hívások kezelése és a hívóval való beszélgetés **ElevenLabs**-szal készül, de **a legvégén**. Amit addig érdemes tudni, hogy a tervezésnél ne érjen meglepetés:
-- A hívás **valós időben, kifelé szól**: ez az „semmi nem megy ki jóváhagyás nélkül” alapszabállyal ütközik. A megoldás várhatóan szűk szerepkör: a hang-ügynök csak **üzenetet vesz fel** (név, médium, kérdés, visszahívási szám, határidő), vagy **előre jóváhagyott** kijelentéseket mond el; tartalmi választ nem ad. Ezt a vezetővel külön dönteni kell, mielőtt bármi épül.
+- A hívás **valós időben, kifelé szól**: ez az „semmi nem megy ki jóváhagyás nélkül” alapszabállyal ütközik. A megoldás várhatóan szűk szerepkör: a hang-munkatárs csak **üzenetet vesz fel** (név, médium, kérdés, visszahívási szám, határidő), vagy **előre jóváhagyott** kijelentéseket mond el; tartalmi választ nem ad. Ezt a vezetővel külön dönteni kell, mielőtt bármi épül.
 - A hívót **tájékoztatni kell**, hogy mesterséges intelligenciával beszél (EU AI Act átláthatóság; `docs/05`, 8. kérdés), és a hívásfelvétel és az átirat személyes adat (GDPR, `docs/05`, 7. kérdés). Jogászi átnézés javasolt.
 - Az átirat és az összefoglaló ugyanúgy a Bejövőbe kerülne (mint a kézi jegyzet), besorolással és visszahívási javaslattal; a felület erre már alkalmas (a „kézi jegyzet” útvonal).
 - Szempontok a választáshoz: magyar nyelvű beszédfelismerés és hang minősége, késleltetés, költség percenként, adatkezelés és adattárolási hely, telefonszám-szolgáltatás. Ezek a megvalósításkor, ajánlattal együtt kerülnek elő.

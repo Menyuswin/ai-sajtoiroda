@@ -1,6 +1,6 @@
-# Az öt alapügynök
+# Az öt alapmunkatárs
 
-## 1. Kommunikációs Kapcsolattartó Ügynök (Inbox & Call Agent)
+## 1. Kommunikációs Kapcsolattartó Munkatárs (Inbox & Call Agent)
 
 Feladata a sajtóval való közvetlen, reaktív kapcsolatkezelés.
 
@@ -13,7 +13,7 @@ Feladata a sajtóval való közvetlen, reaktív kapcsolatkezelés.
 - Kapcsolattartási napló: melyik újságíró mikor keresett, milyen témában, milyen válasz született.
 - Eszkaláció a vezetőhöz, ha a kérdés politikailag érzékeny, jogi vonatkozású, vagy a válasz stratégiai döntést igényel.
 
-## 2. Sajtófelkészítő Ügynök (Briefing Agent)
+## 2. Sajtófelkészítő Munkatárs (Briefing Agent)
 
 Feladata a vezetők és szóvivők tartalmi és kommunikációs felkészítése.
 
@@ -23,7 +23,7 @@ Feladata a vezetők és szóvivők tartalmi és kommunikációs felkészítése.
 - „Red flags” lista: kérdések és témák, amelyeknél azonnal a vezetőt vagy jogászt kell bevonni.
 - Rövid, 1–2 oldalas „talking points” dokumentum, amelyet a vezető közvetlenül interjú előtt használhat.
 
-## 3. Sajtószemle- és Monitoring Ügynök (Media Monitoring Agent)
+## 3. Sajtószemle- és Monitoring Munkatárs (Media Monitoring Agent)
 
 Feladata a külső média és a közbeszéd folyamatos figyelése és strukturált értékelése.
 
@@ -33,7 +33,7 @@ Feladata a külső média és a közbeszéd folyamatos figyelése és strukturá
 - Összehasonlító elemzés: a szervezet megjelenése a versenytársakéhoz vagy a szakpolitikai napirendhez képest.
 - Heti „media pulse” jelentés a vezetőnek a legfontosabb figyelmeztetésekkel és lehetőségekkel.
 
-## 4. Proaktív Kommunikációs Stratégia Ügynök (Agenda & Opportunity Agent)
+## 4. Proaktív Kommunikációs Stratégia Munkatárs (Agenda & Opportunity Agent)
 
 Feladata a napirend-formálás és a proaktív megszólalási lehetőségek azonosítása.
 
@@ -43,7 +43,7 @@ Feladata a napirend-formálás és a proaktív megszólalási lehetőségek azon
 - Üzenetstratégiai javaslat: hogyan illeszthető egy külső téma a szervezet saját narratívájába anélkül, hogy opportunistának tűnjön.
 - Időzítési ajánlás (azonnal, 24 órán belül, a következő hét elején stb.), a hírverseny és a vezetői naptár figyelembevételével.
 
-## 5. Eseményszervező Ügynök (Event & Logistics Agent)
+## 5. Eseményszervező Munkatárs (Event & Logistics Agent)
 
 Feladata a sajtónyilvános események teljes szervezése: sajtótájékoztató, háttérbeszélgetés, stúdióinterjú, nyílt nap, webinárium.
 

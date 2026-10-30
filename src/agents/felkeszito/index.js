@@ -1,4 +1,4 @@
-// A Sajtófelkészítő Ügynök: téma → felkészítő csomag (háttér, Q&A, üzenetkeretek, red flagek, talking points).
+// A Sajtófelkészítő Munkatárs: téma → felkészítő csomag (háttér, Q&A, üzenetkeretek, red flagek, talking points).
 // Belső anyag: kifelé semmit nem küld. Red flag esetén belső kérdést ad át a Jogi asztalnak.
 import { gatherSources, startOfDayIso } from '../common/sources.js';
 import { buildContent, renderPackage, OCCASIONS } from './package.js';

@@ -1,4 +1,4 @@
-// A Közösségimédia- és Digitális Narratíva Ügynök (docs/16): jelzés vagy kérés → posztjavaslat platformonként,
+// A Közösségimédia- és Digitális Narratíva Munkatárs (docs/16): jelzés vagy kérés → posztjavaslat platformonként,
 // kommentkezelési útmutatóval. Semmit nem tesz közzé és nem küld ki: a vezető másolja ki és teszi ki, majd „Kiadtam”-mal rögzíti.
 import { loadPrompt, extractJson } from '../../core/llm.js';
 import { gatherSources, stripInvalidRefs, startOfDayIso, AI_NOTE } from '../common/sources.js';
@@ -21,11 +21,11 @@ const KIT = (s) => `[KITÖLTENDŐ: ${s}]`;
 const str = (v, n) => String(v ?? '').trim().slice(0, n);
 const ALT_LABEL = { nem_posztolunk: 'Nem posztolunk', csak_megkeresesre: 'Csak a megkeresésekre válaszolunk', magyarazo_szal: 'Magyarázó szál', egyeb: 'Egyéb' };
 
-// Szabályalapú váz AI nélkül: a szöveget az ügynök nem fogalmazza meg, a szerkezet és az időzítés viszont megvan.
+// Szabályalapú váz AI nélkül: a szöveget a munkatárs nem fogalmazza meg, a szerkezet és az időzítés viszont megvan.
 export function mockPost({ platformok, tema, jelzes, sources, day }) {
   return {
     helyzet: `${jelzes || tema}${sources.cikkek.length ? ` Kapcsolódó tárolt cikk: ${sources.cikkek.map(c => `[${c.n}]`).join(' ')}.` : ' Tárolt cikket nem találtunk a témához.'}`,
-    valtozatok: platformok.map(p => ({ platform: p, szoveg: KIT(`a(z) ${SOCIAL_PLATFORMS[p]}-szöveg; AI nélkül az ügynök nem fogalmaz nyilvános szöveget`), hashtagek: [], kepotlet: '' })),
+    valtozatok: platformok.map(p => ({ platform: p, szoveg: KIT(`a(z) ${SOCIAL_PLATFORMS[p]}-szöveg; AI nélkül a munkatárs nem fogalmaz nyilvános szöveget`), hashtagek: [], kepotlet: '' })),
     szal: [],
     kommentkezeles: {
       varhato: [{ tipus: 'Kérdés a témáról', valaszminta: KIT('válaszminta') }, { tipus: 'Éles vagy sértő hozzászólás', valaszminta: 'Nem válaszolunk; moderálási javaslat a vezetőnek.' }],
@@ -109,7 +109,7 @@ export async function createPost(ctx, { tema, jelzes = '', levelId = null, jelze
   const { profile, log, llm, now, prompts, models, anyagok, store, docs, proactive, social } = ctx;
   const topic = String(tema || '').replace(/\s+/g, ' ').trim().slice(0, 300);
   if (!topic) throw new AgentError(400, 'A téma kötelező.');
-  if (!agentActive(profile, AGENT, now())) throw new AgentError(409, 'A Közösségi média ügynök szünetel; kapcsolja vissza, mielőtt javaslatot kér.');
+  if (!agentActive(profile, AGENT, now())) throw new AgentError(409, 'A Közösségi média munkatárs szünetel; kapcsolja vissza, mielőtt javaslatot kér.');
   const allowed = profile.kozossegi?.platformok || [];
   const chosen = (Array.isArray(platformok) && platformok.length ? platformok : allowed).filter((p, i, a) => allowed.includes(p) && a.indexOf(p) === i);
   if (!chosen.length) throw new AgentError(400, 'Nincs bekapcsolt platform: a Beállításokban jelölje ki, melyiken kíván posztolni.');

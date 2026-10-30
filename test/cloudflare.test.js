@@ -95,7 +95,7 @@ test('Worker-futás D1-gyel: szemle a próbalevelek közé kerül, nem megy ki; 
   assert.equal(results.filter(r => r.kind === 'riasztas').length, 1);
 });
 
-test('Worker-futás: egy ügyfél hibája nem állítja le a másikat; kikapcsolt ügynök kimarad; éles mód levélküldő nélkül megáll', async () => {
+test('Worker-futás: egy ügyfél hibája nem állítja le a másikat; kikapcsolt munkatárs kimarad; éles mód levélküldő nélkül megáll', async () => {
   const db = createD1Shim();
   const repo = createD1ProfileRepo({ db });
   const p = await loadProfile(fixture('profil.yaml'));

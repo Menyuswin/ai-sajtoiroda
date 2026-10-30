@@ -1,4 +1,4 @@
--- A Közösségi média ügynök (docs/16): posztjavaslatok és a vezető által felvitt digitális jelzések.
+-- A Közösségi média munkatárs (docs/16): posztjavaslatok és a vezető által felvitt digitális jelzések.
 -- allapot: tervezet | jovahagyva | kiadva | elvetve | kesobb | megfigyelendo (csak megjegyzés, nincs szöveg)
 CREATE TABLE IF NOT EXISTS poszt_javaslatok (
   id          TEXT PRIMARY KEY,

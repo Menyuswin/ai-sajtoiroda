@@ -11,7 +11,7 @@ export function mockContent(req, sources, profile) {
   const t = req.tema;
   const redArticles = sources.cikkek.filter(c => c.voros_vonal);
   return {
-    hatter: sources.cikkek.length || sources.reszletek.length ? 'Az alábbi források a témához kapcsolódnak. A helyzetkép szöveges összefoglalását az ügynök AI nélkül nem készíti el.' : `A témához nem találtunk tárolt cikket vagy dokumentumot. ${KIT('helyzetkép')}`,
+    hatter: sources.cikkek.length || sources.reszletek.length ? 'Az alábbi források a témához kapcsolódnak. A helyzetkép szöveges összefoglalását a munkatárs AI nélkül nem készíti el.' : `A témához nem találtunk tárolt cikket vagy dokumentumot. ${KIT('helyzetkép')}`,
     idovonal: [], erintettek: [],
     kerdesek: [
       { kategoria: 'valoszinu', kerdes: `Mi a szervezet álláspontja a(z) „${t}” kérdésében?`, valasz: KIT('álláspont, forrással') },

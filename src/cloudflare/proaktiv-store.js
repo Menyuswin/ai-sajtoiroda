@@ -1,4 +1,4 @@
-// A Proaktív ügynök adatai (D1): naptár és megszólalási javaslatok. Minden lekérdezés a tenant_id-vel szűr.
+// A Proaktív munkatárs adatai (D1): naptár és megszólalási javaslatok. Minden lekérdezés a tenant_id-vel szűr.
 let seq = 0;
 const newId = (now) => `${now().toISOString()}-${String(++seq % 1000000).padStart(6, '0')}-${crypto.randomUUID().slice(0, 6)}`;
 const parse = (j) => (j ? JSON.parse(j) : null);

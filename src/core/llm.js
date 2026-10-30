@@ -1,5 +1,5 @@
 // AI-illesztő. Két mód:
-//  - 'mock': nincs hálózat, nincs költség; a mód az ügynök saját szabályalapú tartalékát használja;
+//  - 'mock': nincs hálózat, nincs költség; a mód a munkatárs saját szabályalapú tartalékát használja;
 //  - 'anthropic': Claude API (ANTHROPIC_API_KEY kell).
 export function createLlm({ mode = 'mock', key = null, models, fetchImpl = fetch }) {
   if (mode === 'mock') return { mode: 'mock', complete: null };

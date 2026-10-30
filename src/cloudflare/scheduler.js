@@ -23,7 +23,7 @@ export function decideMode(profile, now, lastDigestDay) {
   return localTime(now, tz) >= due && lastDigestDay !== dayKey(now, tz) ? 'digest' : 'check';
 }
 
-// Az ügynök-azonosító → feldolgozó függvény térkép: az újabb ügynökök érkezésekor itt iratkoznak fel (docs/10).
+// A munkatárs-azonosító → feldolgozó függvény térkép: az újabb munkatársak érkezésekor itt iratkoznak fel (docs/10).
 export { handoffHandlers } from './agentctx.js';
 
 export async function runScheduled(env, { now = () => new Date(), fetchText = defaultFetchText, prompts, llmFetch, mailFetch, handlers = handoffHandlers } = {}) {
@@ -54,7 +54,7 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
         Object.assign(entry, { mode, ...result }); // a korábbi összegző alak (Monitoring) megmarad
       }
 
-      // Kapcsolattartó: a postafiók lekérdezése (ha van lekérdezhető) és a levelek feldolgozása. Egyik ügynök hibája a másikat nem állítja le.
+      // Kapcsolattartó: a postafiók lekérdezése (ha van lekérdezhető) és a levelek feldolgozása. Egyik munkatárs hibája a másikat nem állítja le.
       if (profile.postafiok || (await base.levelek.pending(1)).length) {
         try {
           const levelek = base.levelek;

@@ -47,7 +47,7 @@ async function main() {
     return;
   }
   if (!agentId || command !== 'run' || !flags.profile) {
-    console.error('Használat: node src/cli.js <ügynök> run --profile <profil.yaml> [--mode digest|check] [--llm mock|anthropic] [--offline-feed <feed.xml>]');
+    console.error('Használat: node src/cli.js <munkatárs> run --profile <profil.yaml> [--mode digest|check] [--llm mock|anthropic] [--offline-feed <feed.xml>]');
     process.exit(2);
   }
   const config = getConfig();

@@ -61,7 +61,7 @@ test('belépés zárt alapértelmezéssel: beállítás nélkül 503, ismeretlen
   assert.equal(noAuthCfg.status, 503);
 });
 
-test('az iroda: 8 asztal, mindegyik ügynök dolgozik (a Közösségi média az utolsó); olvasatlan anyagok jelezve', async () => {
+test('az iroda: 8 asztal, mindegyik munkatárs dolgozik (a Közösségi média az utolsó); olvasatlan anyagok jelezve', async () => {
   const o = await office();
   const { status, data } = await o.call('GET', '/api/iroda');
   assert.equal(status, 200);
@@ -138,7 +138,7 @@ test('elvetett javaslat nem módosít; a döntés szerepe és értéke ellenőrz
   assert.equal((await o.profileNow()).forrasok.rss.length, 1);
 });
 
-test('amit az ügynök nem ért vagy nem tud (levélküldés), arra visszakérdez, és nem hajt végre semmit', async () => {
+test('amit a munkatárs nem ért vagy nem tud (levélküldés), arra visszakérdez, és nem hajt végre semmit', async () => {
   const o = await office();
   for (const szoveg of ['Írj levelet az újságírónak, hogy cáfoljuk a hírt', 'Küldd el a szemlét a sajtónak', 'blablabla']) {
     const r = await o.call('POST', '/api/ugynok/monitoring/utasitas', { szoveg });

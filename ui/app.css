@@ -68,7 +68,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 1rem; outline: none; }
   .asztal .fogo { cursor: default; }
 }
 
-/* ---- egy ügynök asztala */
+/* ---- egy munkatárs asztala */
 .asztal-fej { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; margin-bottom: 1rem; }
 .asztal-fej .vissza { text-decoration: none; }
 .teljes { margin-top: 1rem; }

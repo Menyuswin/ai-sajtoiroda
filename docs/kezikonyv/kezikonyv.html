@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="hu"><head><meta charset="utf-8"><title>Az AI-sajtóiroda kézikönyve</title><link rel="stylesheet" href="stilus.css"></head><body>
+
+<div class="cimlap">
+<h1 class="first">Az AI-sajtóiroda kézikönyve</h1>
+<div class="alcim">Hogyan épült, hogyan működik, és hogyan kell használni és üzemeltetni</div>
+<p>Oktató kézikönyv Mányai Zoltán számára<br>az <b>iroda.manyai.hu</b> rendszerhez</p>
+<p class="meta">Állapot: 2026. október 30. · Próbaüzem: AI-kulcs és levélküldés nélkül<br>A kézikönyv a rendszer tárának (<code>Menyuswin/ai-sajtoiroda</code>) dokumentációjára épül.</p>
+</div>
+
+<div class="tartalom">
+<h2 style="margin-top:0">Tartalom</h2>
+<ol>
+<li>1. Mi ez, és miért így épült</li>
+<li>2. A nyolc munkatárs: ki mit csinál, és mit nem</li>
+<li>3. Hogyan működik a rendszer (felépítés, ütemezés, átadások)</li>
+<li>4. A biztonsági modell: hat szabály, amely nem alku tárgya</li>
+<li>5. Hogyan jött létre: a fejlesztés útja</li>
+<li>6. Az éles telepítés lépései (ahogyan megcsináltuk)</li>
+<li>7. A mindennapi használat</li>
+<li>8. Az asztalok egyenként</li>
+<li>9. Beállítások: mit jelent a profil</li>
+<li>10. Üzemeltetés: frissítés, mentés, titkok, költségek, visszalépés</li>
+<li>11. Hibaelhárítás</li>
+<li>12. Mi nincs még kész, és mi következik</li>
+<li>13. Szószedet</li>
+</ol>
+</div>
+
+<h1>1. Mi ez, és miért így épült</h1>
+
+<p>Az AI-sajtóiroda egy <b>sajtóiroda-modell</b>, amelyben nyolc, mesterséges intelligenciára épülő „munkatárs” (munkatárs) dolgozik egyetlen emberi vezető irányítása alatt. A vezető Ön. A munkatársak figyelnek, gyűjtenek, előkészítenek és javaslatot tesznek; <b>a döntés és a felelősség mindig az Öné marad</b>.</p>
+
+<div class="doboz kulcs"><b class="cim">A központi gondolat</b>Ez nem „önműködő” sajtóiroda, hanem egy jól szervezett támogatórendszer. A munkatárs olyan, mint egy gyakornok, aki sosem fárad el és sosem felejt: mindent előkészít, de semmit nem küld ki a nevében. A sajtós szakma ezt úgy mondja: <i>a vezető aláírása nélkül semmi nem távozik az irodából</i>.</div>
+
+<h2>Miért érdemes így csinálni?</h2>
+<p>Egy példa. Egy hétfő reggelen három dolog történik egyszerre: egy újságíró interjút kér a várólistáról, a hírportálokon megugrik a téma említése, és egy korábbi nyilatkozatának egy mondata ellentmond a mostani álláspontnak. Egy emberi irodában ez három munkatárs három órája, és a végén valaki mégis lemarad valamiről. Itt a Kapcsolattartó előkészíti a választervezetet, a Monitoring jelzi a felerősödő témát, az Archívum idézi a régi mondatot, a Jogi munkatárs szól a kockázatról, a Közösségi média pedig felveti, hogy talán érdemes nyilvánosan is elmagyarázni. Önnek <b>egy helyen, egymás mellett</b> látszik minden, és három gombbal dönthet.</p>
+
+<h2>Négy alapelv, amelyből minden következik</h2>
+<table>
+<tr><th>Alapelv</th><th>Mit jelent a gyakorlatban</th></tr>
+<tr><td><b>Az ember dönt</b></td><td>Minden kimenő válasz, nyilatkozat, meghívó és poszt csak az Ön jóváhagyásával távozhat. Ezt a kód is kikényszeríti (a „kimenő kapu”), nem csak a szándék.</td></tr>
+<tr><td><b>Mindent jelez, semmit nem tesz meg</b></td><td>A munkatársak javaslatot, tervezetet, figyelmeztetést adnak. Posztot nem tesznek ki, levelet nem küldenek, nyilatkozatot nem adnak.</td></tr>
+<tr><td><b>Nyomon követhetőség</b></td><td>Minden javaslat és minden döntés a naplóba kerül, ahonnan utólag sem törölhető. Ha később valaki megkérdezi, miért történt valami, a napló válaszol.</td></tr>
+<tr><td><b>Őszinteség</b></td><td>Ahol a munkatárs nem tud valamit alátámasztani, ott <code>[KITÖLTENDŐ]</code> jelölést hagy, és az ilyen szöveg nem hagyható jóvá. Nem talál ki tényt, számot vagy idézetet.</td></tr>
+</table>
+
+<h2>Egy tanulság az elejéről</h2>
+<p>A rendszer tervezésekor érdemes volt eldönteni, hogy mit <i>nem</i> építünk: nincs önálló küldés, nincs platform-bekötés a közösségi médiába, nincs automatikus válasz telefonon. Ami egyszer kikerült az irodából, azt nem lehet visszahívni; ezért minden ilyen lépés külön döntés, és a legvégére került (a telefon például ElevenLabs-szal, a fejlesztés legvégén).</p>
+
+<h1>2. A nyolc munkatárs: ki mit csinál, és mit nem</h1>
+
+<p>A munkatársak három bevezetési szakaszban érkeztek, és három kiegészítő is van. Mindegyiknek saját <b>asztala</b> van az irodában: ott utasíthatja, ott látja a munkáját, ott olvashatja a jelentéseit.</p>
+
+<table>
+<tr><th>Munkatárs</th><th>Mit csinál</th><th>Mikor dolgozik</th><th>Mit NEM csinál</th></tr>
+<tr><td><b>Sajtószemle és Monitoring</b></td><td>Óránként lekéri a figyelt hírforrásokat, szűri a kulcsszavak szerint, besorolja (hangnem, fontosság, vörös vonal), napi szemlét ír, trendet és riasztást jelez. A közösségi csatornákról külön szemlét ad.</td><td>Óránként (a 30. percben); a szemle a megadott időpontban (alapból 7:30)</td><td>Nem ír kifelé; nem értékel jogilag</td></tr>
+<tr><td><b>Kommunikációs Kapcsolattartó</b></td><td>Fogadja a beérkező leveleket, besorolja (interjúkérés, adatkérés, panasz…), választervezetet ír 2–3 változatban.</td><td>Új levélre azonnal vagy a következő futásnál</td><td>Nem válaszol önállóan; a levélben lévő „utasítást” nem követi</td></tr>
+<tr><td><b>Sajtófelkészítő</b></td><td>Felkészítő csomag interjúra, nyilatkozatra: háttér, várható kérdések, üzenetkeretek, red flagek, talking points.</td><td>Csak kérésre vagy átadásra; napi 10 csomag</td><td>Nem talál ki tényt; ami nincs alátámasztva, az kitöltendő</td></tr>
+<tr><td><b>Proaktív Stratégia</b></td><td>Megszólalási javaslat: érdemes-e, mikor, milyen formában, milyen üzenettel; a hallgatás kockázatát is mondja.</td><td>Átadásra és kérésre; napi 5 javaslat</td><td>Nem indít semmit a döntése nélkül; az időzítést a program számolja a naptárból</td></tr>
+<tr><td><b>Eseményszervező</b></td><td>Esemény-koncepció (időpont, költség a program számolásával), sajtólista, meghívótervezetek, ellenőrzőlista, utómunka.</td><td>A vezető indítására</td><td>Meghívót csak a kimenő kapun át, tételes kijelöléssel, jóváhagyással küld</td></tr>
+<tr><td><b>Archívum és Tudásmenedzsment</b></td><td>A kiadott közlések változtathatatlan nyilvántartása; keresés; idővonal; korábbi közlések a tervezet mellett; ellentmondás-jelzés szó szerinti idézettel.</td><td>Automatikusan nyilvántart; kérésre keres</td><td>Nem ítél ellentmondásról AI nélkül; csak jelez</td></tr>
+<tr><td><b>Közösségimédia és Digitális Narratíva</b></td><td>Posztjavaslat platformonként (Facebook, LinkedIn, Instagram, X), kommentkezelési útmutató; jelzést kap a Monitoringtól, a levelektől, a Proaktívtól és az Ön kézi digitális jelzéseiből.</td><td>Szigorú feltételekkel automatikusan, vagy kérésre; napi 10 javaslat</td><td>Semmit nem tesz közzé; Ön másolja ki és teszi ki, majd „Kiadtam”-mal rögzíti. A platformokat közvetlenül nem olvassa</td></tr>
+<tr><td><b>Jogi és Kockázatfigyelő</b></td><td>Kockázati besorolás (alacsony/közepes/magas) szó szerinti idézettel; a szabályalapú réteg adja az alsó határt, az AI csak emelhet; riaszt magas kockázatnál.</td><td>Átadásra automatikusan; napi 10 vélemény</td><td>Nem jogi tanács, törvényhelyet nem hivatkozik; a jogász nem pótolható</td></tr>
+</table>
+
+<div class="doboz"><b class="cim">Hogyan dolgoznak együtt?</b>A munkatársak egymásnak <b>átadást</b> küldenek (jelzés, kérelem, anyag, kérdés). Az átadás belső: nem megy ki az irodából. Legfeljebb 3 láncszem mélységű lehet, naponta legfeljebb 50 átadás indulhat, és 14 nap után lejár, ha senki nem dolgozta fel. Ha a címzett munkatárs szünetel, az átadás vár. Az Iroda nézeten és az Átadások menüben látja, ki kinek mit küldött.</div>
+
+<h2>A munkatársak közötti munka egy példán</h2>
+<ol>
+<li>A <b>Monitoring</b> észreveszi, hogy egy vörös vonalba eső cikk jelent meg (pl. hatósági eljárás említése).</li>
+<li>Riasztást küld Önnek (az irodában és levélben), és átadást ír a <b>Proaktív</b> és a <b>Közösségi média</b> asztalának.</li>
+<li>A Proaktív megszólalási javaslatot készít (érdemes-e, mikor, milyen formában); a Közösségi média posztjavaslatot és kommentkezelési útmutatót.</li>
+<li>Minden javaslathoz automatikusan készül <b>jogi vélemény</b>, és az <b>Archívum</b> mellé teszi a korábbi közléseket.</li>
+<li>Ön az asztalokon dönt: elfogad, elvet vagy később dönt. Ha elfogad egy „poszt” formájú javaslatot, a Közösségi média szövegváltozatokat készít; ha kéri, a Felkészítő is csomagot.</li>
+</ol>
+
+<h1>3. Hogyan működik a rendszer</h1>
+
+<h2>A felépítés dióhéjban</h2>
+<div class="abra">  Ön (böngésző, telefon)
+        │  https://iroda.manyai.hu   (jelmondatos belépés)
+        ▼
+  ┌──────────────────────── Cloudflare ────────────────────────┐
+  │  Worker (az iroda programja)                                │
+  │    ├─ felület (HTML/JS/CSS) és API                          │
+  │    ├─ nyolc munkatárs + közös mag (napló, kimenő kapu, átadás) │
+  │    └─ ütemező: óránként, a 30. percben                      │
+  │  D1 adatbázis (profil, cikkek, levelek, anyagok, napló…)    │
+  └─────────────────────────────────────────────────────────────┘
+        ▲                         │
+        │ hírforrások (RSS)       │ (AI-hívás: csak ha kulcs van)
+        │                         ▼
+   levélhíd (iCloud, a saját     Anthropic Claude (később)
+   gépén): csak olvas, HTTPS-en
+   adja át a leveleket</div>
+
+<p><b>Cloudflare Worker:</b> egy kis program, amely a Cloudflare szervereinek hálózatán fut, nem az Ön gépén. A kérésekre válaszol (ez az iroda felülete és API-ja), és óránként egyszer felébred, hogy elvégezze az ütemezett munkát.<br>
+<b>D1:</b> a Cloudflare adatbázisa, amely az Ön adatait tárolja. A tárhely régiója Kelet-Európa (EEUR).<br>
+<b>Ütemező (cron):</b> óránként a 30. percben fut. Ilyenkor a Monitoring lekéri a híreket; a megadott időpontban (7:30) napi szemlét is készít; a Kapcsolattartó pedig feldolgozza az új leveleket.</p>
+
+<h2>Próbaüzem és éles üzem</h2>
+<p>A rendszer <b>alapállapota a „száraz” (próba-) mód</b>: nem küld levelet, nem hív fizetős szolgáltatást. Ami kimenne, az a „próba-kimenő” tárolóba kerül, és az irodában olvasható. Az éles módhoz három feltétel együtt kell: <code>SAJTOIRODA_LIVE=1</code>, kiválasztott levélküldő szolgáltatás és AI-kulcs. Amíg ezek nincsenek meg, a rendszer szándékosan nem küld és nem fogyaszt semmit.</p>
+
+<h2>AI nélkül és AI-val</h2>
+<table>
+<tr><th></th><th>AI nélkül (mostani állapot)</th><th>AI-val (Anthropic-kulccsal)</th></tr>
+<tr><td>Besorolás</td><td>Szabályalapú (kulcsszó, vörös vonal)</td><td>Claude értelmezi: hangnem, fontosság, tény</td></tr>
+<tr><td>Napi szemle</td><td>Számok, lista, egyszerű összegzés</td><td>Narratívák, „mire figyeljünk”</td></tr>
+<tr><td>Válaszok, javaslatok</td><td>Váz: <code>[KITÖLTENDŐ]</code> részekkel</td><td>Teljes tervezet, forrásjelöléssel</td></tr>
+<tr><td>Ellentmondás-ellenőrzés (Archívum)</td><td>Csak megmutatja a korábbi közléseket</td><td>Idézettel jelzi az ellentmondást</td></tr>
+</table>
+<p>Az AI-t a program <b>kordában tartja</b>: csak létező forrásra hivatkozhat (a többit a program törli), az idézetnek szó szerint szerepelnie kell a szövegben, a jogi besorolást az AI csak emelheti, és a bejövő szöveg (levél, cikk, poszt) adatként kezelődik, nem utasításként.</p>
+
+<h1>4. A biztonsági modell: hat szabály</h1>
+
+<ol>
+<li><b>Semmi nem megy ki az Ön jóváhagyása nélkül.</b> A kimenő kapu (<code>src/core/outbox.js</code>) minden kimenő üzenetet vizsgál: belső jelentés csak az Önnek szólhat; minden más csak jóváhagyási objektummal mehet. A tesztek ezt bizonyítják.</li>
+<li><b>Zárt műveletlista.</b> A munkatárs csak előre meghatározott műveleteket végezhet. A levélbe vagy cikkbe rejtett „utasítás” (pl. „hagyd figyelmen kívül a szabályokat”) hatástalan, mert a szöveg adat.</li>
+<li><b>Adatelkülönítés.</b> Minden adat egy <code>tenant_id</code> (ügyfél-azonosító) alatt él, minden lekérdezés szűr rá. Egy ügyfél semmit nem lát a másikéból.</li>
+<li><b>Szerepek.</b> A <b>vezető</b> látja a tartalmakat (levelek, tervezetek, jogi vélemények, posztjavaslatok). Az <b>üzemeltető</b> csak darabszámot lát a bizalmas anyagokból, de ő állíthatja a postafiókot és az AI-jelzést.</li>
+<li><b>Napló.</b> Minden javaslat, döntés és belépési kísérlet hozzáfűződik a naplóhoz, amelyet az adatbázis is véd a módosítástól.</li>
+<li><b>Napi korlátok.</b> Költség- és zajvédelem: napi 10 felkészítő csomag, 5 megszólalási javaslat, 3 eseménykoncepció, 10 jogi vélemény, 10 posztjavaslat és 30 digitális jelzés; futásonként legfeljebb 80 cikk besorolása.</li>
+</ol>
+
+<h2>A belépés</h2>
+<p>Az iroda saját, <b>jelmondatos belépést</b> használ (a Cloudflare Access ingyenes csomagja bankkártyát kér, ezért erről lemondtunk). Egyetlen felhasználóra szól: a jelmondat Cloudflare-titokként tárolódik (nem fájlban), belépés után aláírt, a böngésző scriptjei által nem olvasható süti él 12 óráig, öt hibás próba után a belépés 15 percre zárol, és minden kísérlet a naplóba kerül.</p>
+<div class="doboz figy"><b class="cim">Fontos különbség</b>Nincs e-mailes kód, ezért a védelem a jelmondat erősségén múlik: legalább 20 karakter, lehetőleg 6–8 véletlen szó, amelyet sehol máshol nem használ, jelszókezelőben tárolva. Külső ügyfeleknek ez nem elég: oda a Cloudflare Access vagy külön példány kell (lásd az új ügyfél útmutatóját).</div>
+
+<h2>Adatmegőrzés</h2>
+<table>
+<tr><th>Adat</th><th>Megőrzés</th></tr>
+<tr><td>Beérkezett levelek</td><td>90 nap</td></tr>
+<tr><td>Nyers cikkek</td><td>12 hónap</td></tr>
+<tr><td>Napló</td><td>36 hónap (GDPR-szempontból jogásszal egyeztetendő)</td></tr>
+<tr><td>Archívum (kiadott közlések)</td><td>36 hónap; e-mail-cím nem tárolódik, csak a médium és a címtartomány</td></tr>
+</table>
+
+<h1>5. Hogyan jött létre: a fejlesztés útja</h1>
+
+<p>A rendszer <b>lépésekben</b> épült, minden lépés előtt terv és jóváhagyás, utána tesztek. Ez a sorrend azért fontos, mert egy sajtóiroda hibája a hírnevet érinti: a „fuss gyorsan, javíts utólag” itt nem járható.</p>
+
+<table>
+<tr><th>Szakasz</th><th>Mi készült</th><th>Miért ebben a sorrendben</th></tr>
+<tr><td>1. Modell</td><td>A munkatársak szerepköre, az együttműködés, az emberi kontrollpontok (<code>docs/01–05</code>, <code>agents/*.yaml</code>)</td><td>Előbb a „mit és ki felel”, csak utána a kód</td></tr>
+<tr><td>2. Monitoring</td><td>Az első működő munkatárs, száraz módban: hírgyűjtés, szűrés, besorolás, szemle, riasztás</td><td>A legkisebb kockázatú, és minden más munkatárs erre épül</td></tr>
+<tr><td>3. Cloudflare-réteg és iroda</td><td>Adatbázis, ütemező, a webes felület és az API; a PWA (telepíthető weboldal)</td><td>Hogy ne parancssorból kelljen használni</td></tr>
+<tr><td>4. Átadások, Dokumentumtár</td><td>Munkatársak közötti belső átadás; feltölthető tudásbázis (txt, md, csv, docx, szöveges PDF)</td><td>A munkatársak ebből dolgoznak forrással</td></tr>
+<tr><td>5. Kapcsolattartó</td><td>Levelek fogadása (iCloud-levélhíd, Gmail, Exchange, kézi), besorolás, tervezet</td><td>Az első „kifelé is érő” munkatárs, ezért óvatosan: csak olvasás és tervezet</td></tr>
+<tr><td>6. Felkészítő és Proaktív</td><td>Csomag, megszólalási javaslat, naptár</td><td>Az előkészítés és a stratégia a levelezésre épül</td></tr>
+<tr><td>7. Eseményszervező</td><td>Koncepció, sajtólista, meghívók, utómunka</td><td>A legtöbb külső érintkezés, ezért a végére</td></tr>
+<tr><td>8. Jogi és Archívum</td><td>Kockázati vélemény, közlések nyilvántartása</td><td>Védőháló az összes többi munkatárs fölé</td></tr>
+<tr><td>9. Közösségi média</td><td>Posztjavaslatok, kommentkezelés; a Monitoring közösségi csatornái</td><td>Utolsó munkatárs: mindegyik korábbira épít</td></tr>
+<tr><td>10. Éles telepítés</td><td>Cloudflare, adatbázis, domén, belépés, a nulladik ügyfél betöltése</td><td>Csak a teljes, tesztelt rendszer kerülhet élesbe</td></tr>
+</table>
+
+<div class="doboz"><b class="cim">Az ellenőrzés három szintje</b><b>159 automatikus teszt</b> (hálózat nélkül futnak, az üzleti szabályokat és a biztonsági védelmeket ellenőrzik), <b>böngészős végpontok közötti próba</b> (valódi böngészővel végigkattintja az irodát), és a Cloudflare-csomag <b>szárazon</b> történő összeállítása a telepítés előtt.</div>
+
+<h1>6. Az éles telepítés lépései</h1>
+
+<p>Ez az a sorrend, ahogyan az <b>iroda.manyai.hu</b> létrejött. A parancsokat az Ubuntu terminálban futtatta (Ctrl+Alt+T), a tár mappájában.</p>
+
+<h2>0. Előkészület</h2>
+<pre>git clone https://github.com/Menyuswin/ai-sajtoiroda.git
+cd ai-sajtoiroda
+npm install
+npm test               # 159 teszt; ha ez zöld, a kód rendben van
+npx wrangler login     # a böngészőben belép a Cloudflare-fiókba
+npx wrangler whoami    # ellenőrzés: a helyes fiókot mutatja-e</pre>
+<p><b>Miért fontos a <code>whoami</code>?</b> A Worker csak annak a fiókjában lévő domént tudja használni, amelyikkel belépett. A manyai.hu doménnek ugyanabban a Cloudflare-fiókban kell lennie.</p>
+
+<h2>1. Adatbázis és az első telepítés</h2>
+<pre>npx wrangler d1 create ai-sajtoiroda</pre>
+<p>A kimenet <code>database_id</code> sorát a <code>wrangler.toml</code>-ba írtuk. Ugyanitt kapta meg a Worker az <code>iroda.manyai.hu</code> egyéni domént (<code>routes</code>). Utána:</p>
+<pre>npx wrangler d1 migrations apply ai-sajtoiroda --remote    # a táblák létrehozása (10 migráció)
+npx wrangler deploy                                         # a Worker feltöltése</pre>
+<div class="doboz figy"><b class="cim">Tanulság</b>A <code>routes</code> sor a <code>wrangler.toml</code> elején, a táblák előtt legyen; ha egy <code>[build]</code>-féle szakasz alá kerül, a wrangler figyelmen kívül hagyja, és figyelmeztetést ír („Unexpected fields found in build field”).</div>
+
+<h2>2. Belépés: jelmondat</h2>
+<pre>npx wrangler secret put SAJTOIRODA_JELMONDAT     # beillesztés, Enter (a gépelés nem látszik)
+npx wrangler deploy</pre>
+<p>A <code>wrangler.toml</code> <code>SAJTOIRODA_BELEPES_EMAIL</code> értéke az az e-mail-cím, amelyhez a belépés tartozik. Ennek az irodai szerepét a 3. lépés adja.</p>
+
+<h2>3. A nulladik ügyfél betöltése</h2>
+<pre>node src/cli.js profil-sql --profile monitoring/nulladik-ugyfel.yaml &gt; /tmp/profil.sql
+npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/profil.sql
+
+node src/cli.js hozzaferes-sql --email zoltan.manyai@icloud.com --ugyfel manyai-zoltan --szerep vezeto &gt; /tmp/hozzaferes.sql
+npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/hozzaferes.sql
+
+node src/cli.js domen-sql --domen iroda.manyai.hu --ugyfel manyai-zoltan &gt; /tmp/domen.sql
+npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/domen.sql</pre>
+<p><b>Mi mire való?</b> A <i>profil</i> az ügyfél minden egyedi adata (kulcsszavak, források, vörös vonalak). A <i>hozzáférés</i> megmondja, hogy az e-mail-cím melyik ügyfél irodáját nyithatja meg, milyen szereppel. A <i>domén</i> az <code>iroda.manyai.hu</code> címet köti az ügyfélhez. A parancsokat <b>egyenként</b> futtassa, mert mindegyik megerősítést kér (<code>y</code>).</p>
+
+<h2>4. Ellenőrzés</h2>
+<ul>
+<li>Nyissa meg az <b>https://iroda.manyai.hu</b> oldalt: jelmondatot kell kérnie.</li>
+<li>Belépés után nyolc asztal és a „Próbaüzem: levél nem megy ki” jelvény látszik.</li>
+<li>A Beállításokban a kulcsszavak és a források a helyes értékeket mutatják.</li>
+<li>A következő óra 30. perce után a <b>Napló</b> „futás” sorokat mutat; a „hiba” sorokból látszik, melyik hírforrás nem érhető el.</li>
+</ul>
+
+<h2>Ami még hátravan az éles használathoz</h2>
+<table>
+<tr><th>Lépés</th><th>Mit ad</th><th>Állapot</th></tr>
+<tr><td>AI-kulcs (<code>ANTHROPIC_API_KEY</code>) és <code>SAJTOIRODA_LLM=anthropic</code></td><td>Valódi elemzés, tervezetek</td><td>Szándékosan még nincs; előtte 30 cikkes minőségpróba</td></tr>
+<tr><td>iCloud-levélhíd</td><td>A levelek beérkezése</td><td>Még nincs bekapcsolva; valódi fiókkal nem próbáltuk</td></tr>
+<tr><td>Levélküldő szolgáltató</td><td>Hogy a jóváhagyott válaszok ténylegesen elmenjenek</td><td>Kiválasztása hátravan</td></tr>
+<tr><td>Telefon (ElevenLabs)</td><td>Bejövő hívások kezelése</td><td>A fejlesztés legvégén</td></tr>
+</table>
+
+<h1>7. A mindennapi használat</h1>
+
+<h2>Egy átlagos reggel (kb. 10–15 perc)</h2>
+<ol>
+<li><b>Belépés</b> az iroda.manyai.hu címen. Az Iroda nézeten az asztalok jelvényei mutatják, hol vár Önre valami: „új” (olvasatlan anyag) és „jóváhagyásra vár”.</li>
+<li><b>Jelentések</b> menü: a reggeli sajtószemle (7:30 után). A tetején számok, majd az összkép, a narratívák, a „mire érdemes figyelni” és a cikklista hivatkozásokkal. Először a „Figyelem” részt olvassa.</li>
+<li><b>Bejövő</b> menü: a beérkezett levelek, mindegyikhez választervezettel. Itt dönt (lásd az alábbi gombokat).</li>
+<li><b>Javaslatok</b> a Proaktív, a Közösségi média és más asztalokon: elfogad, elvet vagy később dönt.</li>
+</ol>
+
+<h2>A döntési gombok</h2>
+<table>
+<tr><th>Gomb</th><th>Mit tesz</th></tr>
+<tr><td>Jóváhagyom</td><td>A válasz a kimenő kapun át megy. Próbaüzemben a próba-kimenőbe kerül, nem megy ki.</td></tr>
+<tr><td>Elvetem / Nem válaszolunk</td><td>A javaslat lezárul; a döntés naplózódik.</td></tr>
+<tr><td>Később döntök</td><td>A javaslat nyitva marad; az Irodán továbbra is jelez.</td></tr>
+<tr><td>Továbbítom</td><td>Belső átadás másik munkatársnak (Jogi, Proaktív, Felkészítő).</td></tr>
+<tr><td>Átírást kérek</td><td>Csak AI-val: új tervezet a megadott szempont szerint. AI nélkül kézzel szerkessze.</td></tr>
+</table>
+
+<div class="doboz figy"><b class="cim">Mikor nem hagyható jóvá egy szöveg?</b>Ha <code>[KITÖLTENDŐ: …]</code> részt tartalmaz; ha egy posztban a megkereső neve, médiuma vagy e-mail-címe szerepel; ha a jogi vélemény <b>magas</b> kockázatot jelez, akkor jóváhagyás előtt külön jelölnie kell, hogy <i>tudomásul vette a jogi figyelmeztetést</i> (ez nem tilt, csak lassít).</div>
+
+<h2>Az Archívum szerepe a döntésben</h2>
+<p>Minden jóváhagyott levélválasz és minden kiadott poszt bekerül az Archívumba. A következő tervezet mellett az iroda „Korábbi közlések erről” címen megmutatja, mit mondott már ugyanerről. Ha az AI be van kapcsolva és ellentmondást talál, szó szerint idézi mindkét mondatot.</p>
+
+<h1>8. Az asztalok egyenként</h1>
+
+<h3>Monitoring (Sajtószemle)</h3>
+<p>Az asztalon utasítást adhat magyarul, például „Készíts jelentést az elmúlt 7 napról a várólistáról”, vagy „Vegyél fel egy új kifejezést a figyeltek közé”. Az olvasó műveletek (jelentés, kérdés) azonnal futnak; a beállítást módosító utasítások <b>előbb javaslatként</b> jelennek meg, és csak a jóváhagyása után hajtódnak végre. Rá is kérdezhet: „Mit írtak a Telexen a múlt héten rólunk?” A Dokumentumtárból kulcsszót is javasol.</p>
+
+<h3>Kapcsolattartó (Bejövő)</h3>
+<p>A levelek állapota: <i>Feldolgozásra vár → Tervezet kész → Jóváhagyva / Elvetve / Később dönt / Továbbítva</i>. A levél jelvényei: sürgősség, vörös vonal, jogi vonatkozás, határidő, hangnem. Kézzel is felvihet levelet vagy telefonjegyzetet („+ Új levél felvétele”).</p>
+
+<h3>Felkészítő</h3>
+<p>Megadja a témát, az alkalmat (nyilatkozat, interjú, sajtótájékoztató…), esetleg az időpontot és a megszólalót. A csomag öt szakasz: háttér, várható kérdések és válaszok, üzenetkeretek, red flagek, talking points. A red flag a Jogi asztalnak is kérdést küld.</p>
+
+<h3>Proaktív</h3>
+<p>Itt készíthet megszólalási javaslatot (téma + háttér). Vezeti a <b>kézi naptárat</b> is (külső események, saját események, a vezetői naptár): az időzítési javaslat ezekből számolódik, a program kihagyja a hétvégét és a foglalt napokat. Az időzítési szabályokat (pl. „pénteken délután nem szólalunk meg”) a Beállításokban írhatja le.</p>
+
+<h3>Eseményszervező</h3>
+<p>Esemény <b>állapotmenet</b>: koncepció → az Ön jóváhagyása → meghívók → ellenőrzőlista → utómunka. A jóváhagyás előtt semmi nem indul. A <b>sajtólistát</b> kézzel vagy CSV-ből töltheti fel; csak a hozzájárulással rendelkező kapcsolat hívható meg. A névnek és az e-mail-címnek az AI-hoz nem szabad eljutnia: ezt a program tartja be.</p>
+
+<h3>Archívum</h3>
+<p>Keresés a közlések, a Dokumentumtár és a munkatársak anyagai között; idővonal egy témáról; régi közlések felvitele (cím, dátum, fajta, szöveg); az egész archívum letöltése CSV-ben.</p>
+
+<h3>Közösségi média</h3>
+<p>Itt kérhet posztjavaslatot, vihet fel digitális jelzést (amit a felületeken lát: terjedő bejegyzés, sorozatos hozzászólás), és olvashatja a közösségi szemlét. A javaslat nézetében platformonként látja a szöveget karakterszámlálóval, <b>Másolás</b> gombbal; alatta a kommentkezelési útmutató és az alternatívák. Elfogadás után Ön teszi ki a posztot, majd a <b>Kiadtam</b> gombbal rögzíti, amitől az Archívumba kerül. A <b>Bejövőben</b> bármelyik levélnél van „Közösségi támogatás kérése” gomb.</p>
+<p><b>Mikor indít javaslatot magától?</b> Vörös vonalas vagy felerősödő témánál a Monitoring jelzésére; levélnél, ha panasz, feszült hangnemű, vörös vonalba esik, vagy ugyanarról a témáról legalább három megkeresés jött 7 napon belül; a Proaktív „poszt” formájú elfogadott javaslatára; és ha az Ön felvitt digitális jelzése negatív <i>és</i> nagy elérésű. Ugyanarra a témára 3 napon belül csak egy javaslat készül, az újabb jelzés ahhoz fűződik.</p>
+
+<h3>Jogi</h3>
+<p>Véleményt kérhet bármelyik anyagra vagy beillesztett szövegre. A vélemény a vizsgált szöveg <b>szó szerinti részletét</b> idézi, kategória (személyes adat, becsület, eljárás, titok…) és szint (alacsony/közepes/magas) szerint. Minden vélemény végén áll: nem jogi tanács, a jogász nem pótolható.</p>
+
+<h3>Dokumentumtár</h3>
+<p>Ide tölti fel a szervezet tudásbázisát: sajtóközleményeket, állásfoglalásokat, adatlapokat (txt, md, csv, docx, szöveges PDF; legfeljebb 10 MB és 200 dokumentum). A munkatársak ebből dolgoznak <b>forrásjelöléssel</b> ([D1 §2]). Amit nem szabad az AI-hoz juttatni, azt jelölje <b>„Nem küldhető AI-nak”</b>: a munkatársak ezeket a részeket kihagyják.</p>
+
+<h1>9. Beállítások: mit jelent a profil</h1>
+
+<p>Minden, ami az ügyféltől függ, a <b>profilban</b> van, és sehol máshol. A Beállítások menüben szerkesztheti; a módosítás a következő futástól él, és minden módosítás naplózódik.</p>
+
+<table>
+<tr><th>Rész</th><th>Mit állít</th><th>Tipp</th></tr>
+<tr><td>Szervezet neve</td><td>Megjelenik a fejlécben és a jelentésekben</td><td></td></tr>
+<tr><td>Kulcsszavak</td><td>Szervezeti nevek, személyek, témák, kizáró szavak. Ékezet- és kisbetű-független; ragozott alakot is talál („ápolóhiány” – „ápolóhiányról”)</td><td>A túl általános kifejezés (pl. „mesterséges intelligencia”) zajt hoz; inkább szűkebb, a Önre jellemző fordulatok</td></tr>
+<tr><td>Hírforrások (RSS)</td><td>Melyik hírportálokat figyeli</td><td>Csak <code>https://</code> cím adható meg; legfeljebb 30</td></tr>
+<tr><td>Kulcsszavas keresések</td><td>Hírkereső-lekérdezések; idézőjellel pontos kifejezés</td><td>Pl. <code>"receptnaptár"</code></td></tr>
+<tr><td>Közösségi csatornák</td><td>Nyilvános RSS/Atom csatornák (YouTube, Reddit, Mastodon, Bluesky…), legfeljebb 20</td><td>X, Facebook, Instagram, TikTok közvetlenül nem olvasható</td></tr>
+<tr><td>Vörös vonalak</td><td>Ha ilyen téma megjelenik, azonnal riasztást kap, nem várja meg a reggeli szemlét</td><td>Pl. „jogi eljárás vagy hatósági megkeresés említése”</td></tr>
+<tr><td>Szemle időpontja</td><td>A napi szemle ideje (az ügyfél időzónájában)</td><td></td></tr>
+<tr><td>Kapcsolattartó: aláírás, hangnem</td><td>A tervezetek aláírása és hangja</td><td>Üresen a vezető és a szervezet neve kerül a levél aljára</td></tr>
+<tr><td>Proaktív: időzítési szabályok</td><td>Szabad szöveg, az AI figyelembe veszi</td><td>Pl. „Hétvégén csak vörös vonalnál”</td></tr>
+<tr><td>Közösségi média</td><td>Platformok, hangnem, tiltott témák, szokásos hashtagek, emoji</td><td>A tiltott témáról nem készül poszt, csak megjegyzés</td></tr>
+<tr><td>Postafiók</td><td>Szolgáltató (iCloud, Gmail, Exchange), cím, mappa, titok neve</td><td>Csak az üzemeltető állítja; maga a jelszó nem ide kerül</td></tr>
+<tr><td>Címzett, AI-jelzés</td><td>Kihez mennek a jelentések; a jelentések alján álló átlátszósági szöveg</td><td>Csak az üzemeltető módosíthatja; az AI-jelzés nem hagyható el</td></tr>
+</table>
+
+<h1>10. Üzemeltetés</h1>
+
+<h2>Frissítés (új verzió telepítése)</h2>
+<pre>cd ~/ai-sajtoiroda
+git pull
+npm install
+npm test
+npx wrangler d1 migrations apply ai-sajtoiroda --remote   # ha új migráció jött
+npx wrangler deploy</pre>
+<p>Az adatbázis tartalma a frissítéskor nem vész el; a migrációk csak új táblákat adnak hozzá.</p>
+
+<h2>Szüneteltetés és kikapcsolás</h2>
+<ul>
+<li><b>Egy munkatárs szüneteltetése:</b> az asztalán a „Szünet” gomb, vagy utasítás („Szüneteltesd 2026-11-05-ig”). Szünet alatt a munkatárs nem fut, az átadások várnak.</li>
+<li><b>Az egész rendszer leállítása:</b> a Cloudflare irányítópultján a Worker kikapcsolható; vagy a <code>wrangler.toml</code>-ból az ütemezés (<code>crons</code>) kivehető, és újratelepíthető.</li>
+</ul>
+
+<h2>Titkok kezelése</h2>
+<table>
+<tr><th>Titok</th><th>Beállítása</th><th>Megjegyzés</th></tr>
+<tr><td>Jelmondat</td><td><code>npx wrangler secret put SAJTOIRODA_JELMONDAT</code></td><td>Cseréje minden munkamenetet kiléptet</td></tr>
+<tr><td>Anthropic-kulcs</td><td><code>npx wrangler secret put ANTHROPIC_API_KEY</code></td><td>A Console-on állítson be havi költségkeretet</td></tr>
+<tr><td>Levélhíd titka</td><td><code>npx wrangler secret put ICLOUD_HID_TITOK</code></td><td>A titok <i>neve</i> a profilban szerepel, az értéke nem</td></tr>
+<tr><td>iCloud alkalmazás-jelszó</td><td>Az Apple-azonosítónál hozható létre, a híd gépén él</td><td>Bármikor visszavonható; a fő Apple-jelszót ne adja meg sehová</td></tr>
+</table>
+<div class="doboz figy"><b class="cim">Alapszabály</b>Titkot soha ne küldjön el e-mailben, chatben vagy a tárba; ne írja fájlba. Csak a <code>wrangler secret put</code> parancson át, vagy a hídnál a <code>0600</code> jogú <code>levelhid.env</code> fájlban kerülhet a helyére.</div>
+
+<h2>Mentés</h2>
+<pre>npx wrangler d1 export ai-sajtoiroda --remote --output ~/mentes-$(date +%F).sql</pre>
+<p>Ez a teljes adatbázist elmenti a gépére. Havonta érdemes, nagyobb változtatás előtt mindenképpen. A mentés <b>személyes adatot tartalmaz</b> (levelek, sajtólista): kezelje ennek megfelelően.</p>
+
+<h2>Költségek</h2>
+<ul>
+<li><b>Cloudflare:</b> a Workers, a D1 és a domén ingyenes csomagon indulhat. Az óránkénti futás és sok hírforrás miatt később fizetős Workers csomag lehet indokolt (néhány dollár havonta).</li>
+<li><b>Anthropic (AI):</b> ez a fő változó költség. Az osztályozás olcsóbb modellt használ, az összefoglalók és tervezetek erősebbet. Állítson be a Console-on <b>havi keretet</b>, hogy semmi ne szaladhasson el.</li>
+<li><b>Levélküldő szolgáltató:</b> még nincs kiválasztva.</li>
+</ul>
+
+<h2>Visszalépés</h2>
+<ul>
+<li>Hibás frissítés után: <code>git log</code>, majd az előző verzióra <code>git checkout &lt;azonosító&gt;</code> és újratelepítés. A <code>main</code> ágra erőltetett push tilos.</li>
+<li>A Cloudflare a korábbi Worker-verziókat megőrzi; az irányítópulton egy korábbi verzióra vissza lehet állni.</li>
+<li>Az adatbázis hibás módosítása esetén a mentésből lehet visszatölteni.</li>
+</ul>
+
+<h1>11. Hibaelhárítás</h1>
+
+<table>
+<tr><th>Tünet</th><th>Valószínű ok</th><th>Teendő</th></tr>
+<tr><td>Az oldal nem nyílik meg, tanúsítványhiba</td><td>Az új domén tanúsítványát még állítja a Cloudflare</td><td>Várjon 5–10 percet</td></tr>
+<tr><td>„Belépés szükséges” / jelmondat-űrlap nem jön</td><td>A jelmondat nincs beállítva vagy rövidebb 20 karakternél</td><td>Futtassa újra a <code>wrangler secret put SAJTOIRODA_JELMONDAT</code> parancsot</td></tr>
+<tr><td>„Hibás jelmondat”</td><td>Elgépelés, szóköz, kisbetű-nagybetű</td><td>Óvatosan gépelje be; ha nem megy, cserélje a jelmondatot</td></tr>
+<tr><td>„Túl sok sikertelen próbálkozás”</td><td>5 hiba után 15 perc zár</td><td>Várjon 15 percet</td></tr>
+<tr><td>„Ehhez az irodához nincs hozzáférése”</td><td>A hozzáférés vagy a profil nem került az adatbázisba</td><td>Ellenőrizze: <code>SELECT email, tenant_id, szerep FROM felhasznalok</code>; futtassa újra a <code>hozzaferes-sql</code> lépést</td></tr>
+<tr><td>A Napló „hiba” sora egy hírforrásra</td><td>A hírforrás nem elérhető, vagy a címe változott</td><td>Javítsa a címet a Beállításokban; vagy vegye ki a forrást</td></tr>
+<tr><td>Sehol nincs szemle</td><td>Még nem telt el az első 7:30, vagy a munkatárs szünetel</td><td>Nézze a Naplót és az asztal állapotát („Dolgozik”)</td></tr>
+<tr><td>Sok „Posztjavaslat” <code>[KITÖLTENDŐ]</code> szöveggel</td><td>AI nélkül csak váz készül, és minden Monitoring-riasztás javaslatot indít</td><td>Normális; AI-val tartalmas lesz. Szűkítse a kulcsszavakat vagy szüneteltesse a Közösségi asztalt</td></tr>
+<tr><td>A wrangler „Unexpected fields” figyelmeztet</td><td>Egy beállítás rossz szakaszba került a <code>wrangler.toml</code>-ban</td><td>Tegye a fájl elejére, a szakaszok elé</td></tr>
+<tr><td>A parancsok „remote” helyett helyi adatbázison futnak</td><td>Hiányzik a <code>--remote</code> kapcsoló</td><td>Mindig írja ki</td></tr>
+<tr><td>Több parancs egyszerre beillesztve elakad</td><td>A megerősítés (<code>y</code>) a következő sort „eszi meg”</td><td>A parancsokat egyenként futtassa</td></tr>
+</table>
+
+<h1>12. Mi nincs még kész</h1>
+
+<div class="doboz figy"><b class="cim">Őszinte állapotjelentés</b>A rendszer kódja és szabályai tesztekkel igazoltak, de <b>az éles világban még sok minden kipróbálatlan</b>. Ezt tudni kell, mielőtt valamire építene.</div>
+
+<table>
+<tr><th>Terület</th><th>Állapot</th></tr>
+<tr><td>Hírforrások</td><td>Az RSS-értelmező mintaadaton tesztelt; az első valódi futás mutatja meg, melyik portál címe működik. A Google News RSS felhasználási feltételeit ellenőrizni kell.</td></tr>
+<tr><td>AI minősége</td><td>Nem mért. A Claude-hívások hamis API-val tesztelték. Az első lépés a 30 cikkes minőségpróba.</td></tr>
+<tr><td>Postafiókok</td><td>Az iCloud-híd IMAP-része valódi fiókkal nem volt kipróbálva; a Gmail és az Exchange illesztők hamis szerverrel tesztelték.</td></tr>
+<tr><td>Levélküldés</td><td>Nincs bekötve. A jóváhagyott válaszok a próba-kimenőbe kerülnek.</td></tr>
+<tr><td>Telefon</td><td>Nincs. Terv: ElevenLabs, a legvégén.</td></tr>
+<tr><td>Közösségi platformok</td><td>Az X, a Facebook, az Instagram és a TikTok közvetlenül nem olvasható (fizetős API). A közösségi szemle csak nyilvános RSS/Atom csatornákat lát; a többit Ön viszi fel kézzel.</td></tr>
+<tr><td>Jogi réteg</td><td>A szabályalapú réteg kulcsszavas, tévedhet mindkét irányba; a jogász nem pótolható.</td></tr>
+<tr><td>Belépés</td><td>A jelmondat az Access-nél gyengébb védelem; külső ügyfeleknek nem elég.</td></tr>
+<tr><td>Dokumentumtár</td><td>Szkennelt PDF és kép felismerése nincs; az eredeti fájlok tárolása (R2) nincs bekapcsolva.</td></tr>
+<tr><td>Jogi és szabályozási kérdések</td><td>GDPR, az EU AI Act (átláthatósági kötelezettségek), a napló tárolása és a felhasználási jog szerződése: jogász bevonásával, az első külső ügyfél előtt.</td></tr>
+</table>
+
+<h2>A javasolt sorrend innen</h2>
+<ol>
+<li><b>Néhány nap megfigyelés AI nélkül</b> (a mostani állapot): jól fut-e az ütemezés, melyik hírforrás működik, mennyi a zaj.</li>
+<li><b>AI-kulcs</b> havi költségkerettel, és a 30 cikkes <b>minőségpróba</b>: az AI tényleg jól osztályoz-e. 80% alatt a promptot és a kulcsszavakat igazítjuk.</li>
+<li><b>iCloud-levélhíd</b>: a levelek beérkezése, egy próbalevéllel.</li>
+<li><b>Kéthetes próba</b> a nulladik ügyféllel (Ön): naponta 5 perc, a zaj és az érték mérése, a küszöbök igazítása.</li>
+<li><b>Levélküldő szolgáltató</b> kiválasztása (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről), és csak ezután az éles küldés.</li>
+<li><b>Telefon</b> (ElevenLabs), a legvégén.</li>
+<li>Az első <b>külső ügyfél</b> bevezetése (lásd az új ügyfél útmutatóját) a jogi kérdések lezárása után.</li>
+</ol>
+
+<h1>13. Szószedet</h1>
+
+<table>
+<tr><th>Fogalom</th><th>Jelentése</th></tr>
+<tr><td>Munkatárs</td><td>Mesterséges intelligenciával működő „munkatárs”, saját feladatkörrel és asztallal</td></tr>
+<tr><td>Asztal</td><td>A munkatárs felülete az irodában: utasítás, munka, jelentések, átadások</td></tr>
+<tr><td>Vezető</td><td>A szerep, amely látja a tartalmakat és dönt (Ön)</td></tr>
+<tr><td>Üzemeltető</td><td>A szerep, amely a rendszert állítja be, de a bizalmas tartalmat nem látja</td></tr>
+<tr><td>Profil</td><td>Az ügyfél minden egyedi beállítása egy helyen (kulcsszavak, források, vörös vonalak…)</td></tr>
+<tr><td>Ügyfél (tenant)</td><td>Egy szervezet, egymástól szigorúan elkülönített adatokkal; az azonosítója a <code>tenant_id</code></td></tr>
+<tr><td>Vörös vonal</td><td>Olyan téma, amelynél azonnali riasztás jár, nem várunk a reggeli szemlére</td></tr>
+<tr><td>Átadás</td><td>Belső üzenet egyik munkatárstól a másiknak (jelzés, kérelem, anyag, kérdés)</td></tr>
+<tr><td>Kimenő kapu</td><td>A kódnak az a pontja, amely minden kimenő üzenetet ellenőriz: csak jóváhagyással mehet</td></tr>
+<tr><td>Próbaüzem (száraz mód)</td><td>Az az állapot, amelyben a rendszer nem küld levelet, és nem hív fizetős szolgáltatást</td></tr>
+<tr><td><code>[KITÖLTENDŐ]</code></td><td>A munkatárs jelzése, hogy az adott részt nem tudta alátámasztani; ilyen szöveg nem hagyható jóvá</td></tr>
+<tr><td>Napló</td><td>Hozzáfűzős, utólag nem módosítható nyilvántartás minden javaslatról és döntésről</td></tr>
+<tr><td>Worker</td><td>A Cloudflare hálózatán futó program: az iroda szerveroldala</td></tr>
+<tr><td>D1</td><td>A Cloudflare adatbázisa</td></tr>
+<tr><td>Cron / ütemező</td><td>Az időzített futás (óránként, a 30. percben)</td></tr>
+<tr><td>Migráció</td><td>Az adatbázis szerkezetének verziózott módosítása (új tábla hozzáadása)</td></tr>
+<tr><td>RSS / Atom</td><td>Szabványos hírcsatorna-formátum, amelyet a hírportálok kínálnak</td></tr>
+<tr><td>Levélhíd</td><td>Kis program a saját gépén, amely az iCloud-leveleket csak olvassa, és HTTPS-en átadja az irodának</td></tr>
+<tr><td>PWA</td><td>Telepíthető weboldal: ikonként a kezdőképernyőre tehető, de ugyanaz a weboldal</td></tr>
+<tr><td>Wrangler</td><td>A Cloudflare parancssori eszköze a telepítéshez</td></tr>
+</table>
+
+</body></html>

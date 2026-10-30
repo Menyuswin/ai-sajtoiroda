@@ -134,7 +134,7 @@ test('check mód: csak riasztás, szemle nem készül, a cikkek jelentetlenek ma
   assert.ok((await ctx.store.load()).every(a => !a.reportedAt));
 });
 
-test('kikapcsolt ügynök nem fut, és ez naplózva van', async () => {
+test('kikapcsolt munkatárs nem fut, és ez naplózva van', async () => {
   const { ctx } = await makeCtx({ profileMod: p => ({ ...p, ugynokok: { monitoring: { aktiv: false } } }) });
   const r = await monitoringAgent.run(ctx);
   assert.equal(r.skipped, true);

@@ -1,5 +1,5 @@
 // Jogi és reputációs kockázatvizsgálat. A program adja az ALSÓ HATÁRT (determinisztikus szabályok); az AI ezt csak megerősítheti vagy emelheti.
-// Minden megállapítás a vizsgált szöveg szó szerinti részletére hivatkozik (ellenőrzött), törvényhelyet az ügynök nem hivatkozhat.
+// Minden megállapítás a vizsgált szöveg szó szerinti részletére hivatkozik (ellenőrzött), törvényhelyet a munkatárs nem hivatkozhat.
 import { loadPrompt, extractJson } from '../../core/llm.js';
 import { norm } from '../../core/text.js';
 

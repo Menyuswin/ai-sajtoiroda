@@ -1,4 +1,4 @@
-// A Jogi- és Kockázatfigyelő Ügynök: tervezett szöveg → kockázati besorolás, megállapítások szó szerinti idézettel.
+// A Jogi- és Kockázatfigyelő Munkatárs: tervezett szöveg → kockázati besorolás, megállapítások szó szerinti idézettel.
 // Jelez, de nem helyettesíti a jogászt. Semmit nem módosít, és kifelé nem küld; magas kockázatnál riasztás csak a vezetőnek.
 import { analyse, CATEGORIES, KINDS, LEVEL_LABEL } from './analysis.js';
 import { startOfDayIso, AI_NOTE } from '../common/sources.js';
@@ -28,7 +28,7 @@ function render(title, kind, r, srcText) {
 // ctx: { profile, log, outbox, llm, now, prompts, models, anyagok }
 export async function createOpinion(ctx, { anyagId = null, szoveg = null, fajta = 'egyeb', by = WHO, atadasId = null }) {
   const { profile, log, outbox, llm, now, prompts, models, anyagok } = ctx;
-  if (!agentActive(profile, AGENT, now())) throw new AgentError(409, 'A Jogi ügynök szünetel; kapcsolja vissza, mielőtt véleményt kér.');
+  if (!agentActive(profile, AGENT, now())) throw new AgentError(409, 'A Jogi munkatárs szünetel; kapcsolja vissza, mielőtt véleményt kér.');
   let text = String(szoveg ?? ''), title = 'beillesztett szöveg', kind = KINDS[fajta] ? fajta : null;
   if (anyagId) {
     const src = await anyagok.get(anyagId);

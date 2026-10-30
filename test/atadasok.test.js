@@ -49,7 +49,7 @@ test('hibás feldolgozó nem veszi el az átadást: kézbesítve marad, a hiba n
   assert.ok((await s.log.query({ tipus: 'hiba' })).some(e => /elromlott/.test(e.tartalom.hiba)));
 });
 
-test('érvénytelen átadás elutasítva és naplózva: ismeretlen ügynök, önmagának, rossz típus, üres szöveg', async () => {
+test('érvénytelen átadás elutasítva és naplózva: ismeretlen munkatárs, önmagának, rossz típus, üres szöveg', async () => {
   const s = setup();
   for (const bad of [msg({ to: 'nincs' }), msg({ from: 'nincs' }), msg({ to: 'monitoring' }), msg({ tipus: 'level' }), msg({ szoveg: '  ' }), msg({ targy: '' })]) {
     assert.equal((await s.h.send(bad)).ok, false, JSON.stringify(bad));

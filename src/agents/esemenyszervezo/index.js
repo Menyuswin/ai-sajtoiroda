@@ -1,4 +1,4 @@
-// Az Eseményszervező Ügynök: koncepció → (vezetői jóváhagyás) → meghívók és ellenőrzőlista → visszajelzések → utómunka.
+// Az Eseményszervező Munkatárs: koncepció → (vezetői jóváhagyás) → meghívók és ellenőrzőlista → visszajelzések → utómunka.
 // Csak jóváhagyott koncepcióval indul tovább; meghívó csak a vezető jóváhagyásával, a kimenő kapun át, a sajtólistán szereplő, hozzájáruló kapcsolatoknak megy.
 import { gatherSources, startOfDayIso, AI_NOTE } from '../common/sources.js';
 import { buildConcept, renderConcept, costSummary } from './concept.js';
@@ -249,7 +249,7 @@ export async function createPostWork(ctx, id, { by }) {
     '## Résztvevői lista', ...(count('reszt_vesz') ? invites.filter(i => i.valasz === 'reszt_vesz').map(i => `- ${i.nev}${i.medium ? ` (${i.medium})` : ''}`) : ['- (nincs rögzített résztvevő; a visszajelzéseket a meghívók listáján véglegesítheti)']), '',
     `**Meghívottak:** ${invites.length} · **részt vesz:** ${count('reszt_vesz')} · **nem vesz részt:** ${count('nem_vesz_reszt')} · **bizonytalan:** ${count('bizonytalan')} · **nincs válasz:** ${count('nincs')}`, '',
     '## Megjelenések összefoglalója (a Monitoring tárolt cikkeiből)', ...(after.length ? after.map(c => `- [${c.n}] ${c.title} (${c.medium}, ${c.hangnem})${c.url ? ` ${c.url}` : ''}`) : ['- (az esemény óta nem találtunk a témához kapcsolódó tárolt cikket)']), '',
-    '## Sajtóanyag-tervezet', KIT('a sajtóanyag szövege; az ügynök AI nélkül nem írja meg, és tényt nem talál ki'), `Alapadatok: ${ev.cim}, ${ev.idopont || KIT('időpont')}, ${ev.helyszin || KIT('helyszín')}.`, '',
+    '## Sajtóanyag-tervezet', KIT('a sajtóanyag szövege; a munkatárs AI nélkül nem írja meg, és tényt nem talál ki'), `Alapadatok: ${ev.cim}, ${ev.idopont || KIT('időpont')}, ${ev.helyszin || KIT('helyszín')}.`, '',
     '## Tanulságok', KIT('mi működött, mi nem; a vezető tölti ki'), '', AI_NOTE];
   const anyagId = await anyagok.add({ ugynok: AGENT, tipus: 'esemeny_utomunka', cim: `Utómunka: ${ev.cim}`, szoveg: L.join('\n'), meta: { esemeny_id: id, cikkek: after.map(({ n, id: aid, title, url, medium, hangnem, indoklas }) => ({ n, id: aid, title, url, medium, hangnem, indoklas })), resztvevok: count('reszt_vesz') } });
   await esemeny.events.transition(id, ['lezajlott'], 'utomunka', { utomunka_anyag_id: anyagId });

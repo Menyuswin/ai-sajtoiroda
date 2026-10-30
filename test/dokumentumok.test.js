@@ -98,12 +98,12 @@ test('dokumentumtár: feltöltés, lista, keresés (ragozott alakkal és ékezet
   assert.equal(bucket._keys().length, 3);
 });
 
-test('hatókör és „nem küldhető AI-nak” jelölés: csak az engedélyezett ügynök és csak AI nélkül látja', async () => {
+test('hatókör és „nem küldhető AI-nak” jelölés: csak az engedélyezett munkatárs és csak AI nélkül látja', async () => {
   const { docs } = await lab();
   const d = docs();
   await d.add({ bytes: await file('jegyzet.txt'), fajlnev: 'jegyzet.txt', cim: 'Bizalmas', hatokor: ['felkeszito'], by: 'x' });
   await d.add({ bytes: await file('kerdesek.md'), fajlnev: 'kerdesek.md', cim: 'Titkos kérdések', aiTiltott: true, by: 'x' });
-  assert.equal((await d.search('sürgősségi ellátás', { agent: 'monitoring' })).talalatok.length, 0); // más ügynöknek van fenntartva
+  assert.equal((await d.search('sürgősségi ellátás', { agent: 'monitoring' })).talalatok.length, 0); // más munkatársnak van fenntartva
   assert.equal((await d.search('sürgősségi ellátás', { agent: 'felkeszito' })).talalatok.length, 1);
   const ai = await d.search('várakozási', { forAI: true });
   assert.equal(ai.talalatok.length, 0);

@@ -1,18 +1,18 @@
-# Az ügynökök közötti átadások terve
+# A munkatársak közötti átadások terve
 
-*Állapot: **jóváhagyva és megépítve** (a tulajdonos 2026-10-29-én jóváhagyta; az A1–A3 lépések kész és tesztelt, az A4 az ügynökök érkezésével következik).*
+*Állapot: **jóváhagyva és megépítve** (a tulajdonos 2026-10-29-én jóváhagyta; az A1–A3 lépések kész és tesztelt, az A4 a munkatársak érkezésével következik).*
 
 ## 1. A cél
 
-Úgy kell kezdeni, mint egy irodát, ahol többféle munkatárs dolgozik a saját területén, és a feladatok sok helyen összeérnek: a sajtóválasz írásánál a Kapcsolattartó, az Archívum és a Jogi ügynök is érintett; a megszólalási javaslathoz a Monitoring jelzése kell. Az ügynökök ilyenkor **tudjanak egymással kommunikálni**, de úgy, hogy a vezető mindent lát és irányít, és semmi nem megy ki jóváhagyás nélkül.
+Úgy kell kezdeni, mint egy irodát, ahol többféle munkatárs dolgozik a saját területén, és a feladatok sok helyen összeérnek: a sajtóválasz írásánál a Kapcsolattartó, az Archívum és a Jogi munkatárs is érintett; a megszólalási javaslathoz a Monitoring jelzése kell. A munkatársak ilyenkor **tudjanak egymással kommunikálni**, de úgy, hogy a vezető mindent lát és irányít, és semmi nem megy ki jóváhagyás nélkül.
 
 ## 2. Az alapelvek (jóváhagyott)
 
 1. **Átadásokon keresztül kommunikálnak, nem közvetlen hívással.** Az átadás egy rögzített, naplózott üzenet két asztal között.
 2. **Zárt típuslista:** *jelzés* (valami történt, érdemes tudni), *kérelem* (kérek egy munkát), *anyag-átadás* (kész anyagot adok tovább), *kérdés* (kérdezek egy szakmai kérdést).
 3. **Minden átadás látszik a vezetőnek**: az érintett asztaloknál, az Átadások nézetben és a naplóban. A vezető bármelyiket megállíthatja.
-4. **Minden kimenetnek egy felelős ügynöke van**; a többiek közreműködnek (véleményt adnak, adatot szolgáltatnak). A felelős adja be az eredményt a vezetőnek.
-5. **Üres asztalnak is lehet címezni.** Az átadás *várakozik*, amíg az ügynök megérkezik (vagy a szünet véget ér), és csak akkor kézbesül.
+4. **Minden kimenetnek egy felelős munkatársa van**; a többiek közreműködnek (véleményt adnak, adatot szolgáltatnak). A felelős adja be az eredményt a vezetőnek.
+5. **Üres asztalnak is lehet címezni.** Az átadás *várakozik*, amíg a munkatárs megérkezik (vagy a szünet véget ér), és csak akkor kézbesül.
 6. **Kifelé semmi nem megy.** Az átadás belső; levelet, nyilatkozatot, posztot nem tud küldeni. A kimenő kapu és a jóváhagyás ettől független marad.
 
 ## 3. Az átadás
@@ -20,7 +20,7 @@
 | Mező | Jelentés |
 |------|----------|
 | típus | jelzés / kérelem / anyag-átadás / kérdés |
-| honnan, hova | az ügynökök azonosítói (az ügynök-katalógusból; önmagának nem küldhet) |
+| honnan, hova | a munkatársak azonosítói (a munkatárs-katalógusból; önmagának nem küldhet) |
 | tárgy, szöveg | rövid tárgy, részletek |
 | anyag | opcionális hivatkozás egy elkészült anyagra (később: dokumentumra is) |
 | szülő, mélység | melyik átadásra válaszul született; a lánc mélysége |
@@ -64,6 +64,6 @@
 | A1 | Adatmodell, átadás-szolgáltatás (típus, mélység, napi keret, lejárat, megállítás, várakozás üres asztalnál), napló | Tesztek: korlátok, lánc, várakozás és kézbesítés, ügyfél-elkülönítés |
 | A2 | A Monitoring első valódi átadása: trendjelzés és vörös vonal → jelzés a Proaktív asztalnak | A riasztás mellett átadás születik, az üres asztalnál várakozik |
 | A3 | API és felület: Átadások szakasz az asztalnál, iroda-jelzések, Átadások nézet, megállítás | Böngészős kipróbálás |
-| A4 | (az ügynökök érkezésével) a többi átadási út, kapcsolat a dokumentumtárral | |
+| A4 | (a munkatársak érkezésével) a többi átadási út, kapcsolat a dokumentumtárral | |
 
-Az átadás-mechanizmus tesztelhető próba-ügynökkel már most; a valódi címzettek a Proaktív, a Felkészítő stb. érkezésével kapcsolódnak be.
+Az átadás-mechanizmus tesztelhető próba-munkatárssal már most; a valódi címzettek a Proaktív, a Felkészítő stb. érkezésével kapcsolódnak be.

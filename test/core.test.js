@@ -20,7 +20,7 @@ test('a profilsablon (monitoring/profil-sablon.yaml) érvényes', async () => {
   assert.equal(p.schema_verzio, 1);
 });
 
-test('ügynök kikapcsolható a profilban', async () => {
+test('munkatárs kikapcsolható a profilban', async () => {
   const p = await loadProfile(fixture('profil.yaml'));
   assert.equal(agentActive(p, 'monitoring'), true);
   assert.equal(agentActive({ ...p, ugynokok: { monitoring: { aktiv: false } } }, 'monitoring'), false);

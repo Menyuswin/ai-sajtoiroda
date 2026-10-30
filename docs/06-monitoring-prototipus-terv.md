@@ -1,4 +1,4 @@
-# A Monitoring Ügynök prototípusának terve
+# A Monitoring Munkatárs prototípusának terve
 
 *Állapot: **jóváhagyásra vár** (2026-10-29). Amíg a tulajdonos nem hagyja jóvá, kód nem készül.*
 
@@ -6,7 +6,7 @@
 
 Egy ügyfélszervezet számára minden reggel egy értelmező sajtószemle érkezik a vezetőjének e-mailben, a megadott kulcsszavak alapján, hangnemelemzéssel és trendjelzéssel; a vezető válaszban jelezheti, mi volt hasznos, és minden javaslat és döntés naplóba kerül.
 
-A prototípus **kifelé semmit nem kommunikál**. Az egyetlen kimenő levél a vezetőnek szóló belső jelentés. Az alapszabály (kimenő üzenet csak jóváhagyással) így érintetlen marad, mert a Monitoring Ügynök szerepe eleve belső (`agents/03-monitoring.yaml`).
+A prototípus **kifelé semmit nem kommunikál**. Az egyetlen kimenő levél a vezetőnek szóló belső jelentés. Az alapszabály (kimenő üzenet csak jóváhagyással) így érintetlen marad, mert a Monitoring Munkatárs szerepe eleve belső (`agents/03-monitoring.yaml`).
 
 ## 2. Mi van a prototípusban, és mi nincs
 
@@ -14,9 +14,9 @@ A prototípus **kifelé semmit nem kommunikál**. Az egyetlen kimenő levél a v
 |-----------|--------|
 | Napi sajtószemle e-mailben | Heti „media pulse” jelentés |
 | Kulcsszavas gyűjtés RSS-ből és hírkereső-csatornákból | Fizetős médiafigyelő adatbázis |
-| Cikkenkénti besorolás: téma, hangnem, érintett szereplők | Közösségi média (a 7. ügynök feladata) |
+| Cikkenkénti besorolás: téma, hangnem, érintett szereplők | Közösségi média (a 7. munkatárs feladata) |
 | Narratívák, kiemelt médiumok a napi összefoglalóban | Versenytárs-összehasonlító elemzés |
-| Trendjelzés (hirtelen felerősödő téma) azonnali értesítéssel | Átadás a Proaktív Ügynöknek |
+| Trendjelzés (hirtelen felerősödő téma) azonnali értesítéssel | Átadás a Proaktív Munkatársnak |
 | Több, egymástól elválasztott ügyfél (tenant) | Csevegőfelület (az e-mail az első felület) |
 | Válaszban adott visszajelzés, napló | Webes irányítópult |
 
@@ -106,7 +106,7 @@ A levél alján rövid, gépileg is értelmezhető parancsok: *„3: nem relevá
 
 ### 4.6 Napló
 
-Minden esemény egy sor, tenant-azonosítóval, időbélyeggel és szereplővel: a besorolás (ügynök-javaslat), a trendjelzés, a kiküldött szemle, a vezető visszajelzése (emberi döntés), és a profil minden módosítása. A napló csak hozzáfűzhető, nem módosítható. Ebből készül majd a havi értékelés (pontosság, hasznosság), és ez az audit alapja.
+Minden esemény egy sor, tenant-azonosítóval, időbélyeggel és szereplővel: a besorolás (munkatárs-javaslat), a trendjelzés, a kiküldött szemle, a vezető visszajelzése (emberi döntés), és a profil minden módosítása. A napló csak hozzáfűzhető, nem módosítható. Ebből készül majd a havi értékelés (pontosság, hasznosság), és ez az audit alapja.
 
 ### 4.7 Több ügyfél kezelése
 
@@ -135,7 +135,7 @@ Két üzemmód: (a) **üzemeltetett**: Ön futtatja, ügyfelenként külön mapp
 |---|--------|--------------------------|
 | 4 | Források | RSS + hírkereső-csatorna; fizetős adatbázis csak akkor, ha az ügyfél kéri és fizeti |
 | 5 | Postafiók | A Monitoring nem olvas postafiókot. Csak küldeni kell a vezetőnek; ehhez tranzakciós levélküldő szolgáltatás kell (a kiválasztása nyitott). A válaszfogadás a 4. mérföldkőben jön |
-| 6 | Telefonhívások | Nem része a prototípusnak (a Kapcsolattartó Ügynök témája) |
+| 6 | Telefonhívások | Nem része a prototípusnak (a Kapcsolattartó Munkatárs témája) |
 | 7 | GDPR | Az ügyféllel adatfeldolgozói megállapodás kell, amelyben Ön az adatfeldolgozó. A cikkekben szereplő közszereplők neve személyes adat, ezért: csak a szükséges mező mentése, megőrzési idő (javaslat: nyers cikkadat 12 hónap, napló hosszabb), törlési rend. Az AI-szolgáltató adatkezelési feltételeit is rögzíteni kell. Jogász átnézése javasolt |
 | 8 | EU AI Act | A belső, vezetőnek szóló szemle várhatóan kis kockázatú; a levélben az „AI által előkészített” jelzés az átláthatóságot szolgálja. A pontos besorolást a szolgáltatás ügyfeleknek értékesítése előtt jogásszal érdemes tisztázni |
 | 9 | Napló | A D1 adatbázis tenant-szerinti, hozzáfűzős táblája; hozzáférése Önnek, az ügyfél vezetőjének pedig csak a saját szervezetéhez, exportálható |

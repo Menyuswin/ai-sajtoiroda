@@ -1,4 +1,4 @@
-# Az Eseményszervező ügynök terve
+# Az Eseményszervező munkatárs terve
 
 *Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 9. fejezetet). A bevezetési sorrend szerint a harmadik szakasz (`docs/04`). Az átadások, a Dokumentumtár, a naptár (`docs/12`) és a kimenő kapu (`docs/11`) már készek, erre épül.*
 
@@ -10,16 +10,16 @@ Az esemény **csak jóváhagyott koncepcióval indul**, és **minden meghívó c
 
 ## 2. Az esemény élete (állapotok)
 
-`javaslat` → **`koncepcio`** (az ügynök elkészíti) → **jóváhagyva** (Ön) → `szervezes` (meghívók, ellenőrzőlista) → `lezajlott` → `utomunka` → `lezarva`; bármikor `elvetve` vagy `elhalasztva`.
+`javaslat` → **`koncepcio`** (a munkatárs elkészíti) → **jóváhagyva** (Ön) → `szervezes` (meghívók, ellenőrzőlista) → `lezajlott` → `utomunka` → `lezarva`; bármikor `elvetve` vagy `elhalasztva`.
 
 Minden állapotváltás és döntés naplózott; a döntések az Öné.
 
-## 3. Mit csinál az ügynök
+## 3. Mit csinál a munkatárs
 
 1. **Koncepció** (téma + alkalom + költségkeret + időablak alapján): cél, célközönség, formátum, időpont-javaslat (a naptárból a program számolja, mint a Proaktívnál), helyszín-szempontok, költség- és erőforrásbecslés tételesen. Forrásjelöléssel; ami nem támasztható alá, `[KITÖLTENDŐ]`. A **költségkeret túllépése** és **a helyszínnel kapcsolatos jogi vagy biztonsági kérdés** külön, kiemelt jelzés (a Jogi asztalnak belső kérdés).
 2. **Meghívólista:** a **sajtólistából** (új, ügyfelenként kezelt névjegytár: név, médium, e-mail, téma, prioritás) prioritási sorrendben; a lista és a **meghívószöveg** tervezet, az Ön jóváhagyására vár. Tételenként kijelölhető, kit hívunk (mint a kulcsszójavaslatnál).
 3. **Meghívók kiküldése:** csak jóváhagyás után, a **kimenő kapun át** (`kind: meghivo`, vezetői jóváhagyás kell); próbaüzemben a kimenő mappába kerül. A levélküldő szolgáltató kiválasztásáig nem megy ki semmi (P6).
-4. **Visszajelzések követése:** a beérkező válaszok (a Kapcsolattartó Bejövőjében) összekapcsolhatók az eseménnyel; az ügynök a „részt vesz / nem vesz részt / bizonytalan” állapotot **javaslatként** jelöli, Ön véglegesíti.
+4. **Visszajelzések követése:** a beérkező válaszok (a Kapcsolattartó Bejövőjében) összekapcsolhatók az eseménnyel; a munkatárs a „részt vesz / nem vesz részt / bizonytalan” állapotot **javaslatként** jelöli, Ön véglegesíti.
 5. **Logisztikai ellenőrzőlista:** helyszín, technika, étkeztetés, akkreditáció, hozzáférhetőség, sajtóanyag-csomag, felelősök és határidők (hátrafelé a naptárból). A pipák az Öné.
 6. **Utómunka:** sajtóanyag-tervezet, résztvevői lista, megjelenések összefoglalója (a Monitoring eseményhez köthető cikkeiből), tanulságok.
 7. **Átadások:** a Felkészítőtől csomagot kér (a megszólalóknak), a Proaktívtól üzenetet, a Jogi asztaltól véleményt.
@@ -59,7 +59,7 @@ Az Eseményszervező asztala: **Események** (állapotokkal), **Új esemény** (
 2. **Sajtólista** az irodán belül (kézi felvitel és CSV), nem külső CRM-ből? (Ajánlott első ütemben.)
 3. **Meghívó csak a kimenő kapun át**, tételes kijelöléssel, a levélküldő kiválasztásáig próbaüzemben? (Ajánlott.)
 4. **Korlátok:** napi 3 koncepció, 50 meghívótervezet, eseményenként 200 meghívó?
-5. **A visszajelzés-követés javaslat-alapú** (az ügynök jelöl, Ön véglegesít)? (Ajánlott.)
+5. **A visszajelzés-követés javaslat-alapú** (a munkatárs jelöl, Ön véglegesít)? (Ajánlott.)
 6. A **sajtólista személyes adatai** (név, e-mail) az AI-nak nem mennek át, csak médium és téma szintjén? (Ajánlott; GDPR miatt jogász átnézése javasolt.)
 
 ## 9. Mi készült el (2026-10-30)
@@ -77,7 +77,7 @@ A tulajdonos mind a hat pontot elfogadta (állapotmenet, belső sajtólista, meg
 
 **Korlátok (őszintén):**
 - Az **AI valódi minősége nem mért** (hamis API-val tesztelt); AI nélkül a koncepció váz, a költségtételek összegei üresek.
-- A **sajtóanyag** szövegét az ügynök nem írja meg (váz `[KITÖLTENDŐ]` jelöléssel); a megjelenések összefoglalója a Monitoring tárolt cikkeire korlátozódik.
+- A **sajtóanyag** szövegét a munkatárs nem írja meg (váz `[KITÖLTENDŐ]` jelöléssel); a megjelenések összefoglalója a Monitoring tárolt cikkeire korlátozódik.
 - A visszajelzés-javaslat egyszerű kulcsszavas szabály; a bonyolultabb válaszokat (feltételek, helyettes küldése) a vezetőnek kell véglegesítenie.
 - A meghívó **tényleges kiküldése** a levélküldő szolgáltató kiválasztására vár (P6). A sajtólista GDPR-megfelelőségét (jogalap, tájékoztatás, megőrzés) jogász nézze át.
 - Nincs naptár-meghívó (iCal) és online regisztrációs oldal; a regisztráció a visszajelzések követésén át történik.

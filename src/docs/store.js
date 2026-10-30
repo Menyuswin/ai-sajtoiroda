@@ -96,7 +96,7 @@ export function createDocs({ db, bucket = null, tenantId, now = () => new Date()
       return obj ? { fajlnev: r.fajlnev, bytes: new Uint8Array(await obj.arrayBuffer()) } : null;
     },
 
-    // Keresés. `agent`: csak az ennek az ügynöknek engedélyezett dokumentumok; `forAI`: az AI-nak tiltottak kizárva.
+    // Keresés. `agent`: csak az ennek a munkatársnak engedélyezett dokumentumok; `forAI`: az AI-nak tiltottak kizárva.
     // Visszaadja a találatokat és azt is, hány találatot zártunk ki az AI-jelölés miatt.
     async search(text, { agent = null, forAI = false, limit = 6 } = {}) {
       const q = ftsQuery(text);
@@ -116,7 +116,7 @@ export function createDocs({ db, bucket = null, tenantId, now = () => new Date()
       return { talalatok: out, kizart_ai: kizart };
     },
 
-    // Szakaszok egy ügynök számára (pl. kulcsszójavaslathoz): a hatókör és az AI-jelölés szerint szűrve.
+    // Szakaszok egy munkatárs számára (pl. kulcsszójavaslathoz): a hatókör és az AI-jelölés szerint szűrve.
     async sectionsFor({ agent, forAI, limit = 40 }) {
       const { results } = await db.prepare('SELECT s.dokumentum_id AS did, s.sorszam, s.cim, s.szoveg FROM doksi_szakaszok s WHERE s.tenant_id = ? ORDER BY s.dokumentum_id, s.sorszam').bind(tenantId).all();
       const docs = new Map((await api.list()).map(d => [d.id, d]));

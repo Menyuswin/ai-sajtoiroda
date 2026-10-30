@@ -288,7 +288,7 @@ test('levélhíd (iCloud/IMAP): saját titokkal védett fogadó; hibás vagy hi�
   assert.equal(res.status, 401);
 });
 
-test('megőrzési idő: a lejárt levélszöveg törlődik, a napló marad; szüneteltetett ügynök nem dolgozza fel a leveleket', async () => {
+test('megőrzési idő: a lejárt levélszöveg törlődik, a napló marad; szüneteltetett munkatárs nem dolgozza fel a leveleket', async () => {
   const s = await setup({ profileMod: (p) => ({ ...p, megorzes: { level_nap: 30 } }) });
   await add(s);
   await s.db.prepare("UPDATE levelek SET fogadva = '2026-08-01T00:00:00.000Z'").run();

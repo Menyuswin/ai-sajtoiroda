@@ -1,6 +1,6 @@
 // Választervezet. Három opció: válasz / későbbi válasz (nyugtázás) / nem válaszolunk.
 // A tervezet SOHA nem megy ki magától: a vezető jóváhagyása és a kimenő kapu kell hozzá.
-// A tervezetben `[KITÖLTENDŐ: …]` jelöli, amit az ügynök nem tud (nem találunk ki tényt); ilyen szöveg nem hagyható jóvá.
+// A tervezetben `[KITÖLTENDŐ: …]` jelöli, amit a munkatárs nem tud (nem találunk ki tényt); ilyen szöveg nem hagyható jóvá.
 import { loadPrompt, extractJson } from '../../core/llm.js';
 
 export const PLACEHOLDER = /\[KITÖLTENDŐ[^\]]*\]/;
@@ -13,7 +13,7 @@ export function mockDraft(letter, cls, profile) {
   const sign = signature(profile);
   const when = cls.hatarido ? ` Jeleztük, hogy a megadott határidőre (${cls.hatarido}) figyelünk.` : '';
   const hold = `${greeting(letter)}\n\nKöszönjük megkeresését, a levelét megkaptuk.${when} Kollégáink áttekintik a kérdést, és hamarosan érdemben válaszolunk.\n\nÜdvözlettel:\n${sign}`;
-  const full = `${greeting(letter)}\n\nKöszönjük megkeresését.\n\n[KITÖLTENDŐ: a kérdésre adandó tartalmi válasz – ezt az ügynök AI nélkül nem tudja megírni]\n\nÜdvözlettel:\n${sign}`;
+  const full = `${greeting(letter)}\n\nKöszönjük megkeresését.\n\n[KITÖLTENDŐ: a kérdésre adandó tartalmi válasz – ezt a munkatárs AI nélkül nem tudja megírni]\n\nÜdvözlettel:\n${sign}`;
   return {
     opciok: [
       { kod: 'valasz', cim: 'Tartalmi válasz', targy: `Re: ${letter.targy}`, szoveg: full },
@@ -43,7 +43,7 @@ export function validateDraft(obj, { letter, cls, profile, validRefs, model }) {
 
 export async function buildDraft({ letter, cls, profile, llm, prompts, models, docs, instruction = null }) {
   const forAI = llm.mode !== 'mock';
-  // Az ügynök a korábbi nyilatkozatokat és irányelveket a kérdés és a levél szavai alapján keresi meg.
+  // A munkatárs a korábbi nyilatkozatokat és irányelveket a kérdés és a levél szavai alapján keresi meg.
   const found = docs ? await docs.search(`${letter.targy} ${cls.tema} ${letter.szoveg.slice(0, 300)}`, { agent: 'kapcsolattarto', forAI, limit: 4 }) : { talalatok: [], kizart_ai: 0 };
   const labels = new Map();
   for (const t of found.talalatok) if (!labels.has(t.dokumentum_id)) labels.set(t.dokumentum_id, labels.size + 1);

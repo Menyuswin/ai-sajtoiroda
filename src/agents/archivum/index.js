@@ -1,4 +1,4 @@
-// Az Archívum- és Tudásmenedzsment Ügynök: a kiadott közlések nyilvántartása, keresés, idővonal, ellentmondás-jelzés.
+// Az Archívum- és Tudásmenedzsment Munkatárs: a kiadott közlések nyilvántartása, keresés, idővonal, ellentmondás-jelzés.
 // Csak belső tudásbázis: semmit nem küld ki, nem módosít, nem dönt; jelez. AI nélkül nem ítél ellentmondásról, csak megmutatja az előzményeket.
 import { loadPrompt, extractJson } from '../../core/llm.js';
 import { startOfDayIso } from '../common/sources.js';

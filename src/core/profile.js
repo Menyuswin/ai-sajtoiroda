@@ -57,7 +57,7 @@ export function validateProfile(raw) {
   };
 }
 
-// A Közösségi média ügynök beállításai: platformok (zárt lista), hangnem, tiltott témák, hashtagek, emoji.
+// A Közösségi média munkatárs beállításai: platformok (zárt lista), hangnem, tiltott témák, hashtagek, emoji.
 export function normalizeSocial(k) {
   const o = k || {};
   const list = (v, n, max) => [...new Set((Array.isArray(v) ? v : []).map(x => String(x).trim().slice(0, n)).filter(Boolean))].slice(0, max);
@@ -74,7 +74,7 @@ export async function loadProfile(path) {
   return validateProfile(parse(await readFile(path, 'utf8')));
 }
 
-// A vezető bármikor kikapcsolhat vagy szüneteltethet egy ügynököt a profilban:
+// A vezető bármikor kikapcsolhat vagy szüneteltethet egy munkatársat a profilban:
 //   ugynokok.<id>.aktiv: false            – kikapcsolva, amíg vissza nem kapcsolják
 //   ugynokok.<id>.szunet_ig: "ÉÉÉÉ-HH-NN" – szünet a megadott nap végéig
 export function agentActive(profile, agentId, now = new Date()) {

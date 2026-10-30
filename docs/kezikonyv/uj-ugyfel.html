@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="hu"><head><meta charset="utf-8"><title>Új ügyfél bevezetése</title><link rel="stylesheet" href="stilus.css"></head><body>
+
+<div class="cimlap">
+<h1 class="first">Új ügyfél bevezetése</h1>
+<div class="alcim">Részletes telepítési és testreszabási útmutató egy cég vagy intézmény számára</div>
+<p>Az AI-sajtóiroda bevezetése lépésről lépésre:<br>az előkészítő beszélgetéstől a próbaüzemen át az éles indulásig</p>
+<p class="meta">Állapot: 2026. október 30. · A rendszer jelenleg próbaüzemben fut (AI-kulcs és levélküldés nélkül)<br>Kiegészítő olvasmány: <i>Az AI-sajtóiroda kézikönyve</i></p>
+</div>
+
+<div class="tartalom">
+<h2 style="margin-top:0">Tartalom</h2>
+<ol>
+<li>1. Mit kap az ügyfél, és mi a bevezetés menete</li>
+<li>2. Döntés: közös példány vagy önálló példány?</li>
+<li>3. Előkészítő beszélgetés: a kérdőív</li>
+<li>4. Jogi és adatvédelmi teendők a kezdés előtt</li>
+<li>5. A profil kitöltése mezőnként</li>
+<li>6. Telepítés: A) közös példányban, B) az ügyfél saját fiókjában</li>
+<li>7. A tudásbázis (Dokumentumtár) feltöltése</li>
+<li>8. A munkatársak testreszabása</li>
+<li>9. Postafiók bekötése</li>
+<li>10. Szakterületi minták: egészségügy, önkormányzat, vállalat, civil szervezet</li>
+<li>11. Próbaüzem, minőségmérés, éles indulás</li>
+<li>12. Átadás-átvétel, oktatás, folyamatos üzemeltetés</li>
+<li>13. Kilépés: adatok kiadása és törlése</li>
+<li>Mellékletek: kérdőív, ellenőrzőlista</li>
+</ol>
+</div>
+
+<h1>1. Mit kap az ügyfél, és mi a bevezetés menete</h1>
+
+<p>Az ügyfél egy <b>webes irodát</b> kap, amelyben nyolc munkatárs dolgozik a saját asztalánál: sajtószemle és monitoring, levelezés, felkészítés, proaktív stratégia, eseményszervezés, archívum, közösségi média, jogi kockázatfigyelés. Az iroda egy böngészőből elérhető cím (például <code>iroda.ugyfel.hu</code>), amely telefonon is használható, és kezdőképernyőre is tehető.</p>
+
+<div class="doboz kulcs"><b class="cim">Mit ígérhetünk, és mit nem</b>Ígérhetjük: a vezető idejének felszabadítását az előkészítő munkából; mindent egy helyen; nyomon követhető döntéseket; és azt, hogy <b>semmi nem távozik a vezető jóváhagyása nélkül</b>. Nem ígérhetjük: autonóm működést, tévedhetetlen szövegeket, jogi tanácsot, vagy a közösségi platformok közvetlen figyelését. Az AI szövegei <i>tervezetek</i>; a felelősség a vezetőé.</div>
+
+<h2>A bevezetés öt szakasza</h2>
+<table>
+<tr><th>#</th><th>Szakasz</th><th>Idő</th><th>Eredmény</th></tr>
+<tr><td>1</td><td><b>Előkészítő beszélgetés</b> (kérdőív) és jogi teendők</td><td>1 hét</td><td>Kitöltött kérdőív, aláírt megállapodás</td></tr>
+<tr><td>2</td><td><b>Telepítés és profil</b>: iroda, belépés, kulcsszavak, források, vörös vonalak</td><td>1–2 nap</td><td>Működő, de „száraz” (nem küldő) iroda</td></tr>
+<tr><td>3</td><td><b>Tudásbázis és hangnem</b>: dokumentumok, aláírás, szabályok</td><td>2–3 nap</td><td>A munkatársak már az ügyfél szavaival dolgoznak</td></tr>
+<tr><td>4</td><td><b>Próbaüzem</b> (2 hét): minőségmérés, zajszűrés, a küszöbök igazítása</td><td>2 hét</td><td>Mért minőség, jóváhagyott beállítások</td></tr>
+<tr><td>5</td><td><b>Éles indulás</b>: AI, levélküldés, oktatás, átadás</td><td>1 hét</td><td>Éles iroda, betanított vezető</td></tr>
+</table>
+
+<h1>2. Közös példány vagy önálló példány?</h1>
+
+<p>A rendszer <b>több ügyfelet is kezelhet egyetlen példányban</b>: minden adat egy <code>tenant_id</code> (ügyfél-azonosító) alatt él, és az ügyfelek adatai szigorúan elkülönülnek. Ugyanakkor egy ügyfélnek saját, teljesen különálló példánya is lehet a saját Cloudflare-fiókjában. Melyiket válasszuk?</p>
+
+<table>
+<tr><th></th><th>A) Közös példány</th><th>B) Önálló példány az ügyfél fiókjában</th></tr>
+<tr><td>Kinek való</td><td>Pilot, kisebb ügyfél, bizalmi kapcsolat</td><td>Intézmény, ahol az adatok nem hagyhatják el az ügyfél felügyeletét; hosszú távú, nagyobb ügyfél</td></tr>
+<tr><td>Költség és munka</td><td>Kevés: új profil, hozzáférés, domén</td><td>Több: külön fiók, adatbázis, domén, titkok</td></tr>
+<tr><td>Adatok</td><td>Egy adatbázisban, de <code>tenant_id</code> szerint elkülönítve; Ön az üzemeltető</td><td>Az ügyfél saját fiókjában; Ön csak meghatalmazással fér hozzá</td></tr>
+<tr><td>Szerződéses háttér</td><td>Adatfeldolgozói megállapodás; Ön adatfeldolgozó</td><td>Felhasználási jog + (szükség esetén) üzemeltetési megbízás</td></tr>
+<tr><td>Leválaszthatóság</td><td>A profil és az exportok átvihetők</td><td>Eleve különálló; az ügyfél átveheti</td></tr>
+</table>
+
+<div class="doboz figy"><b class="cim">A belépésről őszintén</b>A jelenlegi <b>jelmondatos belépés egyetlen felhasználót</b> támogat, ezért <b>több felhasználós, külső ügyfélnél nem elég</b>. A lehetőségek: (1) <b>Cloudflare Access</b> (e-mailes kód, több felhasználó; az ingyenes csomag is bankkártyát kér); (2) <b>önálló példány</b>, ahol az ügyfél vezetője az egyetlen belépő, az üzemeltetést pedig Ön a <code>wrangler</code> eszközzel és az adatbázison át végzi; (3) <b>több felhasználós belépés kifejlesztése</b> (például e-mailes kóddal, amihez levélküldő szolgáltató is kell). Ezt az első külső ügyfél <b>előtt</b> el kell dönteni.</div>
+
+<h1>3. Előkészítő beszélgetés: a kérdőív</h1>
+
+<p>Az iroda minősége nagyrészt a bevezetéskor dől el. Egy rosszul beállított kulcsszólista zajt hoz, egy rosszul átgondolt vörös vonal pedig vagy semmit nem jelez, vagy mindent. Ezért a bevezetés első lépése <b>beszélgetés, nem telepítés</b>. A teljes kérdőív a mellékletben van; a lényege:</p>
+
+<table>
+<tr><th>Téma</th><th>Mit kell megtudni</th><th>Miért fontos</th></tr>
+<tr><td><b>A szervezet</b></td><td>Pontos név és rövidítések, korábbi nevek, vezetők és szóvivők, márkák, telephelyek</td><td>Ezek lesznek a kulcsszavak; a ragozott alakot a rendszer tudja</td></tr>
+<tr><td><b>Közönség és szakterület</b></td><td>Kik a fontos újságírók, médiumok, érdekelt felek; milyen témák érintik az ügyfelet</td><td>A figyelt források és a témalista alapja</td></tr>
+<tr><td><b>Kockázatok</b></td><td>Mi az, amiről azonnal tudni akar (vörös vonalak); mik a tiltott témák; kik a jogi és szakmai tanácsadók</td><td>Riasztás és védelem</td></tr>
+<tr><td><b>Hangnem</b></td><td>Hogyan beszél a szervezet (formális, közvetlen, szakmai), aláírás, tiltott fordulatok, korábbi példák</td><td>A tervezetek hangja ezen múlik</td></tr>
+<tr><td><b>Folyamatok</b></td><td>Ki hagyja jóvá a közléseket; van-e jóváhagyási lánc (jogi, szakmai); mi a szokásos válaszidő</td><td>Kit kell beállítani vezetőnek/üzemeltetőnek; mit kell kifejezetten rögzíteni</td></tr>
+<tr><td><b>Csatornák</b></td><td>Melyik postafiókra érkeznek a sajtómegkeresések; melyik közösségi platformon van jelen; van-e sajtólistája</td><td>Postafiók-bekötés, platformok</td></tr>
+<tr><td><b>Naptár és ritmus</b></td><td>Visszatérő események (ülések, nyílt napok), pihenőidő, hétvégi ügyelet</td><td>Az időzítési javaslatok ezekből dolgoznak</td></tr>
+<tr><td><b>Tudásanyag</b></td><td>Milyen dokumentumok állnak rendelkezésre (bemutatkozó, állásfoglalások, tények és számok, korábbi közlemények)</td><td>A Dokumentumtár tartalma; a „nem küldhető AI-nak” jelölés</td></tr>
+</table>
+
+<div class="doboz"><b class="cim">Tanács a beszélgetéshez</b>Kérjen <b>három konkrét múltbeli esetet</b>: egy jól kezelt megkeresést, egy rosszul kezeltet, és egy ijesztően közeli esetet („majdnem a lapokba került”). Ezekből a vörös vonalak és a hangnem sokkal pontosabban kirajzolódnak, mint az absztrakt kérdésekből.</div>
+
+<h1>4. Jogi és adatvédelmi teendők a kezdés előtt</h1>
+
+<div class="doboz figy"><b class="cim">Ezeket jogásszal kell lezárni, nem a rendszer oldja meg</b>A kézikönyv és a rendszer technikai védelmeket ad (elkülönítés, napló, jóváhagyás, megőrzési idők), de <b>jogi megfelelést nem helyettesít</b>.</div>
+
+<table>
+<tr><th>Terület</th><th>Mit kell tisztázni</th></tr>
+<tr><td><b>Szerződés</b></td><td>Szolgáltatási megállapodás, az ügyfél felhasználási joga (és hogy a saját területére igazíthatja-e); felelősségi határok: a rendszer tervezeteket készít, a közlésekért az ügyfél felel</td></tr>
+<tr><td><b>GDPR</b></td><td>Ki az adatkezelő és ki az adatfeldolgozó; adatfeldolgozói megállapodás; a kezelt adatok köre (levelek, sajtólista, közlések); jogalap; érintetti jogok (törlés, hozzáférés); adatvédelmi hatásvizsgálat szükségessége; a hírportálokból gyűjtött cikkek kezelése</td></tr>
+<tr><td><b>Megőrzés</b></td><td>Levelek 90 nap, nyers cikkek 12 hónap, napló és archívum 36 hónap az alapérték: az ügyfél adatkezelési szabályaihoz kell igazítani</td></tr>
+<tr><td><b>AI-használat</b></td><td>Az EU mesterséges-intelligencia rendelete (AI Act) átláthatósági követelményei: a jelentések alján szerepel az AI-jelzés; kell-e külön tájékoztatás az érintetteknek; az AI-szolgáltató (Anthropic) adatkezelési feltételei</td></tr>
+<tr><td><b>Sajtólista</b></td><td>Újságírók személyes adatai: hozzájárulás vagy jogos érdek; a listában csak hozzájárulással rendelkező kapcsolat hívható meg eseményre</td></tr>
+<tr><td><b>Közösségi média</b></td><td>A platformok felhasználási feltételei; hogy mit szabad a szövegekben (a megkereső adata nem szerepelhet)</td></tr>
+<tr><td><b>Napló és hozzáférés</b></td><td>Ki és mennyi ideig fér hozzá a naplóhoz; ki jogosult az exportra</td></tr>
+</table>
+
+<h1>5. A profil kitöltése mezőnként</h1>
+
+<p>Minden ügyfélfüggő beállítás egyetlen <b>profilban</b> van (<code>monitoring/profil-sablon.yaml</code>). Ezt másoljuk le, és töltjük ki. A profil tartalmaz <b>titkos adatot soha</b>: jelszó, kulcs nem kerül bele.</p>
+
+<table>
+<tr><th>Mező</th><th>Mit írjon bele</th><th>Példa és megjegyzés</th></tr>
+<tr><td><code>ugyfel_id</code></td><td>Az ügyfél rövid, kisbetűs, kötőjeles azonosítója. <b>Nem módosítható utólag</b> (ez köti az összes adatot).</td><td><code>pelda-korhazak</code></td></tr>
+<tr><td><code>megnevezes</code></td><td>A szervezet megjelenő neve</td><td>„Példa Kórházak Zrt.”</td></tr>
+<tr><td><code>nyelv</code>, <code>foldrajzi_hatokor</code></td><td>Nyelv és földrajzi hatókör</td><td><code>hu</code>, <code>[HU]</code></td></tr>
+<tr><td><code>vezeto.nev</code>, <code>vezeto.email</code></td><td>A vezető neve; <b>az egyetlen cím, ahová jelentés mehet</b></td><td>Az üzemeltető állítja; naplózott</td></tr>
+<tr><td><code>kulcsszavak.szervezet</code></td><td>Szervezeti nevek, rövidítések, márkák</td><td>Minden név, ahogyan a sajtó hívja</td></tr>
+<tr><td><code>kulcsszavak.szemelyek</code></td><td>Vezetők, szóvivők, figyelt személyek</td><td>Teljes név; a keresés ragozott alakot is talál</td></tr>
+<tr><td><code>kulcsszavak.temak</code></td><td>A szakterület témái</td><td>Konkrét kifejezések: „ápolóhiány”, „várólista”. <b>Kerülje a túl általános szavakat</b> (pl. „egészségügy”, „mesterséges intelligencia”), mert zajt hoznak</td></tr>
+<tr><td><code>kulcsszavak.kizaro</code></td><td>Ezekkel együtt előforduló találat kiesik</td><td>„álláshirdetés”, „horoszkóp”</td></tr>
+<tr><td><code>forrasok.rss</code></td><td>Figyelt hírportálok RSS-címei (https)</td><td>Legfeljebb 30; országos és a szakmai sajtó</td></tr>
+<tr><td><code>forrasok.hirkereso</code></td><td>Hírkereső-lekérdezések; idézőjellel pontos kifejezés</td><td><code>"Példa Kórházak"</code></td></tr>
+<tr><td><code>forrasok.sajat</code></td><td>Az ügyfél által megadott szakmai/helyi források</td><td>Helyi lapok, szakmai oldalak</td></tr>
+<tr><td><code>forrasok.kozossegi</code></td><td>Nyilvános RSS/Atom csatornák (YouTube, Reddit, Mastodon, Bluesky…), legfeljebb 20</td><td>X, Facebook, Instagram, TikTok közvetlenül nem olvasható</td></tr>
+<tr><td><code>vorosvonalak</code></td><td>Azonnali riasztást kiváltó témák</td><td>„peres ügy vagy hatósági eljárás említése”, „haláleset vagy baleset az intézményben”</td></tr>
+<tr><td><code>trend</code></td><td>A „felerősödő téma” érzékenysége: alapidő (14 nap), szórásszorzó (2), minimum említés (5)</td><td>Kisebb szervezetnél a minimum csökkenthető (3)</td></tr>
+<tr><td><code>utemezes</code></td><td>A napi szemle ideje és az időzóna</td><td><code>07:30</code>, <code>Europe/Budapest</code></td></tr>
+<tr><td><code>megorzes</code></td><td>Megőrzési idők (hónap)</td><td>Az ügyfél adatkezelési szabályai szerint (4. fejezet)</td></tr>
+<tr><td><code>ai_jelzes</code></td><td>A jelentések alján álló átlátszósági szöveg</td><td>Csak az üzemeltető módosíthatja; nem hagyható el</td></tr>
+<tr><td><code>kapcsolattarto</code></td><td>Aláírás és hangnem a levélválaszokhoz</td><td>Szabad szöveg</td></tr>
+<tr><td><code>proaktiv.szabalyok</code></td><td>Időzítési szabályok szabad szövegben</td><td>„Pénteken délután nem szólalunk meg”</td></tr>
+<tr><td><code>kozossegi</code></td><td>Platformok, hangnem, tiltott témák, hashtagek, emoji</td><td>Csak a ténylegesen használt platformokat kapcsolja be</td></tr>
+<tr><td><code>postafiok</code></td><td>Szolgáltató, cím, mappa, a titok <i>neve</i></td><td>Lásd a 9. fejezetet</td></tr>
+</table>
+
+<div class="doboz"><b class="cim">Az ellenőrzés</b>A profil betöltése előtt a rendszer ellenőrzi (validálja): legalább egy forrás kell, a források csak <code>https://</code> címek lehetnek, a mezők formátuma stimmel. Hiba esetén a betöltés megáll, és megmondja, mit javítson.</div>
+
+<h1>6. Telepítés</h1>
+
+<h2>A) Új ügyfél a közös példányban</h2>
+<p>Ez a gyors út: a Cloudflare-példány már fut, csak az ügyfelet kell hozzáadni.</p>
+<ol>
+<li><b>A profil elkészítése.</b> Másolja a <code>monitoring/profil-sablon.yaml</code>-t <code>monitoring/ugyfel-uj.yaml</code> néven, és töltse ki az 5. fejezet szerint.</li>
+<li><b>A profil betöltése:</b>
+<pre>node src/cli.js profil-sql --profile monitoring/ugyfel-uj.yaml &gt; /tmp/profil.sql
+npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/profil.sql</pre></li>
+<li><b>Hozzáférés az ügyfél vezetőjének</b> (<code>vezeto</code>) és szükség esetén az üzemeltetőnek (<code>uzemelteto</code>):
+<pre>node src/cli.js hozzaferes-sql --email vezeto@ugyfel.hu --ugyfel ugyfel-azonosito --szerep vezeto &gt; /tmp/h1.sql
+npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/h1.sql</pre></li>
+<li><b>Saját domén</b> (nem kötelező; enélkül az <code>?ugyfel=…</code> paraméterrel érhető el):
+<pre>node src/cli.js domen-sql --domen iroda.ugyfel.hu --ugyfel ugyfel-azonosito &gt; /tmp/d1.sql
+npx wrangler d1 execute ai-sajtoiroda --remote --file /tmp/d1.sql</pre>
+A doménnek a Cloudflare-fiókban kell lennie (a <code>routes</code> bejegyzés a <code>wrangler.toml</code>-ban), különben az ügyfél a közös címen éri el.</li>
+<li><b>Belépés:</b> lásd a 2. fejezet figyelmeztetését. Több felhasználós belépéshez az Access vagy a külön fejlesztés kell.</li>
+</ol>
+<p>Szerepek: a <b>vezető</b> látja a tartalmakat és dönt; az <b>üzemeltető</b> a beállításokat (postafiók, címzett, AI-jelzés) kezeli, de a bizalmas tartalmakat nem látja. Ugyanaz az e-mail-cím különböző ügyfeleknél különböző szerepet kaphat.</p>
+
+<h2>B) Önálló példány az ügyfél saját Cloudflare-fiókjában</h2>
+<ol>
+<li><b>Az ügyfél Cloudflare-fiókja</b> és a domén (a DNS a Cloudflare-nél legyen). A telepítést az ügyfél engedélyével, az ő fiókjába lépve végzi: <code>npx wrangler login</code>, <code>npx wrangler whoami</code> (<b>ellenőrizze, hogy a helyes fiókban van-e</b>).</li>
+<li><b>A tár letöltése és a tesztek:</b>
+<pre>git clone https://github.com/Menyuswin/ai-sajtoiroda.git ügyfél-iroda
+cd ügyfél-iroda
+npm install
+npm test</pre></li>
+<li><b>Adatbázis:</b>
+<pre>npx wrangler d1 create ai-sajtoiroda</pre>
+A kimenet <code>database_id</code> értékét írja a <code>wrangler.toml</code>-ba. Ugyanitt: <code>routes</code> az ügyfél doménjére; <code>SAJTOIRODA_BELEPES_EMAIL</code> a vezető e-mail-címe.</li>
+<li><b>Táblák és telepítés:</b>
+<pre>npx wrangler d1 migrations apply ai-sajtoiroda --remote
+npx wrangler secret put SAJTOIRODA_JELMONDAT    # a vezető jelmondata
+npx wrangler deploy</pre></li>
+<li><b>Profil, hozzáférés, domén:</b> mint az A) lépéseiben 2–4.</li>
+<li><b>Ellenőrzés:</b> az ügyfél domén megnyílik; a jelmondattal belép; nyolc asztal; „Próbaüzem” jelvény; a Napló az első órában futást mutat.</li>
+</ol>
+<div class="doboz figy"><b class="cim">Fontos</b>Az <code>ugyfel_id</code> a profilban és a hozzáférésben pontosan egyezzen. A <code>SAJTOIRODA_DEV_AUTH</code> élesben mindig <code>0</code> legyen (különben bárki beléphetne). A jelmondat <b>legalább 20 karakter</b>, és csak a vezető ismeri; ne e-mailben küldje.</div>
+
+<h1>7. A tudásbázis (Dokumentumtár) feltöltése</h1>
+
+<p>A Dokumentumtár az a hely, ahonnan a munkatársak <b>forrásjelöléssel</b> dolgoznak: válaszaikban [D1 §2] jelöléssel hivatkoznak arra, honnan vették az állítást. Ami nincs a tárban, azt nem találják ki.</p>
+
+<table>
+<tr><th>Töltse fel</th><th>Miért</th></tr>
+<tr><td>A szervezet bemutatkozó anyaga, alapadatai</td><td>Háttér a felkészítő csomagokhoz és válaszokhoz</td></tr>
+<tr><td>Hivatalos álláspontok, állásfoglalások</td><td>Konzisztencia; az Archívum is ezekhez viszonyít</td></tr>
+<tr><td>Tények és számok (statisztikák, kapacitások, éves jelentés)</td><td>Hogy a szám ne kitalált legyen</td></tr>
+<tr><td>Korábbi sajtóközlemények, nyilatkozatok</td><td>Hangnem és előzmény</td></tr>
+<tr><td>Szóvivői protokoll, jóváhagyási rend</td><td>A szabályok, amelyeket a munkatársak tiszteletben tartanak</td></tr>
+<tr><td>Gyakori kérdések (GYIK)</td><td>Válasz-keretek a Kapcsolattartónak</td></tr>
+</table>
+
+<h3>Fájlformátumok és korlátok</h3>
+<p>txt, md, csv, docx és <b>szöveges</b> PDF; legfeljebb <b>10 MB</b> fájlonként, <b>200 dokumentum</b>, <b>100 MB</b> ügyfelenként. Beolvasott (szkennelt) PDF és kép nem olvasható: a rendszer megmondja, hogy nincs szöveg.</p>
+
+<div class="doboz figy"><b class="cim">„Nem küldhető AI-nak”</b>Bizalmas anyagot (személyes adat, üzleti titok, perek) <b>jelöljön meg</b> ezzel. Az ilyen dokumentum tartalma sosem kerül az AI-hoz, a munkatársak ezeket a részeket kihagyják, és jelzik, hány szakaszt zártak ki.</div>
+
+<p>A Dokumentumtárból <b>kulcsszójavaslatot</b> is kérhet a Monitoringtól („Javasolj kulcsszavakat a feltöltött dokumentumokból”): jóváhagyás után a javasolt kifejezések bekerülnek a figyeltek közé.</p>
+
+<h1>8. A munkatársak testreszabása</h1>
+
+<table>
+<tr><th>Munkatárs</th><th>Mit érdemes beállítani</th><th>Hol</th></tr>
+<tr><td>Monitoring</td><td>Kulcsszavak, kizáró szavak, források, vörös vonalak, szemle időpontja, trendérzékenység</td><td>Beállítások</td></tr>
+<tr><td>Kapcsolattartó</td><td>Aláírás, válaszok hangneme; a postafiók és a mappa</td><td>Beállítások</td></tr>
+<tr><td>Felkészítő</td><td>Nincs külön beállítás: a Dokumentumtár tartalmából és a profilból dolgozik</td><td>Dokumentumtár</td></tr>
+<tr><td>Proaktív</td><td>Időzítési szabályok szabad szöveggel; a kézi naptár (külső, saját, vezetői bejegyzések)</td><td>Beállítások, a Proaktív asztala</td></tr>
+<tr><td>Eseményszervező</td><td>A sajtólista (kézzel vagy CSV); hozzájárulások jelölése</td><td>Sajtólista</td></tr>
+<tr><td>Archívum</td><td>Régi közlések felvitele (cím, dátum, fajta, szöveg), hogy az ellentmondás-jelzés az előzményekből dolgozzon</td><td>Az Archívum asztala</td></tr>
+<tr><td>Közösségi média</td><td>Platformok, hangnem, tiltott témák, szokásos hashtagek, emoji; közösségi csatornák a Monitoringnál</td><td>Beállítások</td></tr>
+<tr><td>Jogi</td><td>A profil vörös vonalai és figyelt személyei adják az alsó határ egy részét</td><td>Beállítások</td></tr>
+</table>
+
+<h3>A hangnem leírása</h3>
+<p>A hangnemet rövid, <b>konkrét</b> mondatokkal adja meg, és mondja meg azt is, mi tilos. Gyenge: „professzionális”. Jó: „Udvarias és tárgyilagos; magázódunk; nem használunk felkiáltójelet; nem védekezünk, hanem tényeket mondunk; nem ígérünk határidőt, amit nem biztosan tudunk betartani.”</p>
+
+<h1>9. Postafiók bekötése</h1>
+
+<p>A beérkező sajtómegkeresések olvasása három úton lehetséges. Minden esetben a rendszer <b>csak olvas</b>, a leveleket nem törli és nem mozgatja, és <b>csak egy kijelölt mappát</b> figyel: az ügyfél személyes levelezése nem kerül be.</p>
+
+<table>
+<tr><th>Szolgáltató</th><th>Hogyan működik</th><th>Teendő</th></tr>
+<tr><td><b>iCloud</b></td><td><b>Levélhíd</b>: kis program az ügyfél (vagy az üzemeltető) gépén vagy kis szerverén, IMAP-on olvas, HTTPS-en továbbadja</td><td>„Sajtó” mappa és szabály; alkalmazásspecifikus jelszó; híd-titok; a <code>/hid/*</code> útvonal kivétel az esetleges Access alól; <code>tools/levelhid/README.md</code></td></tr>
+<tr><td><b>Gmail</b></td><td>Közvetlen Gmail API, csak olvasási jogkörrel</td><td>Google-alkalmazás regisztrálása; a titok (JSON: <code>client_id</code>, <code>client_secret</code>, <code>refresh_token</code>) Workers-titokként</td></tr>
+<tr><td><b>Exchange / Microsoft 365</b></td><td>Microsoft Graph, csak olvasás</td><td>Alkalmazásregisztráció <code>Mail.Read</code> joggal, lehetőleg egyetlen postafiókra korlátozva; a titok (JSON: <code>tenant</code>, <code>client_id</code>, <code>client_secret</code>) Workers-titokként</td></tr>
+<tr><td>Kézi felvitel</td><td>Ha nincs bekötve postafiók: a levél vagy telefonjegyzet kézzel az iroda Bejövő nézetén</td><td>Nincs külön teendő</td></tr>
+</table>
+<p>A postafiók <b>beállítását</b> (szolgáltató, cím, mappa, a titok neve) az <b>üzemeltető</b> végzi a Beállításokban; a titok értéke <code>npx wrangler secret put &lt;titok neve&gt;</code> paranccsal kerül fel.</p>
+
+<div class="doboz figy"><b class="cim">Kipróbálatlan</b>A három postafiók-út <b>valódi fiókkal még nem volt kipróbálva</b>; az illesztők hamis szerverekkel tesztelt. Az első ügyfélnél az első postafiók-bekötés mindig <b>egy próbalevéllel</b> kezdődjön, és számoljon egy-két javítással.</div>
+
+<p><b>Levélküldés:</b> amíg nincs kiválasztott levélküldő szolgáltató, a jóváhagyott válaszok <b>nem mennek ki</b>, hanem a próba-kimenőbe kerülnek. Ez az éles indulás egyik feltétele (11. fejezet).</p>
+
+<h1>10. Szakterületi minták</h1>
+
+<p>Az alábbi minták kiindulópontok: az ügyféllel kell finomítani őket.</p>
+
+<h3>Egészségügyi intézmény (kórház)</h3>
+<table>
+<tr><th>Mező</th><th>Minta</th></tr>
+<tr><td>Szervezet</td><td>az intézmény neve és rövidítése, a fenntartó, a főbb osztályok</td></tr>
+<tr><td>Témák</td><td>„ápolóhiány”, „várólista”, „sürgősségi ellátás”, „műtéti kapacitás”, „fertőzés”</td></tr>
+<tr><td>Kizáró</td><td>„álláshirdetés”, „állásbörze”</td></tr>
+<tr><td>Vörös vonalak</td><td>„peres ügy vagy hatósági eljárás említése”, „haláleset vagy baleset az intézményben”, „adatvédelmi incidens”</td></tr>
+<tr><td>Tiltott témák (közösségi)</td><td>egyedi betegek, folyamatban lévő perek</td></tr>
+<tr><td>Dokumentumok</td><td>éves jelentés, kapacitás- és várólista-adatok, betegtájékoztatási szabályzat (a betegadat „nem küldhető AI-nak”)</td></tr>
+<tr><td>Különös figyelem</td><td>Egészségügyi adat: a jogi munkatárs alsó határa magas; a levélválaszban soha nem szerepelhet egyéni beteginformáció</td></tr>
+</table>
+
+<h3>Önkormányzat</h3>
+<table>
+<tr><th>Mező</th><th>Minta</th></tr>
+<tr><td>Témák</td><td>„településfejlesztés”, „helyi adó”, „közlekedés”, „közbeszerzés”, „közmeghallgatás”</td></tr>
+<tr><td>Vörös vonalak</td><td>„közbeszerzési vagy hatósági eljárás”, „képviselő-testületi botrány”, „közpénzfelhasználás vádja”</td></tr>
+<tr><td>Különös figyelem</td><td>Választási időszak: a Jogi munkatárs „választás” kategóriája; a naptárban a testületi ülések, a lakossági fórumok</td></tr>
+<tr><td>Közösségi média</td><td>Gyakori a lakossági kommentáradat: a kommentkezelési útmutató és a moderálási javaslat különösen hasznos</td></tr>
+</table>
+
+<h3>Vállalat</h3>
+<table>
+<tr><th>Mező</th><th>Minta</th></tr>
+<tr><td>Szervezet</td><td>cégnév, márkák, termékek, vezetők, szóvivő</td></tr>
+<tr><td>Témák</td><td>termékek, piac, versenytársak (a profil <code>versenytarsak</code> mezője későbbi szakaszhoz van fenntartva), beruházás, leépítés</td></tr>
+<tr><td>Vörös vonalak</td><td>„termékvisszahívás”, „adatvédelmi incidens”, „munkabaleset”, „hatósági vizsgálat”, „tőzsdei közlemény”</td></tr>
+<tr><td>Különös figyelem</td><td>Tőzsdei és piaci közlések: a jogi és a pénzügyi kommunikáció külön jóváhagyási lánca</td></tr>
+</table>
+
+<h3>Civil szervezet</h3>
+<table>
+<tr><th>Mező</th><th>Minta</th></tr>
+<tr><td>Témák</td><td>a szervezet ügye, adományozás, kampány, támogatók</td></tr>
+<tr><td>Vörös vonalak</td><td>„pénzügyi visszaélés vádja”, „adománygyűjtés szabálytalanságára utalás”</td></tr>
+<tr><td>Különös figyelem</td><td>A közösségi média a fő csatorna; a digitális jelzések (kézi) különösen fontosak; a sajtólista hozzájárulásai</td></tr>
+</table>
+
+<h1>11. Próbaüzem, minőségmérés, éles indulás</h1>
+
+<h2>A kéthetes próbaüzem</h2>
+<p>A próbaüzemben a rendszer figyel, készít, de <b>semmi nem megy ki</b>. A cél az, hogy mérhető legyen, jó-e, amit csinál.</p>
+<table>
+<tr><th>Mit mérünk</th><th>Hogyan</th><th>Elvárt</th></tr>
+<tr><td><b>Besorolás minősége</b></td><td>30 cikket a vezető vagy az üzemeltető kézzel ellenőriz: hangnem, fontosság, vörös vonal helyes-e</td><td>Legalább 80% helyes; alatta a promptot és a kulcsszavakat igazítjuk</td></tr>
+<tr><td><b>Zaj</b></td><td>Naponta hány cikk jön, ebből mennyi releváns; hány riasztás, ebből mennyi indokolt</td><td>A szemle olvasható marad; a riasztás ritka és indokolt</td></tr>
+<tr><td><b>Tervezetek</b></td><td>3–5 választervezet és posztjavaslat átnézése: hangnem, tényszerűség, a megkereső adata nem szerepel-e</td><td>A tervezet kiindulópont, amit 5 perc alatt jóvá lehet hagyni</td></tr>
+<tr><td><b>Forrásmegbízhatóság</b></td><td>Melyik hírforrás működik; a Napló „hiba” sorai</td><td>Az elérhetetlen források javítva vagy elhagyva</td></tr>
+<tr><td><b>Költség</b></td><td>Az AI-használat az Anthropic Console-on; Cloudflare használat</td><td>A havi keretben marad</td></tr>
+<tr><td><b>Időmegtakarítás</b></td><td>A vezető becslése: naponta hány perc megy el a sajtóra a rendszerrel, és anélkül</td><td>Mérhető megtakarítás</td></tr>
+</table>
+
+<h2>Az éles indulás feltételei</h2>
+<table>
+<tr><th>Feltétel</th><th>Állapot ellenőrzése</th></tr>
+<tr><td>A minőségpróba 80% fölött</td><td>A mérés jegyzőkönyve</td></tr>
+<tr><td>AI-kulcs beállítva, havi költségkerettel</td><td><code>ANTHROPIC_API_KEY</code> titok; <code>SAJTOIRODA_LLM=anthropic</code></td></tr>
+<tr><td>A jogi és adatvédelmi teendők lezárva</td><td>4. fejezet</td></tr>
+<tr><td>A postafiók kipróbálva próbalevéllel</td><td>9. fejezet</td></tr>
+<tr><td>Levélküldő szolgáltató kiválasztva, és az ügyfél saját címéről küld</td><td>Költség, adatkezelés, magyar levelek szempontjából értékelve</td></tr>
+<tr><td>A vezető betanítva, a jóváhagyási rend rögzítve</td><td>12. fejezet</td></tr>
+<tr><td>Visszalépési terv</td><td>Szüneteltetés, kikapcsolás, mentés rendben</td></tr>
+</table>
+<p>Az éles küldés kapcsolója a <code>SAJTOIRODA_LIVE=1</code> a <code>wrangler.toml</code>-ban; ennek bekapcsolása <b>külön, tudatos döntés</b>. Három feltétele együtt kell: <code>SAJTOIRODA_LIVE=1</code>, a levélküldő beállítása és az AI-kulcs. Amíg ezek nincsenek meg, a rendszer szándékosan nem küld.</p>
+
+<h1>12. Átadás-átvétel és üzemeltetés</h1>
+
+<h2>A vezető betanítása (kb. 90 perc)</h2>
+<ol>
+<li><b>A modell lényege (15 perc):</b> a munkatársak javasolnak, a vezető dönt; semmi nem megy ki jóváhagyás nélkül.</li>
+<li><b>A napi rutin (20 perc):</b> reggeli szemle, Bejövő, a javaslatok; a „jóváhagyásra vár” jelvények.</li>
+<li><b>Döntési gyakorlat (30 perc):</b> egy valódi levélen végigmenni: tervezet átnézése, átírás, a jogi jelvény, az Archívum jelzése; a „Kiadtam” rögzítése.</li>
+<li><b>Mikor ne bízzon az AI-ban (15 perc):</b> a <code>[KITÖLTENDŐ]</code> jelölés; a hivatkozott források ellenőrzése; a jogi vélemény nem jogi tanács.</li>
+<li><b>Beállítások és vészhelyzet (10 perc):</b> szüneteltetés, ki és be kapcsolás; kihez forduljon.</li>
+</ol>
+
+<h2>Folyamatos üzemeltetés</h2>
+<table>
+<tr><th>Gyakoriság</th><th>Feladat</th></tr>
+<tr><td>Naponta</td><td>A vezető átnézi a szemlét és a javaslatokat (10–15 perc)</td></tr>
+<tr><td>Hetente</td><td>A Napló „hiba” sorai; a zaj; az elérhetetlen források; a használt napi korlátok</td></tr>
+<tr><td>Havonta</td><td>Adatbázis-mentés; költségek áttekintése; a kulcsszavak és a vörös vonalak felülvizsgálata; az Archívum frissítése új közlésekkel</td></tr>
+<tr><td>Negyedévente</td><td>A minőségmérés ismétlése (30 cikk); a jogi és adatvédelmi megfelelés áttekintése; a jelmondat cseréje</td></tr>
+<tr><td>Frissítéskor</td><td><code>git pull</code>, <code>npm test</code>, migrációk, <code>wrangler deploy</code> (lásd a kézikönyvet)</td></tr>
+</table>
+
+<h1>13. Kilépés: adatok kiadása és törlése</h1>
+
+<p>Az ügyfél jogosult kérni az adatai kiadását és törlését. Előre rögzítse a szerződésben, mit és mennyi időn belül ad ki.</p>
+<table>
+<tr><th>Adat</th><th>Kiadás</th></tr>
+<tr><td>Profil</td><td>A profil YAML-ja (a Beállítások tartalma)</td></tr>
+<tr><td>Archívum</td><td>CSV-export az Archívum asztaláról</td></tr>
+<tr><td>Sajtólista</td><td>CSV-export a Sajtólista nézetről</td></tr>
+<tr><td>Napló</td><td>CSV-export a Napló nézetről</td></tr>
+<tr><td>Teljes adatbázis (önálló példánynál)</td><td><code>npx wrangler d1 export</code></td></tr>
+</table>
+<div class="doboz figy"><b class="cim">Törlés: még nincs kész eszköz</b>Az ügyfél összes adatának törlésére <b>nincs külön parancs</b>: közös példányban SQL-lel kell törölni a <code>tenant_id</code> szerint, minden táblából, <b>előbb mentéssel</b> és két ember ellenőrzésével. Önálló példánynál a Cloudflare-fiók adatbázisának törlése elég. Ezt az első külső ügyfél előtt érdemes parancsként elkészíteni és tesztelni.</div>
+
+<h1>Melléklet: az előkészítő kérdőív</h1>
+
+<h3>A. A szervezet</h3>
+<ol>
+<li>Mi a szervezet hivatalos neve, rövidítése, korábbi és köznyelvi neve?</li>
+<li>Kik a vezetők és a szóvivők (teljes név, beosztás)?</li>
+<li>Milyen márkák, termékek, telephelyek, kapcsolódó szervezetek tartoznak ide?</li>
+<li>Ki hagyhatja jóvá a sajtóközléseket? Van-e jóváhagyási lánc (jogász, szakmai vezető)?</li>
+</ol>
+<h3>B. Szakterület és figyelés</h3>
+<ol start="5">
+<li>Mely témák érintik a szervezetet? Mely témákról akar azonnal tudni?</li>
+<li>Mely hírportálokat, szakmai lapokat, helyi médiát figyeljünk? Ismeri-e ezek RSS-címét?</li>
+<li>Vannak-e visszatérő téves találatok, amelyeket ki kell zárni?</li>
+<li>Mely közösségi csatornákon van jelen a szervezet (Facebook, LinkedIn, Instagram, X)? Van-e nyilvános RSS-csatorna (YouTube, Reddit, Mastodon, Bluesky)?</li>
+</ol>
+<h3>C. Kockázatok</h3>
+<ol start="9">
+<li>Mi az a három dolog, amelyről azonnal tudni akar, ha felmerül? (vörös vonalak)</li>
+<li>Milyen témákról soha nem posztolunk a közösségi médiában?</li>
+<li>Mesélje el a három esetet: egy jól kezelt, egy rosszul kezelt és egy „majdnem” esetet.</li>
+<li>Kik a szakmai és jogi tanácsadók, és mikor kell őket bevonni?</li>
+</ol>
+<h3>D. Hangnem és aláírás</h3>
+<ol start="13">
+<li>Hogyan beszél a szervezet (formális, közvetlen, szakmai)? Magázódik-e vagy tegez?</li>
+<li>Mi tilos (felkiáltójel, emoji, szleng, védekező fordulatok)?</li>
+<li>Hogyan szoktak aláírni (név, beosztás, elérhetőség)?</li>
+<li>Kérem három korábbi, jól sikerült közlemény mintáját.</li>
+</ol>
+<h3>E. Csatornák és folyamatok</h3>
+<ol start="17">
+<li>Melyik postafiókra érkeznek a sajtómegkeresések (iCloud, Gmail, Exchange)? Van-e külön mappa?</li>
+<li>Mi a szokásos válaszidő egy megkeresésre? Mi a sürgős?</li>
+<li>Vannak-e visszatérő események (ülések, nyílt napok, évfordulók)? Mely napokon nem szólalnak meg?</li>
+<li>Van-e sajtólista (kik, hozzájárulással)?</li>
+</ol>
+<h3>F. Adatok és jog</h3>
+<ol start="21">
+<li>Ki az adatkezelő, kinek az adatvédelmi tisztviselője?</li>
+<li>Mennyi ideig őrizhetők a levelek, a cikkek, a napló?</li>
+<li>Mely dokumentumok bizalmasak (nem küldhetők az AI-nak)?</li>
+<li>Mit tud (és nem tud) az ügyfél jogásza jóváhagyni a rendszer működésére?</li>
+</ol>
+
+<h1>Melléklet: bevezetési ellenőrzőlista</h1>
+
+<table>
+<tr><th>#</th><th>Teendő</th><th>Kész</th></tr>
+<tr><td>1</td><td>Kérdőív kitöltve, a három eset megbeszélve</td><td>☐</td></tr>
+<tr><td>2</td><td>Szerződés, adatfeldolgozói megállapodás, felhasználási jog rendezve</td><td>☐</td></tr>
+<tr><td>3</td><td>GDPR és AI Act átnézve jogásszal; megőrzési idők rögzítve</td><td>☐</td></tr>
+<tr><td>4</td><td>Közös vagy önálló példány eldöntve; belépési mód eldöntve</td><td>☐</td></tr>
+<tr><td>5</td><td>Profil kitöltve és betöltve; a validáció hibátlan</td><td>☐</td></tr>
+<tr><td>6</td><td>Hozzáférések (vezető, üzemeltető) és domén beállítva</td><td>☐</td></tr>
+<tr><td>7</td><td>Belépés kipróbálva; a Próbaüzem jelvény látszik; <code>DEV_AUTH=0</code></td><td>☐</td></tr>
+<tr><td>8</td><td>Dokumentumtár feltöltve; bizalmas anyagok „Nem küldhető AI-nak” jelöléssel</td><td>☐</td></tr>
+<tr><td>9</td><td>Aláírás, hangnem, időzítési szabályok, közösségi beállítások kitöltve</td><td>☐</td></tr>
+<tr><td>10</td><td>Régi közlések felvéve az Archívumba (legalább az utolsó 12 hónap legfontosabbjai)</td><td>☐</td></tr>
+<tr><td>11</td><td>Postafiók bekötve; próbalevél megérkezett</td><td>☐</td></tr>
+<tr><td>12</td><td>A hírforrások mind elérhetők (Napló), a zaj elfogadható</td><td>☐</td></tr>
+<tr><td>13</td><td>Kéthetes próbaüzem lezárva; 30 cikkes minőségpróba ≥ 80%</td><td>☐</td></tr>
+<tr><td>14</td><td>AI-kulcs és havi költségkeret beállítva</td><td>☐</td></tr>
+<tr><td>15</td><td>Levélküldő szolgáltató kiválasztva és kipróbálva</td><td>☐</td></tr>
+<tr><td>16</td><td>A vezető betanítva; a jóváhagyási rend rögzítve</td><td>☐</td></tr>
+<tr><td>17</td><td>Mentési és visszalépési terv rendben</td><td>☐</td></tr>
+<tr><td>18</td><td>Az éles indulás (<code>SAJTOIRODA_LIVE=1</code>) jóváhagyva az ügyfél vezetője által</td><td>☐</td></tr>
+</table>
+
+</body></html>

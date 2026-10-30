@@ -1,7 +1,7 @@
 // A vezető utasításainak értelmezése és végrehajtása – ZÁRT műveletlistából.
 //  - módosító művelet: csak javaslat, a vezető jóváhagyása után hajtódik végre;
 //  - olvasó művelet (jelentes_keres): azonnal fut, mert semmit nem változtat és nem megy ki sehová.
-// Amit az ügynök nem ért vagy nem tud (például levelet küldeni), arra visszakérdez / megmondja.
+// Amit a munkatárs nem ért vagy nem tud (például levelet küldeni), arra visszakérdez / megmondja.
 import { loadPrompt, extractJson } from '../../core/llm.js';
 import { norm } from '../../core/text.js';
 import { checkLimits } from '../../core/profile.js';

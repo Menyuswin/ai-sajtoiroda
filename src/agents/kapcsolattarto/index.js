@@ -1,4 +1,4 @@
-// A Kommunikációs Kapcsolattartó Ügynök: levelek fogadása, besorolása, választervezet.
+// A Kommunikációs Kapcsolattartó Munkatárs: levelek fogadása, besorolása, választervezet.
 // Kifelé semmit nem küld: a tervezet az asztalon várja a vezető döntését; a válasz csak jóváhagyás után, a kimenő kapun át mehet.
 //   ctx: { profile, log, outbox, llm, now, prompts, models, anyagok, atadasok, levelek, docs, mailbox? }
 import { normalizeMessage, MAIL_LIMITS } from '../../mail/message.js';
@@ -62,7 +62,7 @@ export async function processLetter(ctx, id) {
     await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: `level:${id}`, tartalom: { sor: line } });
   }
   if (cls.jogi_gyanu) {
-    // Belső kérdés a Jogi ügynöknek; üres asztalnál vár. Kifelé nem megy semmi.
+    // Belső kérdés a Jogi munkatársnak; üres asztalnál vár. Kifelé nem megy semmi.
     await atadasok?.send({ from: AGENT, to: 'jogi', tipus: 'kerdes', targy: `Jogi kérdés a levélben: ${letter.targy}`.slice(0, 200), szoveg: `A beérkezett levél jogi vonatkozást érinthet (téma: ${cls.tema}). A választervezet az asztalon van; kérjük a jogi szempontú véleményt a küldés előtt.`, anyagId: anyagId || null });
   }
   return { ok: true, cls, draft };
@@ -98,7 +98,7 @@ export async function processPending(ctx, limit = MAX_PROCESS_PER_RUN) {
 export async function run(ctx) {
   const { profile, log, levelek, mailbox, now } = ctx;
   if (!agentActive(profile, AGENT, now())) {
-    await log.append({ szereplo: 'rendszer', tipus: 'futas', tartalom: { agent: AGENT, kimenet: 'kihagyva: az ügynök ki van kapcsolva' } });
+    await log.append({ szereplo: 'rendszer', tipus: 'futas', tartalom: { agent: AGENT, kimenet: 'kihagyva: a munkatárs ki van kapcsolva' } });
     return { skipped: true };
   }
   const result = { fogadott: 0, duplikatum: 0, ervenytelen: 0, feldolgozva: 0, hiba: null };
@@ -163,7 +163,7 @@ export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by, j
     return { status: 200, allapot: 'halasztva' };
   }
   if (dontes === 'tovabbit') {
-    if (!FORWARD_TO.includes(hova)) return { status: 400, hiba: 'Ismeretlen címzett ügynök.' };
+    if (!FORWARD_TO.includes(hova)) return { status: 400, hiba: 'Ismeretlen címzett munkatárs.' };
     const r = await atadasok.send({ from: AGENT, to: hova, tipus: 'kerelem', targy: `Továbbított levél: ${letter.targy}`.slice(0, 200), szoveg: `A vezető továbbította a levelet (feladó: ${letter.felado_nev || letter.felado}). A választervezet az asztalon van.`, anyagId: letter.anyag_id });
     if (!r.ok) return { status: 409, hiba: `Az átadás nem sikerült: ${r.ok_reason}` };
     await levelek.decide(id, { allapot: 'tovabbitva', by });

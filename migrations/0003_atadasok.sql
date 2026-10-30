@@ -1,4 +1,4 @@
--- Átadások az ügynökök között. allapot: varakozik | kezbesitve | feldolgozva | lezarva | megallitva | lejart
+-- Átadások az munkatársak között. allapot: varakozik | kezbesitve | feldolgozva | lezarva | megallitva | lejart
 CREATE TABLE IF NOT EXISTS atadasok (
   id         TEXT PRIMARY KEY,
   tenant_id  TEXT NOT NULL,

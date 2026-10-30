@@ -1,19 +1,19 @@
-# A Jogi- és Kockázatfigyelő ügynök terve
+# A Jogi- és Kockázatfigyelő munkatárs terve
 
-*Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 8. fejezetet). Kiegészítő ügynök (`agents/08-jogi-kockazat.yaml`). Erre már ma is várnak belső kérdések: a Kapcsolattartó (jogi gyanú), a Felkészítő (red flag) és az Eseményszervező (jogi vagy biztonsági kérdés) a Jogi asztalnak küld átadást.*
+*Állapot: **jóváhagyva (2026-10-30), megépítve és tesztelve** (lásd a 8. fejezetet). Kiegészítő munkatárs (`agents/08-jogi-kockazat.yaml`). Erre már ma is várnak belső kérdések: a Kapcsolattartó (jogi gyanú), a Felkészítő (red flag) és az Eseményszervező (jogi vagy biztonsági kérdés) a Jogi asztalnak küld átadást.*
 
 ## 1. A cél, egy példával
 
-A Kapcsolattartó választervezetet készít egy hatósági eljárásra rákérdező újságírónak, és jogi gyanút jelez. A Jogi ügynök **átnézi a tervezet szövegét**, és ezt adja: „**Magas** kockázat. A 2. mondat konkrét személyt hoz összefüggésbe jogsértéssel (becsület és jóhírnév). A 4. mondatban személyes adat szerepel. Jogász bevonása javasolt a küldés előtt. Javasolt javítás: …”
+A Kapcsolattartó választervezetet készít egy hatósági eljárásra rákérdező újságírónak, és jogi gyanút jelez. A Jogi munkatárs **átnézi a tervezet szövegét**, és ezt adja: „**Magas** kockázat. A 2. mondat konkrét személyt hoz összefüggésbe jogsértéssel (becsület és jóhírnév). A 4. mondatban személyes adat szerepel. Jogász bevonása javasolt a küldés előtt. Javasolt javítás: …”
 
-Az ügynök **jelez, de nem helyettesíti a jogászt**. A döntés a vezetőé, a jogi kérdés eldöntése a jogászé.
+A munkatárs **jelez, de nem helyettesíti a jogászt**. A döntés a vezetőé, a jogi kérdés eldöntése a jogászé.
 
 ## 2. Alapelvek
 
-1. **Zárt kockázati kategóriák:** becsület és jóhírnév (rágalmazás-jellegű állítás), személyiségi jog, személyes adat (GDPR), üzleti vagy szolgálati titok, folyamatban lévő hatósági vagy bírósági eljárás, választási vagy kampányszabály, megtévesztő vagy alá nem támasztott állítás, szerzői jog, helyreigazítási kötelezettség, egyéb. Más kategóriát az ügynök nem találhat ki.
+1. **Zárt kockázati kategóriák:** becsület és jóhírnév (rágalmazás-jellegű állítás), személyiségi jog, személyes adat (GDPR), üzleti vagy szolgálati titok, folyamatban lévő hatósági vagy bírósági eljárás, választási vagy kampányszabály, megtévesztő vagy alá nem támasztott állítás, szerzői jog, helyreigazítási kötelezettség, egyéb. Más kategóriát a munkatárs nem találhat ki.
 2. **A program adja a padlót, az AI csak emelhet.** Determinisztikus szabályok (személyes adat mintái: e-mail, telefonszám, adóazonosító- és TAJ-szerű számok; megnevezett személy + gyanúsító vagy bűncselekményt sejtető szó; „bizalmas”, „üzleti titok”; eljárás említése; választás, kampány) meghatározzák az **alsó határt**. Az AI ezt nem tudja lejjebb vinni, csak megerősíteni vagy emelni, és indokolnia kell. (Így egy tévedő modell nem „nyugtathat meg” hamisan.)
-3. **Csak ellenőrizhető idézettel:** minden megállapítás a vizsgált szöveg egy **szó szerinti részletére** hivatkozik; a program ellenőrzi, hogy a részlet valóban benne van a szövegben, és a nem létezőt törli. Törvényhelyet (paragrafust) az ügynök **nem hivatkozhat**, hacsak nem a Dokumentumtárból (irányelv, jogi háttéranyag) származik jelöléssel; a jogszabály-értelmezés a jogász dolga.
-4. **A szöveg adat, nem utasítás** (a vizsgált tervezet is lehet rosszindulatú). Az ügynök semmit nem módosít, és kifelé nem küld.
+3. **Csak ellenőrizhető idézettel:** minden megállapítás a vizsgált szöveg egy **szó szerinti részletére** hivatkozik; a program ellenőrzi, hogy a részlet valóban benne van a szövegben, és a nem létezőt törli. Törvényhelyet (paragrafust) a munkatárs **nem hivatkozhat**, hacsak nem a Dokumentumtárból (irányelv, jogi háttéranyag) származik jelöléssel; a jogszabály-értelmezés a jogász dolga.
+4. **A szöveg adat, nem utasítás** (a vizsgált tervezet is lehet rosszindulatú). A munkatárs semmit nem módosít, és kifelé nem küld.
 5. **A besorolás nyilvánvalóan nem jogi tanács:** minden vélemény alján ez áll, és **magas** kockázatnál mindig „jogász bevonása javasolt”.
 6. **Tartalom csak a vezetőnek:** a vélemények a vizsgált tervezet szövegét idézik, ezért az üzemeltető csak darabszámot lát.
 
@@ -22,9 +22,9 @@ Az ügynök **jelez, de nem helyettesíti a jogászt**. A döntés a vezetőé, 
 - **Bemenet:**
   - *Átadásból:* a Kapcsolattartó, a Felkészítő és az Eseményszervező kérdése (az átadás az anyagra hivatkozik); a vélemény automatikusan elkészül.
   - *Kézi kérés:* a vezető kiválaszt egy meglévő anyagot (tervezet, csomag, koncepció), vagy beilleszt egy szöveget (legfeljebb 10 000 karakter), és megadja a fajtát (nyilatkozat, poszt, válasz, meghívó, sajtóanyag, egyéb).
-- **Kimenet: jogi vélemény** (anyag): összesített besorolás (alacsony / közepes / magas) indoklással, **megállapítások** (kategória, szint, szó szerinti részlet, indoklás, javasolt javítás), „jogász bevonása javasolt” jelzés, a vizsgált anyagra hivatkozás, a határidő és a kérő ügynök.
+- **Kimenet: jogi vélemény** (anyag): összesített besorolás (alacsony / közepes / magas) indoklással, **megállapítások** (kategória, szint, szó szerinti részlet, indoklás, javasolt javítás), „jogász bevonása javasolt” jelzés, a vizsgált anyagra hivatkozás, a határidő és a kérő munkatárs.
 - **Eszkaláció:** magas kockázat esetén **riasztás a vezetőnek** (a vezető címére, belső levél), és a vélemény a vizsgált anyag mellett is megjelenik.
-- **A kérő ügynök értesítése:** az átadás válasza összefoglalja a véleményt („Magas, 3 megállapítás, jogász javasolt”), és megnyitható a teljes vélemény.
+- **A kérő munkatárs értesítése:** az átadás válasza összefoglalja a véleményt („Magas, 3 megállapítás, jogász javasolt”), és megnyitható a teljes vélemény.
 - **Védőkorlát a küldésnél:** ha egy levélre **magas** kockázatú vélemény van, a Kapcsolattartó jóváhagyásánál a vezetőnek külön **tudomásul kell vennie** („láttam a jogi figyelmeztetést”). Ez nem tilt, csak lassít egy elhamarkodott küldést. (Az eseménymeghívókra egyelőre nem terjed ki.)
 - **Korlát:** naponta legfeljebb 10 vélemény ügyfelenként.
 
@@ -64,7 +64,7 @@ A tulajdonos mind a hat pontot elfogadta (zárt kategóriák, a program adja az 
 - **Vélemény** (`src/agents/jogi/index.js`): összesített besorolás, megállapítások (kategória, szint, idézet, indoklás, javasolt javítás), „jogász bevonása javasolt” jelzés (magasnál mindig), a „nem jogi tanács” felirat. Napi korlát: 10. **Magas** kockázatnál riasztás csak a vezetőnek.
 - **Átadás-feldolgozó:** a Kapcsolattartó, a Felkészítő és az Eseményszervező kérdésére a Jogi asztal automatikusan véleményt készít az átadásban hivatkozott anyagról, és az átadás válasza összefoglalja („magas kockázat, 2 megállapítás, jogász bevonása javasolt”).
 - **Tudomásulvétel:** ha a levél tervezetére magas kockázatú vélemény van, a jóváhagyáshoz a vezetőnek be kell jelölnie, hogy tudomásul vette (a szerver is követeli; nem tilt, csak lassít). A tudomásulvétel naplózott.
-- **Hozzáférés:** a vélemények és az ügynökök bizalmas anyagai (levéltervezet, csomag, javaslat, koncepció, utómunka, jogi vélemény) **csak a vezetőnek** olvashatók; az üzemeltető sem listázni, sem megnyitni, sem rákérdezni nem tud rájuk. (Ez a korábbi ügynökök anyagaira is kiterjedő szigorítás.)
+- **Hozzáférés:** a vélemények és a munkatársak bizalmas anyagai (levéltervezet, csomag, javaslat, koncepció, utómunka, jogi vélemény) **csak a vezetőnek** olvashatók; az üzemeltető sem listázni, sem megnyitni, sem rákérdezni nem tud rájuk. (Ez a korábbi munkatársak anyagaira is kiterjedő szigorítás.)
 - **Felület:** Jogi asztal (vélemények besorolás szerint rendezve, vélemény kérése anyagra vagy beillesztett szövegre, mit néz és mit nem), jelvény és „Jogi vélemény kérése” gomb az anyagok megnyitásánál és a Bejövő levélrészleteinél.
 
 **Korlátok (őszintén):**
@@ -72,4 +72,4 @@ A tulajdonos mind a hat pontot elfogadta (zárt kategóriák, a program adja az 
 - Az **AI valódi minősége nem mért** (hamis API-val tesztelt).
 - A **Dokumentumtárból** származó jogi háttér (irányelvek, korábbi állásfoglalások) ebben a lépésben nem kerül a vizsgálatba; az AI csak a vizsgált szöveget és a programozott előszűrést kapja.
 - Az **eseménymeghívókra** a tudomásulvétel nem terjed ki; a vélemény kézzel kérhető.
-- A hatályos jogszabályokat az ügynök nem ismeri és nem hivatkozza; magyar jogi szakértelem nem pótolható vele.
+- A hatályos jogszabályokat a munkatárs nem ismeri és nem hivatkozza; magyar jogi szakértelem nem pótolható vele.

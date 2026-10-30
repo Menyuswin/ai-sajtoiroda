@@ -1,10 +1,10 @@
-# A Sajtófelkészítő és a Proaktív Stratégia ügynök terve
+# A Sajtófelkészítő és a Proaktív Stratégia munkatárs terve
 
 *Állapot: **jóváhagyva (2026-10-29), megépítve és tesztelve** (lásd a 9. fejezetet). Bevezetési sorrend szerint ez a második szakasz (`docs/04`); az átadások (`docs/10`) és a Dokumentumtár (`docs/09`) már készek, erre épülnek.*
 
 ## 1. A cél, egy példával
 
-A Monitoring jelzi: „Az ápolóhiány említése háromszorosa az átlagnak.” Ma ez a jelzés a Proaktív üres asztalán vár. A két ügynök megérkezésével ez történik:
+A Monitoring jelzi: „Az ápolóhiány említése háromszorosa az átlagnak.” Ma ez a jelzés a Proaktív üres asztalán vár. A két munkatárs megérkezésével ez történik:
 
 1. **Proaktív** megkapja a jelzést, megnézi a Monitoring friss anyagait, a Dokumentumtár narratíváját és az Ön naptárát, és **megszólalási javaslatot** készít: *mikor, milyen formában, milyen üzenettel*, és mi a hallgatás kockázata.
 2. Ön a javaslatot **elfogadja, elveti vagy későbbre halasztja**. Elfogadásnál a Proaktív **kérelmet** ad át a Felkészítőnek.
@@ -14,14 +14,14 @@ A lánc (Monitoring → Proaktív → Felkészítő) három mélységű, ezért 
 
 ## 2. Alapelvek (a meglévő szabályok szerint)
 
-- **Kifelé semmi nem megy.** Mindkét ügynök belső anyagot gyárt; levelet, nyilatkozatot, posztot nem küld. A kimenő kapu és a jóváhagyás változatlan.
-- **Csak forrásból.** Az anyagban minden állítás vagy egy Monitoring-cikkre (`[1]`), vagy egy dokumentumrészletre (`[D1 §2]`) hivatkozik; a program ellenőrzi a jelöléseket, a nem létezőt törli. Amit a források nem támasztanak alá, azt az ügynök nem írja le, hanem `[KITÖLTENDŐ: …]` jelöli (ugyanúgy, mint a Kapcsolattartó tervezeteinél). A számokat és a cikklistákat a program írja, nem az AI.
+- **Kifelé semmi nem megy.** Mindkét munkatárs belső anyagot gyárt; levelet, nyilatkozatot, posztot nem küld. A kimenő kapu és a jóváhagyás változatlan.
+- **Csak forrásból.** Az anyagban minden állítás vagy egy Monitoring-cikkre (`[1]`), vagy egy dokumentumrészletre (`[D1 §2]`) hivatkozik; a program ellenőrzi a jelöléseket, a nem létezőt törli. Amit a források nem támasztanak alá, azt a munkatárs nem írja le, hanem `[KITÖLTENDŐ: …]` jelöli (ugyanúgy, mint a Kapcsolattartó tervezeteinél). A számokat és a cikklistákat a program írja, nem az AI.
 - **A bemenet adat, nem utasítás** (cikk, levél, dokumentum, naptárbejegyzés).
 - **Zárt műveletlista.** Új műveletek: `felkeszito_csomag` (téma → csomag), `proaktiv_javaslat` (téma vagy jelzés → javaslat), `proaktiv_dontes` (a vezető döntése), `naptar_bejegyzes`. Más nem.
 - **Költségvédelem:** naponta legfeljebb 10 felkészítő csomag és 5 megszólalási javaslat ügyfelenként (túllépésnél naplózott elutasítás).
 - **Szerepek:** a döntés a vezetőé; az üzemeltető a tartalmat nem látja (mint a leveleknél), csak a darabszámot.
 
-## 3. Sajtófelkészítő Ügynök
+## 3. Sajtófelkészítő Munkatárs
 
 **Bemenet:** téma (szabad szöveg), az alkalom (interjú / sajtótájékoztató / írásos nyilatkozat / belső egyeztetés), opcionálisan időpont és a megszólaló neve. Kérelem-átadás a Proaktívtól vagy a Kapcsolattartótól is érkezhet (az átadás szövege a téma).
 
@@ -36,7 +36,7 @@ A lánc (Monitoring → Proaktív → Felkészítő) három mélységű, ezért 
 
 **AI nélkül** (szabályalapú tartalék): a csomag **vázát** adja: a talált cikkek és dokumentumrészletek rendezett listája, az általános kérdéssablonok és üres üzenetkeretek `[KITÖLTENDŐ]` jelöléssel. Ez nem helyettesíti az AI-t, de a munkafolyamat és a felület így kipróbálható. Az AI valódi minősége itt sem mért.
 
-## 4. Proaktív Kommunikációs Stratégia Ügynök
+## 4. Proaktív Kommunikációs Stratégia Munkatárs
 
 **Bemenet:** Monitoring-jelzés (átadásként), Kapcsolattartó-jelzés (pl. sok hasonló megkeresés), a vezető által felvitt naptár, a szervezet narratívája (Dokumentumtár, „háttéranyag” és „irányelv” kategória), vagy kézi kérés („Mit érdemes a héten mondanunk?”).
 
@@ -48,7 +48,7 @@ A lánc (Monitoring → Proaktív → Felkészítő) három mélységű, ezért 
 - *A hallgatás kockázata* (ha van, a vezető figyelmét külön jelzi);
 - *Alternatívák* (legalább egy: „most nem szólalunk meg”, indoklással).
 
-**Döntés:** *elfogadom / elvetem / később döntök*, naplózva. Elfogadásnál a felület felajánlja: „Kérjem a Felkészítőtől a csomagot?” (kérelem-átadás a javaslatra hivatkozva). Az ügynök nem dönt, és nem indít semmit a vezető döntése nélkül.
+**Döntés:** *elfogadom / elvetem / később döntök*, naplózva. Elfogadásnál a felület felajánlja: „Kérjem a Felkészítőtől a csomagot?” (kérelem-átadás a javaslatra hivatkozva). A munkatárs nem dönt, és nem indít semmit a vezető döntése nélkül.
 
 **Opportunity map** (a lehetőségek rendezett listája) a javaslatok és a naptár nézete: első ütemben a Proaktív asztalán egy lista „Nyitott javaslatok és közelgő események” címmel, nem külön grafikus térkép.
 

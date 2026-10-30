@@ -1,4 +1,4 @@
-// Levélküldő illesztők. Csak az outbox hívja – az ügynökök közvetlenül nem küldhetnek.
+// Levélküldő illesztők. Csak az outbox hívja – a munkatársak közvetlenül nem küldhetnek.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 

@@ -1,7 +1,7 @@
 // A Monitoring közösségi csatornái: a profilban megadott nyilvános hírcsatornák (YouTube, Reddit, Mastodon, Bluesky stb.).
-// FONTOS KORLÁT: az ügynök nem olvassa közvetlenül az X-et, a Facebookot, az Instagramot vagy a TikTokot (ezekhez fizetős API kell);
+// FONTOS KORLÁT: a munkatárs nem olvassa közvetlenül az X-et, a Facebookot, az Instagramot vagy a TikTokot (ezekhez fizetős API kell);
 // csak azt látja, amit nyilvános RSS/Atom csatorna (vagy ilyet előállító szolgáltatás) közöl. A többit a vezető kézi digitális jelzéssel vihet fel.
-// A közösségi szemle a Közösségi média ügynök asztalára kerül (nem megy külön levélben), és ugyanazt a program-írta szerkezetet használja, mint a sajtószemle.
+// A közösségi szemle a Közösségi média munkatárs asztalára kerül (nem megy külön levélben), és ugyanazt a program-írta szerkezetet használja, mint a sajtószemle.
 import { buildStats, orderItems, synthesize, renderDigest } from './digest.js';
 import { SOURCE_PLATFORMS } from '../../core/profile.js';
 

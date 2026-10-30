@@ -1,7 +1,7 @@
 {
   "name": "Sajtóiroda",
   "short_name": "Sajtóiroda",
-  "description": "AI-ügynökökből álló sajtóiroda: asztalok, utasítások, jelentések.",
+  "description": "AI-munkatársakból álló sajtóiroda: asztalok, utasítások, jelentések.",
   "lang": "hu",
   "start_url": "/",
   "scope": "/",

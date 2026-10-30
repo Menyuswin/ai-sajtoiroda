@@ -1,4 +1,4 @@
--- Az Eseményszervező ügynök adatai (docs/13).
+-- Az Eseményszervező munkatárs adatai (docs/13).
 -- esemenyek.allapot: koncepcio | szervezes | lezajlott | utomunka | lezarva | elvetve | elhalasztva
 -- meghivok.allapot: tervezet | elkuldve   (próbaüzemben az „elkuldve” a kimenő mappába kerülést jelenti)
 -- meghivok.valasz / valasz_javaslat: nincs | reszt_vesz | nem_vesz_reszt | bizonytalan

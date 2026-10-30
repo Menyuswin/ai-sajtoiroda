@@ -1,5 +1,5 @@
-// Forrásgyűjtés a Felkészítő és a Proaktív ügynöknek: a Monitoring tárolt cikkei és a Dokumentumtár részletei egy témához.
-// Minden forrás sorszámot kap ([1], [D1 §2]); az ügynök csak ezekre hivatkozhat, a program ellenőrzi.
+// Forrásgyűjtés a Felkészítő és a Proaktív munkatársnak: a Monitoring tárolt cikkei és a Dokumentumtár részletei egy témához.
+// Minden forrás sorszámot kap ([1], [D1 §2]); a munkatárs csak ezekre hivatkozhat, a program ellenőrzi.
 import { norm } from '../../core/text.js';
 
 // A rendszer saját címkéi (pl. „Felerősödő téma: …”) nem keresőszavak.

@@ -1,4 +1,4 @@
--- A Proaktív ügynök: a vezető által felvitt naptár és a megszólalási javaslatok (docs/12).
+-- A Proaktív munkatárs: a vezető által felvitt naptár és a megszólalási javaslatok (docs/12).
 -- tipus: kulso | sajat | vezetoi;  allapot (javaslat): nyitott | elfogadva | elvetve | halasztva
 CREATE TABLE IF NOT EXISTS naptar (
   id         TEXT PRIMARY KEY,

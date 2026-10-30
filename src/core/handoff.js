@@ -1,8 +1,8 @@
-// Átadások az ügynökök között (docs/10). Belső üzenetek: kifelé semmit nem küldenek.
+// Átadások a munkatársak között (docs/10). Belső üzenetek: kifelé semmit nem küldenek.
 // A szolgáltatás tárfüggetlen: a `repo` az átadás-tár (D1: desk.atadasok), a `log` a napló.
 //  - `agentIds`: a létező asztalok azonosítói;
-//  - `isAvailable(id)`: dolgozik-e az ügynök (van-e ott valaki, és nem szünetel);
-//  - `handlers`: ügynök-azonosító → async (átadás) => { valasz? } ; a feldolgozó ügynökök ide iratkoznak fel.
+//  - `isAvailable(id)`: dolgozik-e a munkatárs (van-e ott valaki, és nem szünetel);
+//  - `handlers`: munkatárs-azonosító → async (átadás) => { valasz? } ; a feldolgozó munkatársak ide iratkoznak fel.
 export const HANDOFF_TYPES = new Set(['jelzes', 'kerelem', 'anyag_atadas', 'kerdes']);
 export const HANDOFF_LIMITS = { maxDepth: 3, dailyQuota: 50, ttlDays: 14 };
 
@@ -33,7 +33,7 @@ export function createHandoffs({ repo, log, agentIds, isAvailable, handlers = ne
 
   return {
     async send({ from, to, tipus, targy, szoveg, anyagId = null, parentId = null }) {
-      if (!ids.has(from) || !ids.has(to)) return reject(from, 'ismeretlen ügynök');
+      if (!ids.has(from) || !ids.has(to)) return reject(from, 'ismeretlen munkatárs');
       if (from === to) return reject(from, 'önmagának nem küldhet átadást');
       if (!HANDOFF_TYPES.has(tipus)) return reject(from, `ismeretlen átadás-típus: ${tipus}`);
       if (!String(targy || '').trim() || !String(szoveg || '').trim()) return reject(from, 'a tárgy és a szöveg kötelező');

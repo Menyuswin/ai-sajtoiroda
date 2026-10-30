@@ -1,4 +1,4 @@
-// Egy ügyfél ügynök-környezete (napló, asztal, átadások, kimenő kapu, levéltár, dokumentumtár, naptár, AI).
+// Egy ügyfél munkatárs-környezete (napló, asztal, átadások, kimenő kapu, levéltár, dokumentumtár, naptár, AI).
 // Az ütemező, az API és a levélhíd-fogadó is ezt használja, így ugyanaz a szabály vonatkozik mindegyikre.
 import { getConfig } from '../core/config.js';
 import { createLlm } from '../core/llm.js';
@@ -21,7 +21,7 @@ import { createOpinion, kindOfAnyag } from '../agents/jogi/index.js';
 import { answerQuestion as archiveAnswer } from '../agents/archivum/index.js';
 import { createPost } from '../agents/kozossegi/index.js';
 
-// Próbákhoz: ügynök-azonosító → feldolgozó, amely felülírja a gyári feldolgozókat (üresen hagyva nem hat).
+// Próbákhoz: munkatárs-azonosító → feldolgozó, amely felülírja a gyári feldolgozókat (üresen hagyva nem hat).
 export const handoffHandlers = new Map();
 
 // Az átadás tárgyából a téma: „Továbbított levél: Interjúkérés” → „Interjúkérés”.
@@ -51,7 +51,7 @@ export function buildAgentCtx({ env, profile, now, prompts, llmFetch, mailbox = 
     archivum: createArchive({ db: env.DB, tenantId, now }),
     social: createSocialStore({ db: env.DB, tenantId, now }),
   };
-  // Gyári feldolgozók: a megérkezett (vagy megérkezéskor kézbesített) átadásokat az ügynökök itt dolgozzák fel.
+  // Gyári feldolgozók: a megérkezett (vagy megérkezéskor kézbesített) átadásokat a munkatársak itt dolgozzák fel.
   const own = new Map([
     ['proaktiv', async (h) => {
       if (!['jelzes', 'kerelem', 'kerdes'].includes(h.tipus)) return { valasz: 'Tudomásul véve.' };

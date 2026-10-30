@@ -1,6 +1,6 @@
 # AI-sajtóiroda
 
-Egy általános, szakmai területhez még nem kötött sajtóiroda szervezeti és működési modellje. Az irodát öt AI-alapügynök (és három kiegészítő ügynök) működteti, egy élő emberi vezető irányítása alatt.
+Egy általános, szakmai területhez még nem kötött sajtóiroda szervezeti és működési modellje. Az irodát öt AI-alapmunkatárs (és három kiegészítő munkatárs) működteti, egy élő emberi vezető irányítása alatt.
 
 A modell a klasszikus sajtóirodai funkciókat valósítja meg mesterséges intelligenciával:
 
@@ -14,11 +14,11 @@ A végső felelősség, a stratégiai döntés és a humán kontroll a vezető k
 
 ## Állapot
 
-**Koncepció + első ügynök (szárazon).** A repó a modell leírását, az ügynökök szerepkör-specifikációit és a közös magot tartalmazza, rajta a Monitoring Ügynökkel, amely száraz módban (küldés és fizetős szolgáltatás nélkül) működik. Éles üzembe helyezés nincs. A felépítés: [docs/07-rendszer-felepites.md](docs/07-rendszer-felepites.md); a terv: [docs/06-monitoring-prototipus-terv.md](docs/06-monitoring-prototipus-terv.md); a nyitott kérdések: [docs/05-nyitott-kerdesek.md](docs/05-nyitott-kerdesek.md).
+**Koncepció + első munkatárs (szárazon).** A repó a modell leírását, a munkatársak szerepkör-specifikációit és a közös magot tartalmazza, rajta a Monitoring Munkatárssal, amely száraz módban (küldés és fizetős szolgáltatás nélkül) működik. Éles üzembe helyezés nincs. A felépítés: [docs/07-rendszer-felepites.md](docs/07-rendszer-felepites.md); a terv: [docs/06-monitoring-prototipus-terv.md](docs/06-monitoring-prototipus-terv.md); a nyitott kérdések: [docs/05-nyitott-kerdesek.md](docs/05-nyitott-kerdesek.md).
 
-## Az ügynökök
+## A munkatársak
 
-| # | Ügynök | Angol munkanév | Fő feladat | Bevezetési szakasz |
+| # | Munkatárs | Angol munkanév | Fő feladat | Bevezetési szakasz |
 |---|--------|----------------|------------|--------------------|
 | 1 | Kommunikációs Kapcsolattartó | Inbox & Call Agent | Beérkező e-mailek és hívások kezelése, választervezetek | 1. |
 | 2 | Sajtófelkészítő | Briefing Agent | Háttéranyag, Q&A, talking points a vezetőnek | 2. |
@@ -31,16 +31,16 @@ A végső felelősség, a stratégiai döntés és a humán kontroll a vezető k
 
 ## Tartalom
 
-- [docs/01-alapugynokok.md](docs/01-alapugynokok.md): az öt alapügynök részletes feladatköre
-- [docs/02-kiegeszito-ugynokok.md](docs/02-kiegeszito-ugynokok.md): a három javasolt kiegészítő ügynök
+- [docs/01-alapugynokok.md](docs/01-alapugynokok.md): az öt alapmunkatárs részletes feladatköre
+- [docs/02-kiegeszito-ugynokok.md](docs/02-kiegeszito-ugynokok.md): a három javasolt kiegészítő munkatárs
 - [docs/03-mukodesi-modell.md](docs/03-mukodesi-modell.md): napi ciklus, együttműködés, emberi kontrollpontok, heti és havi ritmus
 - [docs/04-bevezetes.md](docs/04-bevezetes.md): fokozatos bevezetés és összegző megfontolások
 - [docs/05-nyitott-kerdesek.md](docs/05-nyitott-kerdesek.md): a megvalósítás előtt eldöntendő kérdések
-- [docs/06-monitoring-prototipus-terv.md](docs/06-monitoring-prototipus-terv.md): a Monitoring Ügynök prototípusának terve
-- [docs/07-rendszer-felepites.md](docs/07-rendszer-felepites.md): a kód felépítése, kipróbálás, új ügynök hozzáadása
-- `src/`, `monitoring/`, `test/`: a közös mag, a Monitoring Ügynök, a profilsablon és promptok, a tesztek
-- [agents/](agents/): ügynökönként egy szerepkör-specifikáció (bemenet, kimenet, eszkaláció, jóváhagyás)
+- [docs/06-monitoring-prototipus-terv.md](docs/06-monitoring-prototipus-terv.md): a Monitoring Munkatárs prototípusának terve
+- [docs/07-rendszer-felepites.md](docs/07-rendszer-felepites.md): a kód felépítése, kipróbálás, új munkatárs hozzáadása
+- `src/`, `monitoring/`, `test/`: a közös mag, a Monitoring Munkatárs, a profilsablon és promptok, a tesztek
+- [agents/](agents/): munkatársanként egy szerepkör-specifikáció (bemenet, kimenet, eszkaláció, jóváhagyás)
 
 ## Alapelv
 
-Minden kimenő válasz, nyilatkozat és meghívó a vezető (vagy az általa kijelölt helyettes) jóváhagyásával megy ki. Az ügynökök javasolnak, elemeznek és előkészítenek; dönteni a vezető dönt.
+Minden kimenő válasz, nyilatkozat és meghívó a vezető (vagy az általa kijelölt helyettes) jóváhagyásával megy ki. A munkatársak javasolnak, elemeznek és előkészítenek; dönteni a vezető dönt.

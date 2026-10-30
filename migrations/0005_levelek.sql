@@ -1,4 +1,4 @@
--- A Kapcsolattartó Ügynök levelei (docs/11). A levélszöveg személyes adatot tartalmazhat: a megőrzési idő után törlődik.
+-- A Kapcsolattartó Munkatárs levelei (docs/11). A levélszöveg személyes adatot tartalmazhat: a megőrzési idő után törlődik.
 -- allapot: uj | tervezet_kesz | jovahagyva | elvetve | halasztva | tovabbitva | hiba
 -- forras: postafiok (lekérdezéssel) | hid (a levélhíd küldte) | kezi (a vezető vitte fel)
 CREATE TABLE IF NOT EXISTS levelek (

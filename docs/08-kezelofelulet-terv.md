@@ -1,32 +1,32 @@
-# A kezelőfelület terve: az iroda és az ügynökök asztalai
+# A kezelőfelület terve: az iroda és a munkatársak asztalai
 
 *Állapot: **jóváhagyva az ajánlott beállításokkal (2026-10-29); az U1–U4 lépések megépültek és tesztelve vannak** (lásd a 8. fejezetet). A telepítés (U5) a tulajdonos Cloudflare-hozzáférésére vár.*
 
 ## 1. A cél
 
-A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden ügynöknek saját asztala van. Az asztalnál utasítást ad az ügynöknek, megnézi az elkészített munkáját, és elolvassa a jelentéseit, programozói tudás nélkül. A felület egy külön domént (például `sajtoiroda.ugyfel.hu`) kaphat, és később önálló alkalmazás is épülhet rá.
+A megrendelő egy böngészőben, számítógépen, **egy irodát lát**: minden munkatársnak saját asztala van. Az asztalnál utasítást ad a munkatársnak, megnézi az elkészített munkáját, és elolvassa a jelentéseit, programozói tudás nélkül. A felület egy külön domént (például `sajtoiroda.ugyfel.hu`) kaphat, és később önálló alkalmazás is épülhet rá.
 
 ## 2. A nézetek (javaslat)
 
-*Az „asztal” képletes (a tulajdonos pontosítása): minden AI-munkatárs egy-egy asztalnál „ül”, ott végzi a feladatát. A felületen ez az ügynök saját munkaterülete: ide ad utasítást a vezető, itt látja a munkát és a jelentéseket.*
+*Az „asztal” képletes (a tulajdonos pontosítása): minden AI-munkatárs egy-egy asztalnál „ül”, ott végzi a feladatát. A felületen ez a munkatárs saját munkaterülete: ide ad utasítást a vezető, itt látja a munkát és a jelentéseket.*
 
 | Nézet | Mit lát és mit tud tenni |
 |-------|--------------------------|
-| **1. Az iroda** (főoldal) | Az ügynökök kártyákként egy irodai alaprajzon. Állapotjelző fény (dolgozik / vár / szünetel / kikapcsolva), az utolsó tevékenység egy sorban, és egy ki-be kapcsoló. A kártyákat **húzással mozgathatja** és elrendezheti; az elrendezés mentődik. A még nem bevezetett ügynökök (Kapcsolattartó, Felkészítő, …) halványan, „zárt asztalként” látszanak, a bevezetési sorrend szerint. |
-| **2. Az ügynök asztala** | Három sáv egy oldalon: **Utasítás** (üzenetablak: ide ír az ügynöknek, itt látja az előzményeket), **Munka** (amin az ügynök épp dolgozik, a mai találatok, a trendek), **Jelentések** (a korábbi szemlék és riasztások listája, megnyitva ugyanúgy, ahogy a levélben megérkeztek). Az asztalhoz tartozik a **Beállítások** (kulcsszavak, források, vörös vonalak, időzítés, címzett) és az **ügynök naplója**. |
-| **3. Jelentések** (összesítő) | Az összes ügynök jelentése egy helyen, időrendben, szűrhetően; letölthető. Ez az, amit a vezető reggel átfut. |
+| **1. Az iroda** (főoldal) | A munkatársak kártyákként egy irodai alaprajzon. Állapotjelző fény (dolgozik / vár / szünetel / kikapcsolva), az utolsó tevékenység egy sorban, és egy ki-be kapcsoló. A kártyákat **húzással mozgathatja** és elrendezheti; az elrendezés mentődik. A még nem bevezetett munkatársak (Kapcsolattartó, Felkészítő, …) halványan, „zárt asztalként” látszanak, a bevezetési sorrend szerint. |
+| **2. A munkatárs asztala** | Három sáv egy oldalon: **Utasítás** (üzenetablak: ide ír a munkatársnak, itt látja az előzményeket), **Munka** (amin a munkatárs épp dolgozik, a mai találatok, a trendek), **Jelentések** (a korábbi szemlék és riasztások listája, megnyitva ugyanúgy, ahogy a levélben megérkeztek). Az asztalhoz tartozik a **Beállítások** (kulcsszavak, források, vörös vonalak, időzítés, címzett) és az **munkatárs naplója**. |
+| **3. Jelentések** (összesítő) | Az összes munkatárs jelentése egy helyen, időrendben, szűrhetően; letölthető. Ez az, amit a vezető reggel átfut. |
 
-*Megjegyzés:* a tulajdonos leírásában szerepelt egy „három oldal” kifejezés, amelynek jelentése nem tisztázott. Ez a fejezet ezért egy javaslat az oldalak szétosztására; a darabszám nem kötött. A „mozgatni az ügynököket” pontosítása (2026-10-29): az **irányítást** jelenti: feladatot adni az ügynököknek, beszámoltatni őket, és rákérdezni egy adott anyagra (például egy sajtóválasz-tervezetre vagy egy esemény kommunikációs tervére). Ez az asztal alapműködése; az asztalkártyák húzogatása ezen felül kényelmi funkció.
+*Megjegyzés:* a tulajdonos leírásában szerepelt egy „három oldal” kifejezés, amelynek jelentése nem tisztázott. Ez a fejezet ezért egy javaslat az oldalak szétosztására; a darabszám nem kötött. A „mozgatni a munkatársakat” pontosítása (2026-10-29): az **irányítást** jelenti: feladatot adni a munkatársaknek, beszámoltatni őket, és rákérdezni egy adott anyagra (például egy sajtóválasz-tervezetre vagy egy esemény kommunikációs tervére). Ez az asztal alapműködése; az asztalkártyák húzogatása ezen felül kényelmi funkció.
 
 ## 3. Az utasítások működése (az alapszabályok szerint)
 
-Az üzenetablakba természetes magyar nyelven lehet írni. Az ügynök **nem hajt végre közvetlenül semmit**, hanem javaslatot készít, amit a vezető jóváhagy:
+Az üzenetablakba természetes magyar nyelven lehet írni. A munkatárs **nem hajt végre közvetlenül semmit**, hanem javaslatot készít, amit a vezető jóváhagy:
 
 1. A vezető ír: *„Figyeld a várólista témát is, és a péntek esti szemlét hagyd ki.”*
-2. Az ügynök értelmezi, és **javaslatot** mutat: „Hozzáadom a »várólista« témát a figyelt kifejezésekhez; a péntek esti szemle kimarad. Jóváhagyod?”
+2. A munkatárs értelmezi, és **javaslatot** mutat: „Hozzáadom a »várólista« témát a figyelt kifejezésekhez; a péntek esti szemle kimarad. Jóváhagyod?”
 3. A vezető jóváhagy vagy elvet; az eredmény **naplóba** kerül (javaslat + döntés).
 
-Az utasítások **csak egy zárt, ellenőrzött műveletlistából** hajthatók végre: kifejezés hozzáadása / elvétele, forrás hozzáadása / elvétele, szünet kezdete és vége, időpont módosítása, „készíts jelentést erről az időszakról / témáról” (csak olvasó művelet a tárolt cikkeken). Amit az ügynök nem ért, arra visszakérdez; amit nem tud (például levelet küldeni valakinek), azt megmondja. Kifelé szóló üzenet ezen a csatornán **nem** küldhető: azt a kimenő kapu és a jóváhagyás védi.
+Az utasítások **csak egy zárt, ellenőrzött műveletlistából** hajthatók végre: kifejezés hozzáadása / elvétele, forrás hozzáadása / elvétele, szünet kezdete és vége, időpont módosítása, „készíts jelentést erről az időszakról / témáról” (csak olvasó művelet a tárolt cikkeken). Amit a munkatárs nem ért, arra visszakérdez; amit nem tud (például levelet küldeni valakinek), azt megmondja. Kifelé szóló üzenet ezen a csatornán **nem** küldhető: azt a kimenő kapu és a jóváhagyás védi.
 
 Példák a Monitoring asztalán:
 - *„Mi történt a héten az ápolóhiány körül?”* → olvasó jelentés a tárolt cikkekből, hivatkozásokkal.
@@ -35,7 +35,7 @@ Példák a Monitoring asztalán:
 
 ## 4. Felépítés: API az alapja, a felület csak egy kliens
 
-- **Minden funkció egy API-n át érhető el** (`/api/...`: iroda, ügynökök, utasítások, javaslatok, jelentések, napló). A HTML oldal ennek az egyik kliense. Ezért később külön alkalmazás ugyanazt az API-t használhatja változtatás nélkül.
+- **Minden funkció egy API-n át érhető el** (`/api/...`: iroda, munkatársak, utasítások, javaslatok, jelentések, napló). A HTML oldal ennek az egyik kliense. Ezért később külön alkalmazás ugyanazt az API-t használhatja változtatás nélkül.
 - **Az alkalmazás útja:** először a HTML oldal telepíthető alkalmazásként (PWA) viselkedik, ez további fejlesztés nélkül adja az „app” érzetet; a natív mobilalkalmazás később ugyanerre az API-ra épül.
 - **Külön domén:** az oldal és az API ugyanabból a Workerből szolgálódik ki, ezért az ügyfél saját doménje egyszerűen rámutat. A kérés `Host` fejléce alapján dől el, melyik ügyfél irodáját látja (`domenek` tábla: domén → ügyfél). Az Access-szabály doménenként külön. *Ellenőrizendő a megvalósításkor:* a Cloudflare saját doménhez csatolás feltételei (a domén DNS-e jellemzően a Cloudflare-nél kell legyen).
 - **Az oldal egyetlen HTML + JS, építési lépés nélkül**, szigorú tartalombiztonsági szabállyal (nincs beágyazott script, minden kimenet `textContent`-tel kerül az oldalra). Az irodai elrendezés egyszerű CSS-rács, a húzás a böngésző beépített képességeivel (külső könyvtár nélkül) működik.
@@ -57,7 +57,7 @@ Az oldal dönti el, kihez megy a jelentés, tehát aki bejut, az a sajtófigyel�
 
 | # | Lépés | Ellenőrizhető eredmény |
 |---|-------|------------------------|
-| U1 | API: iroda, ügynökök, profil, jelentések, napló, szerepek, korlátok | Tesztek: ügyfél csak a sajátját látja, érvénytelen mentés elutasítva, címzett-váltás védett |
+| U1 | API: iroda, munkatársak, profil, jelentések, napló, szerepek, korlátok | Tesztek: ügyfél csak a sajátját látja, érvénytelen mentés elutasítva, címzett-váltás védett |
 | U2 | Az iroda és a Monitoring asztala: Munka, Jelentések, Beállítások (utasítás még nélkül) | Böngészőben (automatikus képernyőfelvétellel is ellenőrizve) a nulladik ügyfél irodája, mozgatható kártyákkal, olvasható szemlékkel |
 | U3 | Az utasítás-üzenetablak: javaslat → jóváhagyás → végrehajtás → napló, a zárt műveletlistával | Tesztek: minden műveletre javaslat, jóváhagyás nélkül nincs változás, ismeretlen utasításra visszakérdezés |
 | U4 | Összesítő jelentések nézet, napló-export | |
@@ -90,7 +90,7 @@ Az U1–U4 a mostani környezetben megépíthető és tesztelhető. Az U5-höz a
 
 **Őszinte korlátok:**
 - A bemutatóban az utasításértelmezés és a rákérdezés **szabályalapú**, nem AI; az AI-s ág (zárt műveletlistára kényszerítve, hamis API-val tesztelve) a Claude-kulcs megadása után kapcsolható be, és a valódi minőségét még nem mértük.
-- A többi hét ügynök asztala üres; az általános modell (anyag, állapot, rákérdezés) már kész, de a tervezet-típusú anyagok jóváhagyási folyamata (például választervezet) az adott ügynökkel együtt készül.
+- A többi hét munkatárs asztala üres; az általános modell (anyag, állapot, rákérdezés) már kész, de a tervezet-típusú anyagok jóváhagyási folyamata (például választervezet) az adott munkatárssal együtt készül.
 - Az éles Cloudflare-telepítés és a Cloudflare Access bekötése nem történt meg (U5); a Worker csomagja szárazon összeáll.
 - A böngészőben a időmező a gép nyelvi beállítása szerint jelenik meg (például „AM/PM”).
 

@@ -48,7 +48,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), { status
 const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true, proaktiv: true, kozossegi: true };
 const UZEMELTETO_EXTRA = { vezeto: true, nyelv: true, trend: true, megorzes: true, ai_jelzes: true, utemezes: ['szemle', 'idozona'], megjelenes: true, postafiok: true };
 
-// Az ügynökök bizalmas anyagait (levéltervezet, csomag, javaslat, koncepció, jogi vélemény) csak a vezető olvashatja.
+// A munkatársak bizalmas anyagait (levéltervezet, csomag, javaslat, koncepció, jogi vélemény) csak a vezető olvashatja.
 const SENSITIVE_TYPES = new Set(['valasz_tervezet', 'felkeszito_csomag', 'megszolalasi_javaslat', 'esemeny_koncepcio', 'esemeny_utomunka', 'jogi_velemeny', 'poszt_javaslat']);
 const worstLevel = (list) => list.reduce((w, o) => (RISK_LEVELS.indexOf(o.besorolas) > RISK_LEVELS.indexOf(w) ? o.besorolas : w), 'alacsony');
 
@@ -258,7 +258,7 @@ async function route(request, env, deps) {
     const b = await body();
     const out = {};
     for (const [id, pos] of Object.entries(b.pozicio || {})) {
-      if (!agentById(id)) throw new HttpError(400, `Ismeretlen ügynök: ${id}`);
+      if (!agentById(id)) throw new HttpError(400, `Ismeretlen munkatárs: ${id}`);
       const x = Number(pos.x), y = Number(pos.y);
       if (!(x >= 0 && x <= 5000 && y >= 0 && y <= 5000)) throw new HttpError(400, 'Érvénytelen pozíció.');
       out[id] = { x: Math.round(x), y: Math.round(y) };
@@ -267,10 +267,10 @@ async function route(request, env, deps) {
     return json({ ok: true });
   }
 
-  // ---- Egy ügynök asztala
+  // ---- Egy munkatárs asztala
   if (method === 'GET' && (m = p.match(/^\/api\/ugynok\/([a-z]+)$/))) {
     const a = agentById(m[1]);
-    if (!a) throw new HttpError(404, 'Ismeretlen ügynök.');
+    if (!a) throw new HttpError(404, 'Ismeretlen munkatárs.');
     const atadasok = (await desk.atadasok.list({ ugynok: a.id, limit: 50 })).map(mapHandoff);
     if (!a.elerheto) return json({ ugynok: a, allapot: 'ures', utasitasok: [], anyagok: [], munka: null, atadasok });
     if (a.id === 'kapcsolattarto') {
@@ -342,9 +342,9 @@ async function route(request, env, deps) {
   // ---- Utasítások: értelmezés → javaslat → jóváhagyás
   if (method === 'POST' && (m = p.match(/^\/api\/ugynok\/([a-z]+)\/utasitas$/))) {
     const a = agentById(m[1]);
-    if (!a) throw new HttpError(404, 'Ismeretlen ügynök.');
+    if (!a) throw new HttpError(404, 'Ismeretlen munkatárs.');
     if (!a.elerheto) throw new HttpError(409, 'Ennél az asztalnál még nem ül senki.');
-    if (a.id !== 'monitoring') throw new HttpError(409, 'Ennek az ügynöknek a levelekre adhat utasítást: nyissa meg a Bejövő nézetet, és ott kérhet átírást vagy hozhat döntést.');
+    if (a.id !== 'monitoring') throw new HttpError(409, 'Ennek a munkatársnak a levelekre adhat utasítást: nyissa meg a Bejövő nézetet, és ott kérhet átírást vagy hozhat döntést.');
     const text = String((await body()).szoveg || '').trim();
     if (!text || text.length > 500) throw new HttpError(400, 'Az utasítás 1–500 karakter legyen.');
     await log.append({ szereplo: actor, tipus: 'utasitas', hivatkozas: a.id, tartalom: { szoveg: text } });
@@ -443,7 +443,7 @@ async function route(request, env, deps) {
     if (Number(request.headers.get('Content-Length') || 0) > DOC_LIMITS.fileBytes + 4096) throw new HttpError(413, 'A fájl túl nagy.');
     const bytes = new Uint8Array(await request.arrayBuffer());
     const scope = (url.searchParams.get('hatokor') || '').split(',').map(x => x.trim()).filter(Boolean);
-    if (scope.some(x => !agentById(x))) throw new HttpError(400, 'Ismeretlen ügynök a hatókörben.');
+    if (scope.some(x => !agentById(x))) throw new HttpError(400, 'Ismeretlen munkatárs a hatókörben.');
     try {
       const doc = await docs.add({ bytes, fajlnev: name, cim: url.searchParams.get('cim') || '', kategoria: url.searchParams.get('kategoria') || 'egyeb', hatokor: scope, aiTiltott: url.searchParams.get('ai_tiltott') === '1', by: actor });
       await log.append({ szereplo: actor, tipus: 'dokumentum', hivatkozas: doc.id, tartalom: { esemeny: 'feltoltve', cim: doc.cim, fajlnev: doc.fajlnev, meret: doc.meret, szakaszok: doc.szakaszok, ai_tiltott: doc.ai_tiltott, hatokor: doc.hatokor } });
@@ -474,7 +474,7 @@ async function route(request, env, deps) {
     if (method === 'PUT') {
       const b = await body();
       const hatokor = b.hatokor === undefined ? undefined : (Array.isArray(b.hatokor) ? b.hatokor : null);
-      if (Array.isArray(hatokor) && hatokor.some(x => !agentById(x))) throw new HttpError(400, 'Ismeretlen ügynök a hatókörben.');
+      if (Array.isArray(hatokor) && hatokor.some(x => !agentById(x))) throw new HttpError(400, 'Ismeretlen munkatárs a hatókörben.');
       try {
         const d = await docs.update(id, { cim: b.cim, kategoria: b.kategoria, hatokor, aiTiltott: b.ai_tiltott === undefined ? undefined : b.ai_tiltott === true });
         if (!d) throw new HttpError(404, 'Nincs ilyen dokumentum.');
@@ -800,7 +800,7 @@ async function route(request, env, deps) {
     throw new HttpError(404, 'Nem található.');
   }
 
-  // ---- Átadások az ügynökök között
+  // ---- Átadások a munkatársak között
   if (method === 'GET' && p === '/api/atadasok') {
     const list = await desk.atadasok.list({ ugynok: url.searchParams.get('ugynok'), allapot: url.searchParams.get('allapot'), limit: 200 });
     return json({ atadasok: list.map(mapHandoff) });

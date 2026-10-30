@@ -13,11 +13,12 @@ import proposal from '../../monitoring/prompts/proaktiv-javaslat.md';
 import eventConcept from '../../monitoring/prompts/esemeny-koncepcio.md';
 import legal from '../../monitoring/prompts/jogi-velemeny.md';
 import consistency from '../../monitoring/prompts/archivum-ellentmondas.md';
+import social from '../../monitoring/prompts/kozossegi-poszt.md';
 import { runScheduled } from '../cloudflare/scheduler.js';
 import { handleRequest } from '../api/router.js';
 import { ASSETS } from './ui-assets.js';
 
-const prompts = { classify, synthesize, instruct, qa, docqa, keywords, letterClassify, letterReply, briefing, proposal, eventConcept, legal, consistency };
+const prompts = { classify, synthesize, instruct, qa, docqa, keywords, letterClassify, letterReply, briefing, proposal, eventConcept, legal, consistency, social };
 
 export default {
   async scheduled(_event, env, ctx) {

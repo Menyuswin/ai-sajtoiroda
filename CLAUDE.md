@@ -31,9 +31,9 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 | Eseményszervező Ügynök (`docs/13`, `src/agents/esemenyszervezo/`) | kész, tesztelt: koncepció (program számolta időpont és költség), vezetői jóváhagyás, sajtólista (CSV), meghívók a kimenő kapun át (próbaüzemben nem mennek ki), ellenőrzőlista, visszajelzés-javaslat, utómunka; AI nélkül váz |
 | Jogi és kockázat Ügynök (`docs/14`, `src/agents/jogi/`) | kész, tesztelt: szabályalapú alsó határ + AI, ami csak emelhet, szó szerinti idézet, törvényhely-tilalom, automatikus vélemény az átadásokra, riasztás magasnál, tudomásulvétel a levél jóváhagyásánál; a bizalmas anyagokat csak a vezető látja |
 | Archívum Ügynök (`docs/15`, `src/agents/archivum/`) | kész, tesztelt: a kiadott közlések változtathatatlan nyilvántartása (e-mail-cím nélkül), egységes keresés, idővonal, korábbi közlések a tervezet mellett, AI-s ellentmondás-jelzés szó szerinti idézettel (AI nélkül nem ítél), megőrzés |
-| Közösségi média | csak specifikáció; az asztala az irodában üres |
+| Közösségi média Ügynök (`docs/16`, `src/agents/kozossegi/`) | kész, tesztelt: posztjavaslat platformonként (Facebook, LinkedIn, Instagram, X), kommentkezelési útmutató, program által ellenőrzött platform-szabályok, automatikus jogi vélemény és Archívum-összevetés, „Másolás” és „Kiadtam” (→ Archívum „poszt”); jelzés a Monitoringtól, a Kapcsolattartótól (ismétlődő/feszült/vörös vonalas megkeresés + Bejövő-gomb), a Proaktívtól és kézi digitális jelzésből; **a Monitoring közösségi csatornái** (nyilvános RSS/Atom, a szakterületi kulcsszavak szerint) külön közösségi szemlét és igény szerinti jelentést adnak; semmit nem tesz közzé; X/Facebook/Instagram/TikTok közvetlen olvasása nincs |
 
-143 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
+155 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 
@@ -68,14 +68,14 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 
 1. **Levélküldő szolgáltató kiválasztása** (P6): ezzel a jóváhagyott válaszok ténylegesen elmehetnek; addig a kimenő mappába kerülnek. Rövid összehasonlítás kell hozzá (költség, adatkezelés, magyar levelek, küldés az ügyfél saját címéről).
 2. Az éles telepítés előkészítése a tulajdonossal (Cloudflare-fiók, D1, R2, Access, domén; `docs/08` 9. fejezet), az iCloud-híd első valódi próbája (`tools/levelhid/README.md`), AI-kulcs és a besorolás minőségének mérése 30 cikkes kézi ellenőrzéssel (`docs/06`, 2. mérföldkő), kéthetes próba a nulladik ügyféllel.
-3. A bevezetési sorrend három szakasza és a Jogi ügynök elkészült. **Hátra van egy ügynök: a Közösségi média** (terv kész: `docs/16`, jóváhagyásra vár, a 9. fejezet nyolc pontjával; a tulajdonos kérésére a sajtófigyelő jelzésére és a sajtómegkeresésekre is alapoz, nem csak a Jogi és az Archívum ügynökre). A tulajdonos sorrendje: előbb az összes ügynök, utána az éles telepítés, végül a részletek (pl. a levélküldő szolgáltató, a telefon).
+3. **Mind a nyolc ügynök elkészült** (a Közösségi média is, `docs/16`, a Monitoring közösségi szemléjével együtt). A tulajdonos sorrendje: az összes ügynök megvan, **következik az éles telepítés** (Cloudflare-fiók, AI-kulcs, iCloud-híd első próbája, 30 cikkes minőségpróba), végül a részletek (a levélküldő szolgáltató, a telefon).
 4. **A legvégén: telefonhívások ElevenLabs-szal** (a tulajdonos döntése; a megvalósítás előtt eldöntendő szempontok: `docs/11`, 10. fejezet).
 
 ## Hol tartunk, és hol folytassuk (2026-10-30)
 
-**Ott folytatjuk:** a bevezetési sorrend mindhárom szakasza és a Jogi és az Archívum ügynök elkészült és tesztelt. **A tulajdonos sorrendje: előbb az összes ügynök (már csak a Közösségi média hiányzik), utána az éles telepítés (Cloudflare-fiók, AI-kulcs, iCloud-híd első próbája), végül a részletek (a levélküldő szolgáltató kiválasztása, a telefon / ElevenLabs).**
+**Ott folytatjuk:** mind a nyolc ügynök elkészült és tesztelt (utolsóként a Közösségi média, a Monitoring közösségi szemléjével). **A tulajdonos sorrendje: az éles telepítés következik (Cloudflare-fiók, AI-kulcs, iCloud-híd első próbája), végül a részletek (a levélküldő szolgáltató kiválasztása, a telefon / ElevenLabs).**
 
-**A 2026-10-29/30-i munkamenet döntései és eredményei** (mind fel van töltve, a `main` naprakész, 143 teszt zöld):
+**A 2026-10-29/30-i munkamenet döntései és eredményei** (mind fel van töltve, a `main` naprakész, 143 teszt zöld az akkori állapotban; a Közösségi média után 155):
 - Postafiók: nulladik ügyfél iCloud (levélhíddal), Gmail és Exchange beállítható; először csak olvasás és tervezet; külön „Sajtó” mappa; 90 napos levélmegőrzés. Kész: `docs/11`.
 - Felkészítő és Proaktív: űrlapok, kézi naptár, csak átadásra és kérésre fut, napi 10 csomag és 5 javaslat, egy csomag öt szakasszal, a csomagkérést a felület ajánlja fel. Kész: `docs/12`.
 - Eseményszervező: az állapotmenet (koncepció jóváhagyása nélkül semmi nem indul), belső sajtólista (kézi és CSV), meghívó csak a kimenő kapun át és tételes kijelöléssel, korlátok (napi 3 koncepció, 50 meghívótervezet, eseményenként 200 meghívó), javaslat-alapú visszajelzés-követés, a személyes adatok nem mennek az AI-nak. Kész: `docs/13`.
@@ -86,11 +86,11 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 **Az architektúra, amit érdemes tudni (hogy ne kelljen újra felfedezni):**
 - Minden ügynök közös környezete: `src/cloudflare/agentctx.js` (`buildAgentCtx`): napló, asztal, átadások, kimenő kapu, AI, levéltár, dokumentumtár, naptár. Az ütemező, az API és a levélhíd-fogadó is ezt használja. Az **átadás-feldolgozók** (melyik ügynök mit csinál egy neki küldött átadással) is itt vannak, ügyfélenként; a `handoffHandlers` map csak a tesztek felülírására való.
 - Új ügynök: katalógus (`src/api/catalogue.js`, `elerheto: true`) + ügynök-mappa (`src/agents/<id>/`) + feldolgozó az `agentctx.js`-ben + API-végpontok a `src/api/router.js`-ben + asztal a `ui/app.js`-ben (a `viewAsztal` a `munka.tipus` alapján dönt) + prompt(ok) a `monitoring/prompts/`-ban.
-- **Promptok:** a `prompts` objektum kulcsai: `classify`, `synthesize`, `instruct`, `qa`, `docqa`, `keywords`, `letterClassify`, `letterReply`, `briefing`, `proposal`, `eventConcept`, `legal`, `consistency`. Új prompt három helyre kell: `src/worker/index.js` (import), `src/dev/serve.js`, `test/helpers.js` (`readPrompts`). Ha valahol hiányzik, a hívás csendben tartalékra esik, ezért teszt kell hozzá.
-- **Bizalmas anyag:** a `src/api/router.js` `SENSITIVE_TYPES` listája: az itt szereplő anyagtípusokat csak a vezető olvashatja; új, bizalmas anyagtípust ide is fel kell venni.
+- **Promptok:** a `prompts` objektum kulcsai: `classify`, `synthesize`, `instruct`, `qa`, `docqa`, `keywords`, `letterClassify`, `letterReply`, `briefing`, `proposal`, `eventConcept`, `legal`, `consistency`, `social`. Új prompt három helyre kell: `src/worker/index.js` (import), `src/dev/serve.js`, `test/helpers.js` (`readPrompts`). Ha valahol hiányzik, a hívás csendben tartalékra esik, ezért teszt kell hozzá.
+- **Bizalmas anyag:** a `src/api/router.js` `SENSITIVE_TYPES` listája (valasz_tervezet, felkeszito_csomag, megszolalasi_javaslat, esemeny_koncepcio, esemeny_utomunka, jogi_velemeny, poszt_javaslat): az itt szereplő anyagtípusokat csak a vezető olvashatja; új, bizalmas anyagtípust ide is fel kell venni.
 - **Közös védelmek, amelyeket minden új ügynöknek át kell vennie:** napi korlát (a `countSince` mintára), a tartalmat csak a vezető látja (az üzemeltető csak darabszámot), a forrásjelölés-ellenőrzés (`src/agents/common/sources.js`: `stripInvalidRefs`), `[KITÖLTENDŐ]` a nem alátámasztott részre, a „nem küldhető AI-nak” szűrés a dokumentumkeresésnél, a bemenet adat és nem utasítás (zárt műveletlista), minden döntés a naplóba.
-- **Migrációk:** `migrations/0001`–`0008` (init, iroda, átadások, dokumentumok, levelek, proaktív, események, archívum). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
-- **Tesztelés:** `npm test` (143, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre, `test/jogi.test.js` a Jogira, `test/archivum.test.js` az Archívumra; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
+- **Migrációk:** `migrations/0001`–`0009` (init, iroda, átadások, dokumentumok, levelek, proaktív, események, archívum, közösségi). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
+- **Tesztelés:** `npm test` (155, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre, `test/jogi.test.js` a Jogira, `test/archivum.test.js` az Archívumra, `test/kozossegi.test.js` a Közösségi médiára és a Monitoring közösségi csatornáira; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
 - **Felhőmunkamenet apróságai:** a Playwright előre telepített (helyi `npm install playwright` elrontja, nem kell); `tools/levelhid` külön csomag (saját `npm install`); a Playwrightnál a `has-text` kis-nagybetű-független részszövegre illeszt (pl. „Felvétel” a „felvétele” gombra is): pontos illesztéshez `:text-is(...)`.
 
 **Mi nincs még kipróbálva élesben (összefoglalva):** valódi hírforrások, valódi AI-minőség, Cloudflare Worker/D1/Access/R2 élesben, valódi iCloud/Gmail/Exchange, levélküldés, telefon. A részletek a „Korlátok” szakaszban.
@@ -106,6 +106,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - Az **Eseményszervező** AI nélkül vázat ad, a sajtóanyag szövegét nem írja; a meghívó tényleges kiküldése a levélküldő kiválasztására vár; a sajtólista GDPR-ját jogász nézze át. Részletek: `docs/13`, 9. fejezet.
 - A **Jogi ügynök** szabályalapú rétege kulcsszavas és mintaalapú (tévedhet mindkét irányba), az AI-minőség nem mért, és nem jogi tanács: a jogász nem pótolható. Részletek: `docs/14`, 8. fejezet.
 - Az **Archívum** ellentmondás-ellenőrzésének minősége nem mért; az idézet-ellenőrzés a hamis jelzést kiszűri, a kihagyottat nem; a keresés szó alapú. Részletek: `docs/15`, 8. fejezet.
+- A **Közösségi média** AI-s szövegeinek minősége és hangneme nem mért (hamis API-val tesztelt); AI nélkül csak váz. **Az X-et, a Facebookot, az Instagramot és a TikTokot az iroda nem olvassa közvetlenül** (fizetős API kell): a Monitoring közösségi csatornái csak nyilvános RSS/Atom hírcsatornákat (YouTube, Reddit, Mastodon, Bluesky stb.) látnak, a többit a vezető kézi digitális jelzésként viszi fel; valódi csatornákon nem próbáltuk. A hosszkorlátok ajánlott határok; az automatikus indítás küszöbei (3 megkeresés/7 nap, negatív és nagy elérésű jelzés, minden Monitoring-riasztás) kiindulóértékek: az első éles heteken a zajt ellenőrizni kell. Részletek: `docs/16`, 10. fejezet.
 - A **Cloudflare Access** aláírás-ellenőrzése helyben generált kulccsal tesztelt, valódi Access-szel nem.
 - Cloudflare ingyenes csomagján a külső kérések száma (invokációnként) szűk lehet; több hírforrásnál fizetős Workers ajánlott.
 
@@ -121,7 +122,7 @@ git config user.name ClaudeMZ && git config user.email noreply@anthropic.com
 
 # 3. Függőségek és tesztek
 npm install
-npm test                      # 143 teszt, hálózat nélkül
+npm test                      # 155 teszt, hálózat nélkül
 
 # 4. Az iroda kipróbálása a böngészőben (kitalált adatokkal, memóriában)
 npm run iroda                 # http://127.0.0.1:8787/ ;  --uzemelteto: üzemeltetői nézet
@@ -156,7 +157,7 @@ docs/12                   a Felkészítő és a Proaktív ügynök terve és ál
 docs/13                   az Eseményszervező ügynök terve és állapota (kész)
 docs/14                   a Jogi és kockázat ügynök terve és állapota (kész)
 docs/15                   az Archívum ügynök terve és állapota (kész)
-docs/16                   a Közösségi média ügynök terve (jóváhagyásra vár)
+docs/16                   a Közösségi média ügynök terve és állapota (kész)
 agents/*.yaml             ügynökönként egy szerepkör-specifikáció
 src/core/                 közös mag (profil, napló, kimenő kapu, AI- és levélillesztő)
 src/agents/monitoring/    a Monitoring Ügynök

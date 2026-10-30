@@ -30,7 +30,10 @@ import { createOpinion, DAILY_LIMIT as OPINION_LIMIT, MAX_TEXT as OPINION_MAX } 
 import { CATEGORIES as RISK_CATEGORIES, KINDS as RISK_KINDS, LEVELS as RISK_LEVELS } from '../agents/jogi/analysis.js';
 import { createEvent, decideEvent, inviteCandidates, addInvites, sendInvites, setInviteResponse, createPostWork, importContacts, EventError, LIMITS_DAILY as EVENT_DAILY } from '../agents/esemenyszervezo/index.js';
 import { EVENT_FORMATS, LIMITS as EVENT_LIMITS, RESPONSES } from '../cloudflare/esemeny-store.js';
-import { validateMailbox } from '../core/profile.js';
+import { createPost, decidePost, recordPublished, addSignal, DAILY_LIMIT as POST_LIMIT, SIGNAL_LIMIT_DAY } from '../agents/kozossegi/index.js';
+import { PLATFORM_LIMITS } from '../agents/kozossegi/rules.js';
+import { SocialError, POST_STATES, MOODS, REACH } from '../cloudflare/kozossegi-store.js';
+import { validateMailbox, normalizeSocial, SOCIAL_PLATFORMS, SOURCE_PLATFORMS } from '../core/profile.js';
 
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const SECURITY = { 'Content-Security-Policy': CSP, 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' };
@@ -41,11 +44,11 @@ class HttpError extends Error { constructor(status, message) { super(message); t
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...SECURITY, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 
 // Mit szerkeszthet az ügyfél (vezető), és mit csak az üzemeltető.
-const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true, proaktiv: true };
+const VEZETO_EDITABLE = { megnevezes: true, kulcsszavak: true, forrasok: true, vorosvonalak: true, utemezes: ['szemle'], kapcsolattarto: true, proaktiv: true, kozossegi: true };
 const UZEMELTETO_EXTRA = { vezeto: true, nyelv: true, trend: true, megorzes: true, ai_jelzes: true, utemezes: ['szemle', 'idozona'], megjelenes: true, postafiok: true };
 
 // Az ügynökök bizalmas anyagait (levéltervezet, csomag, javaslat, koncepció, jogi vélemény) csak a vezető olvashatja.
-const SENSITIVE_TYPES = new Set(['valasz_tervezet', 'felkeszito_csomag', 'megszolalasi_javaslat', 'esemeny_koncepcio', 'esemeny_utomunka', 'jogi_velemeny']);
+const SENSITIVE_TYPES = new Set(['valasz_tervezet', 'felkeszito_csomag', 'megszolalasi_javaslat', 'esemeny_koncepcio', 'esemeny_utomunka', 'jogi_velemeny', 'poszt_javaslat']);
 const worstLevel = (list) => list.reduce((w, o) => (RISK_LEVELS.indexOf(o.besorolas) > RISK_LEVELS.indexOf(w) ? o.besorolas : w), 'alacsony');
 
 const cleanList = (a) => [...new Set((Array.isArray(a) ? a : []).map(x => String(x).trim()).filter(Boolean))];
@@ -61,6 +64,7 @@ export function applyProfileEdit(profile, patch, role) {
   if (patch.forrasok) {
     for (const g of ['rss', 'sajat']) if (g in patch.forrasok) next.forrasok[g] = (patch.forrasok[g] || []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim() })).filter(s => s.url);
     if ('hirkereso' in patch.forrasok) next.forrasok.hirkereso = cleanList(patch.forrasok.hirkereso);
+    if ('kozossegi' in patch.forrasok) next.forrasok.kozossegi = (Array.isArray(patch.forrasok.kozossegi) ? patch.forrasok.kozossegi : []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim(), platform: String(s.platform || 'egyeb') })).filter(s => s.url);
   }
   if ('vorosvonalak' in patch) next.vorosvonalak = cleanList(patch.vorosvonalak);
   if (patch.utemezes) {
@@ -71,6 +75,7 @@ export function applyProfileEdit(profile, patch, role) {
   if (patch.kapcsolattarto) {
     for (const k of ['alairas', 'hangnem']) if (k in patch.kapcsolattarto) next.kapcsolattarto = { ...next.kapcsolattarto, [k]: String(patch.kapcsolattarto[k] ?? '').trim().slice(0, k === 'alairas' ? 400 : 300) };
   }
+  if (patch.kozossegi) next.kozossegi = normalizeSocial({ ...next.kozossegi, ...patch.kozossegi });
   if (patch.proaktiv && 'szabalyok' in patch.proaktiv) next.proaktiv = { ...next.proaktiv, szabalyok: String(patch.proaktiv.szabalyok ?? '').trim().slice(0, 600) };
   if ('postafiok' in patch) {
     if (patch.postafiok === null) delete next.postafiok;
@@ -202,13 +207,14 @@ async function route(request, env, deps) {
     const letterCounts = await lctx.levelek.counts();
     const openProposals = await lctx.proactive.proposals.openCount();
     const openEvents = await lctx.esemeny.events.openCount();
+    const openPosts = role === 'vezeto' ? await lctx.social.posts.openCount() : 0;
     const openHighRisk = role === 'vezeto' ? (await desk.anyagok.list({ ugynok: 'jogi', limit: 100, withMeta: true })).filter(x => x.meta?.besorolas === 'magas' && !x.olvasott).length : 0;
     for (const a of AGENTS) {
       const last = a.elerheto ? (await desk.anyagok.list({ ugynok: a.id, limit: 1 }))[0] : null;
       const aktiv = a.elerheto && agentActive(profile, a.id, now());
       agents.push({ id: a.id, nev: a.nev, munkanev: a.munkanev, szakasz: a.szakasz, elerheto: a.elerheto,
         allapot: !a.elerheto ? 'ures' : aktiv ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null,
-        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'jogi' ? openHighRisk : a.id === 'esemenyszervezo' ? openEvents : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
+        utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'jogi' ? openHighRisk : a.id === 'esemenyszervezo' ? openEvents : a.id === 'kozossegi' ? openPosts : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
       mod: { elo: config.live, ai: llm.mode }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
@@ -253,6 +259,14 @@ async function route(request, env, deps) {
         munka: { tipus: 'jogi', tartalom_lathato: leader, velemeny_ma: await desk.anyagok.countSince('jogi', 'jogi_velemeny', startOfDayIso(now())), korlat: OPINION_LIMIT, max_szoveg: OPINION_MAX, osszes: all.length, magas_db: all.filter(x => x.meta?.besorolas === 'magas').length,
           kategoriak: RISK_CATEGORIES, fajtak: RISK_KINDS, velemenyek: leader ? sorted.map(x => ({ id: x.id, cim: x.cim, ido: x.ido, olvasott: x.olvasott, besorolas: x.meta?.besorolas, jogasz_javasolt: x.meta?.jogasz_javasolt, talalatok: x.meta?.talalatok, forras_anyag_id: x.meta?.forras_anyag_id, modell: x.meta?.modell })) : [],
           vizsgalhato: leader ? (await desk.anyagok.list({ limit: 60 })).filter(x => x.ugynok !== 'jogi' && SENSITIVE_TYPES.has(x.tipus)).map(x => ({ id: x.id, cim: x.cim, tipus: x.tipus, ido: x.ido })) : [] } });
+    }
+    if (a.id === 'kozossegi') {
+      const leader = role === 'vezeto';
+      const reports = (await desk.anyagok.list({ ugynok: a.id, limit: 30 })).filter(x => x.tipus !== 'poszt_javaslat');
+      return json({ ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null, utasitasok: [], anyagok: reports, atadasok,
+        munka: { tipus: 'kozossegi', tartalom_lathato: leader, javaslat_ma: await lctx.social.posts.countSince(startOfDayIso(now())), korlat: POST_LIMIT, jelzes_ma: await lctx.social.signals.countSince(startOfDayIso(now())), jelzes_korlat: SIGNAL_LIMIT_DAY, nyitott_db: await lctx.social.posts.openCount(),
+          platformok: profile.kozossegi.platformok, minden_platform: SOCIAL_PLATFORMS, hosszkorlatok: PLATFORM_LIMITS, allapotok: POST_STATES, hangulatok: MOODS, elerések: REACH, kozossegi_forras_db: (profile.forrasok.kozossegi || []).length,
+          javaslatok: leader ? await lctx.social.posts.list({ limit: 50 }) : [], jelzesek: leader ? await lctx.social.signals.list({ limit: 30 }) : [] } });
     }
     if (a.id === 'esemenyszervezo') {
       const leader = role === 'vezeto';
@@ -474,7 +488,8 @@ async function route(request, env, deps) {
       const arcMeta = anyag?.meta || {};
       const korabbi = await lctx.archivum.related(`${letter.targy} ${letter.besorolas?.tema || ''}`, { limit: 5 });
       const jogiOps = letter.anyag_id ? await desk.anyagok.opinionsFor(letter.anyag_id) : [];
-      return json({ archivum: { korabbi, ellentmondasok: arcMeta.ellentmondasok || [], ellenorizve: !!arcMeta.ellenorizve, megjegyzes: arcMeta.ellenorzes_megjegyzes || null }, jogi: jogiOps.length ? { besorolas: worstLevel(jogiOps), anyag_id: jogiOps[0].id, jogasz_javasolt: jogiOps.some(o => o.jogasz_javasolt) } : null, level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
+      const posztJavaslat = await lctx.social.posts.byLetter(letter.id);
+      return json({ kozossegi: posztJavaslat ? { id: posztJavaslat.id, allapot: posztJavaslat.allapot } : null, archivum: { korabbi, ellentmondasok: arcMeta.ellentmondasok || [], ellenorizve: !!arcMeta.ellenorizve, megjegyzes: arcMeta.ellenorzes_megjegyzes || null }, jogi: jogiOps.length ? { besorolas: worstLevel(jogiOps), anyag_id: jogiOps[0].id, jogasz_javasolt: jogiOps.some(o => o.jogasz_javasolt) } : null, level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
     }
     if ((m = p.match(/^\/api\/levelek\/([^/]+)\/dontes$/)) && method === 'POST') {
       const b = await body();
@@ -600,6 +615,62 @@ async function route(request, env, deps) {
     throw new HttpError(404, 'Nem található.');
   }
 
+  // ---- Közösségi média: posztjavaslatok, döntés, „Kiadtam”, digitális jelzések, jelentés (a tartalmat csak a vezető látja és kezeli)
+  if (p.startsWith('/api/kozossegi')) {
+    if (role !== 'vezeto') throw new HttpError(403, 'Ezt csak a vezető kezelheti.');
+    const S = lctx.social;
+    const socErr = (e) => { if (e instanceof AgentError || e instanceof SocialError) throw new HttpError(e.status, e.message); throw e; };
+    try {
+      if (method === 'GET' && p === '/api/kozossegi/javaslatok') return json({ javaslatok: await S.posts.list({ allapot: url.searchParams.get('allapot') || null, limit: 100 }), allapotok: POST_STATES });
+      if (method === 'POST' && p === '/api/kozossegi/javaslat') {
+        const b = await body();
+        let tema = String(b.tema || '').trim(), jelzes = String(b.jelzes || '');
+        let levelId = null, jelzesId = null;
+        if (b.level_id) {
+          const letter = await lctx.levelek.get(String(b.level_id));
+          if (!letter) throw new HttpError(404, 'Nincs ilyen levél.');
+          levelId = letter.id; tema ||= letter.besorolas?.tema || letter.targy;
+          jelzes ||= `Sajtómegkeresés alapján (típus: ${letter.besorolas?.tipus || 'ismeretlen'}, hangnem: ${letter.besorolas?.hangnem || 'ismeretlen'}). A levélíró adata nem kerülhet a nyilvános szövegbe.`;
+        }
+        if (b.jelzes_id) { const s = await S.signals.get(String(b.jelzes_id)); if (!s) throw new HttpError(404, 'Nincs ilyen digitális jelzés.'); jelzesId = s.id; tema ||= s.osszefoglalo.slice(0, 120); }
+        const r = await createPost(lctx, { tema, jelzes, levelId, jelzesId, platformok: Array.isArray(b.platformok) ? b.platformok : null, by: actor });
+        return json(r, 201);
+      }
+      if ((m = p.match(/^\/api\/kozossegi\/javaslatok\/([^/]+)\/dontes$/)) && method === 'POST') {
+        const b = await body();
+        const r = await decidePost(lctx, decodeURIComponent(m[1]), { dontes: b.dontes, jogiTudomasul: b.jogi_tudomasul === true, by: actor });
+        if (r.status !== 200) throw new HttpError(r.status, r.hiba);
+        return json({ allapot: r.allapot });
+      }
+      if ((m = p.match(/^\/api\/kozossegi\/javaslatok\/([^/]+)\/kiadva$/)) && method === 'POST') {
+        const b = await body();
+        const r = await recordPublished(lctx, decodeURIComponent(m[1]), { platform: b.platform, datum: b.datum || null, szoveg: b.szoveg || null, by: actor });
+        if (r.status !== 200) throw new HttpError(r.status, r.hiba);
+        return json({ ok: true, archivum_id: r.archivum_id });
+      }
+      if (method === 'GET' && p === '/api/kozossegi/jelzesek') return json({ jelzesek: await S.signals.list({ limit: 100 }) });
+      if (method === 'POST' && p === '/api/kozossegi/jelzesek') {
+        const b = await body();
+        const r = await addSignal(lctx, { platform: b.platform, osszefoglalo: b.osszefoglalo, hangulat: b.hangulat, elereles: b.elereles, url: b.url || null, by: actor });
+        return json(r, 201);
+      }
+      if ((m = p.match(/^\/api\/kozossegi\/jelzesek\/([^/]+)$/)) && method === 'DELETE') {
+        if (!(await S.signals.remove(decodeURIComponent(m[1])))) throw new HttpError(404, 'Nincs ilyen digitális jelzés.');
+        await log.append({ szereplo: actor, tipus: 'javaslat', hivatkozas: decodeURIComponent(m[1]), tartalom: { fajta: 'digitalis_jelzes_torolve' } });
+        return json({ ok: true });
+      }
+      // Igény szerinti jelentés a Monitoring közösségi csatornákról gyűjtött bejegyzéseiből (olvasó művelet).
+      if (method === 'POST' && p === '/api/kozossegi/jelentes') {
+        const b = await body();
+        const napok = Math.min(Math.max(Number(b.napok) || 7, 1), 90);
+        const report = await buildReport({ tema: String(b.tema || '').trim() || null, napok, articles: await store.load(), profile, llm, prompts, now: now(), csatorna: 'kozossegi' });
+        const anyagId = await desk.anyagok.add({ ugynok: 'kozossegi', tipus: 'kozossegi_jelentes', cim: report.cim, szoveg: report.text, html: report.html, meta: report.meta });
+        return json({ anyag_id: anyagId, cim: report.cim, darab: report.darab, megjegyzes: (profile.forrasok.kozossegi || []).length ? null : 'Nincs beállítva közösségi forrás (Beállítások → Források), ezért nincs miből jelentést készíteni.' }, 201);
+      }
+    } catch (e) { socErr(e); }
+    throw new HttpError(404, 'Nem található.');
+  }
+
   // ---- Eseményszervező: események, sajtólista, meghívók, ellenőrzőlista, utómunka (a tartalmat csak a vezető látja és kezeli)
   if (p.startsWith('/api/esemenyek') || p.startsWith('/api/sajtolista') || p.startsWith('/api/meghivok')) {
     if (role !== 'vezeto') throw new HttpError(403, 'Ezt csak a vezető kezelheti.');
@@ -709,8 +780,8 @@ async function route(request, env, deps) {
 
   // ---- Beállítások
   if (method === 'GET' && p === '/api/profil') {
-    const { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok, proaktiv } = profile;
-    return json({ szerep: role, profil: { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, proaktiv, postafiok: postafiok || null }, szerkesztheto_vezeto: Object.keys(VEZETO_EDITABLE), verzio: current.version });
+    const { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, postafiok, proaktiv, kozossegi } = profile;
+    return json({ szerep: role, profil: { ugyfel_id, megnevezes, nyelv, vezeto, kulcsszavak, forrasok, vorosvonalak, utemezes, ai_jelzes, kapcsolattarto, proaktiv, kozossegi, platformok: SOCIAL_PLATFORMS, forras_platformok: SOURCE_PLATFORMS, postafiok: postafiok || null }, szerkesztheto_vezeto: Object.keys(VEZETO_EDITABLE), verzio: current.version });
   }
   if (method === 'PUT' && p === '/api/profil') {
     const next = applyProfileEdit(profile, await body(), role);

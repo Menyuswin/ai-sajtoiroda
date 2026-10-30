@@ -1,6 +1,6 @@
 # A Közösségimédia- és Digitális Narratíva ügynök terve
 
-*Állapot: **terv, jóváhagyásra vár** (2026-10-30). Az utolsó ügynök (`agents/07-kozossegi-media.yaml`). A tulajdonos kérése: **ne csak a Jogi és az Archívum ügynökre támaszkodjon**: kapjon jelzést a sajtófigyelőtől (Monitoring), és alapozzon a **sajtómegkeresésekre** is, mert egy megkeresésre adott közvetlen, rövid válasz mellett gyakran érdemes a közösségi médiában is magyarázni és kezelni a témát.*
+*Állapot: **kész, tesztelt** (2026-10-30; a terv jóváhagyva, lásd a 10. fejezetet). Az utolsó ügynök (`agents/07-kozossegi-media.yaml`). A tulajdonos kérése: **ne csak a Jogi és az Archívum ügynökre támaszkodjon**: kapjon jelzést a sajtófigyelőtől (Monitoring), és alapozzon a **sajtómegkeresésekre** is, mert egy megkeresésre adott közvetlen, rövid válasz mellett gyakran érdemes a közösségi médiában is magyarázni és kezelni a témát.*
 
 ## 1. A cél, egy példával
 
@@ -82,3 +82,29 @@ Egy **posztjavaslat** (egy anyag), amely tartalmazza:
 6. **A digitális jelzéseket kézzel viszi fel** (az ügynök nem olvas platformokat); a platform-figyelés (API) későbbi, külön döntés? (Ajánlott.)
 7. **Korlátok:** napi 10 javaslat, 30 digitális jelzés?
 8. **Az első platformok:** Facebook, LinkedIn, Instagram és X, ügyfelenként kapcsolható?
+
+## 10. Mi készült el (2026-10-30)
+
+**A jóváhagyott terv mind a nyolc pontja megvalósult** (K1–K5), és a tulajdonos kiegészítése is: **K6, a sajtófigyelő (Monitoring) közösségi szemléje és jelentése** a megadott szakterületek (kulcsszavak) alapján.
+
+### K1–K5 (az ügynök)
+- **Adatmodell:** `migrations/0009_kozossegi.sql` (`poszt_javaslatok`, `digitalis_jelzesek`), tár: `src/cloudflare/kozossegi-store.js`. A javaslat állapotai: tervezet / jóváhagyva / kiadva / elvetve / később / megfigyelendő (csak megjegyzés, szöveg nélkül).
+- **Beállítások** (`profil.kozossegi`, a vezető és az üzemeltető is szerkesztheti): platformok (Facebook, LinkedIn, Instagram, X; ügyfelenként), hangnem, tiltott témák, szokásos hashtagek, emoji.
+- **Platform-szabályok** (`src/agents/kozossegi/rules.js`, a PROGRAM ellenőrzi): @megemlítés törlése, forrásjelölés kiszedése a nyilvános szövegből, legfeljebb 5 hashtag, hosszkorlát (X 280, Facebook 2000, Instagram 2200, LinkedIn 3000: jelzi, nem csonkít), emoji törlése, ha a profil nem engedi; **a megkereső neve, e-mail-címe, médiuma (a címtartományból; freemail nem számít) blokkol**, a `[KITÖLTENDŐ]` is.
+- **Javaslat** (`src/agents/kozossegi/index.js`, prompt: `monitoring/prompts/kozossegi-poszt.md`, kulcs: `social`): helyzet, platformonkénti változatok, magyarázó szál, kommentkezelési útmutató (várható hozzászólások válaszmintával, mikor ne válaszoljunk, mikor vonjuk be a vezetőt, moderálás), időzítés (a program számolja a naptárból), alternatívák (a „nem posztolunk” és a „csak a megkeresésekre válaszolunk” mindig jelen van). AI nélkül váz (`[KITÖLTENDŐ]`, nem hagyható jóvá).
+- **Védelmek:** automatikus jogi vélemény (`poszt` fajta; magasnál tudomásvétel kell), Archívum-összevetés (korábbi közlések, AI-val szó szerinti idézetes ellentmondás-jelzés), tiltott téma → csak „megfigyelendő” megjegyzés, azonos téma 3 napon belül → kiegészítés (nem új javaslat), napi 10 javaslat és 30 digitális jelzés, `poszt_javaslat` bizalmas anyag (csak a vezető látja).
+- **Semmi nem kerül közzé az ügynöktől:** a vezető a felületen **másolja** a szöveget és maga teszi ki; a **„Kiadtam”** gombbal platformonként rögzíti (a ténylegesen kitett szöveg is megadható), és ez **„poszt” fajtájú közlésként az Archívumba kerül**.
+- **Jelzés-források:** Monitoring (vörös vonal, felerősödő téma → átadás), Kapcsolattartó (vörös vonal, panasz, feszült hangnem, vagy ≥3 azonos témájú megkeresés 7 napon belül → átadás; plusz a Bejövő „Közösségi támogatás kérése” gombja; a levélíró adata nem kerülhet a szövegbe, és figyelmeztet, ha a közvetlen válasz még nincs jóváhagyva), Proaktív („poszt” formájú elfogadott javaslat → kérelem), digitális jelzés (kézi; negatív ÉS nagy elérés → javaslat, negatív VAGY nagy elérés → megfigyelendő, egyéb → csak naplózott). Az Eseményszervezőtől átadás fogadható (a feldolgozó általános), de **automatikus indító nincs** és külön gomb sincs hozzá.
+- **Felület:** a Közösségi média asztala (javaslatok, javaslat kérése, digitális jelzés, szemle és jelentés), a javaslat nézete (platformváltozatok Másolás gombbal és karakterszámlálóval, kommentkezelés, jogi és archívum-jelvények, döntés, Kiadtam), a Bejövő gombja, az iroda-kártya jelzése, a Beállítások „Közösségi média” kártyája.
+
+### K6 (a Monitoring közösségi csatornái)
+- A profilban **`forrasok.kozossegi`**: `{ nev, url (https), platform }`, legfeljebb 20; a platform: YouTube, Reddit, Mastodon, Bluesky, Facebook, LinkedIn, Instagram, X, TikTok, Egyéb (a címke). A gyűjtés a meglévő RSS/Atom-értelmezővel megy, a bejegyzések `csatorna: 'kozossegi'` jelölést kapnak, és **ugyanazokon a szakterületi kulcsszavakon** szűrődnek (`kulcsszavak.*`).
+- **Külön szemle:** a sajtószemle nem tartalmazza őket (a trendjüket és az újságcikkekét külön számolja); a napi futás **„Közösségi szemlét”** készít (anyagtípus `kozossegi_szemle`, a Közösségi média asztalán; csatornánkénti darabszámmal), a vezetőnek szóló sajtószemle végén egyetlen utalás áll rá.
+- **Riasztás:** vörös vonalba eső közösségi bejegyzés és a közösségi csatornákon felerősödő téma külön kulccsal riaszt; **minden Monitoring-jelzés a Proaktívhoz és a Közösségi médiához is átadásként megy**.
+- **Igény szerinti közösségi jelentés** (`POST /api/kozossegi/jelentes`, a Közösségi asztalról): csak a közösségi csatornák bejegyzéseiből, a sajtójelentés viszont nem tartalmazza őket.
+- **Őszinte korlát:** az X-et, a Facebookot, az Instagramot és a TikTokot az iroda **közvetlenül nem olvassa** (fizetős API-hozzáférést kérnek, ez külön döntés lenne). Csak azt látja, amit nyilvános RSS/Atom csatorna közöl (YouTube, Reddit, Mastodon, Bluesky, vagy olyan szolgáltatás, amely RSS-t állít elő). Ami ezen kívül van, azt a vezető kézzel vigye fel digitális jelzésként. A hírcsatornák valós kipróbálása (elérhetőség, felhasználási feltételek) az éles telepítéskor teendő.
+
+### Tesztek és korlátok
+- `test/kozossegi.test.js` (12 teszt): platformszabályok, megkereső kiszűrése, AI-válasz ellenőrzése, váz és bizalmasság, korlátok és tiltott téma, AI-s javaslat és Kiadtam → Archívum, jogi tudomásulvétel, ismétlődő megkeresés (3/7 nap, 3 napos kiegészítés), Proaktív-kérelem, digitális jelzés, Monitoring közösségi szemle és jelentés. Böngészős kipróbálás: `test/e2e/iroda.e2e.mjs` (30–31. képernyőkép).
+- **Nem mért:** az AI által írt szövegek minősége és hangneme (hamis API-val tesztelt); a jogi és az archívum-ellenőrzés korlátai a docs/14, docs/15 szerintiek. A hosszkorlátok ajánlott határok, nem a platformok pontos szabályai. Az automatikus indítás küszöbei (3 megkeresés/7 nap stb.) kiindulóértékek, a tapasztalat alapján igazítandók. A Monitoring-jelzés minden esetben javaslatot indít (napi 10-es korláttal), ezért a zaj mértékét az első éles heteken ellenőrizni kell.
+- A Jogi napi korlátját (10) az automatikus vélemények is fogyasztják; ha ez szűk, a korlát emelhető (`DAILY_LIMIT` a `src/agents/jogi/index.js`-ben).

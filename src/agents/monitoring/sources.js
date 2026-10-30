@@ -41,7 +41,7 @@ export function articleId(url) {
   return createHash('sha1').update(canonicalUrl(url)).digest('hex').slice(0, 16);
 }
 
-export function parseFeed(xml, medium, fetchedAt) {
+export function parseFeed(xml, medium, fetchedAt, extra = {}) {
   const out = [];
   const blocks = xml.match(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi) || [];
   for (const b of blocks) {
@@ -64,6 +64,7 @@ export function parseFeed(xml, medium, fetchedAt) {
       medium,
       published: Number.isNaN(t) ? null : new Date(t).toISOString(),
       fetchedAt,
+      ...extra,
     });
   }
   return out;
@@ -89,12 +90,14 @@ export async function collectArticles(profile, { fetchText = defaultFetchText, n
     ...profile.forrasok.rss.map(s => ({ medium: s.nev || s.url, url: s.url })),
     ...profile.forrasok.sajat.map(s => ({ medium: s.nev || s.url, url: s.url })),
     ...profile.forrasok.hirkereso.map(q => ({ medium: 'Hírkereső', url: newsSearchUrl(q, profile.nyelv) })),
+    // Közösségi csatorna: nyilvános hírcsatornák (YouTube, Reddit, Mastodon, Bluesky stb.); a bejegyzések `csatorna: 'kozossegi'` jelölést kapnak.
+    ...(profile.forrasok.kozossegi || []).map(s => ({ medium: s.nev || s.url, url: s.url, extra: { csatorna: 'kozossegi', platform: s.platform || 'egyeb' } })),
   ];
   const articles = [];
   const errors = [];
   await Promise.all(jobs.map(async (j) => {
     try {
-      const items = parseFeed(await fetchText(j.url), j.medium, fetchedAt);
+      const items = parseFeed(await fetchText(j.url), j.medium, fetchedAt, j.extra || {});
       if (!items.length) throw new Error('nincs cikk a csatornában');
       articles.push(...items);
     } catch (e) {

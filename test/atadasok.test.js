@@ -158,8 +158,9 @@ test('a Monitoring riasztásából átadás születik; a megérkezett Proaktív 
   const o = await office();
   const list = (await o.call('GET', '/api/atadasok')).data.atadasok;
   assert.ok(list.length >= 1);
-  const h = list[0];
+  const h = list.find(x => x.hova === 'proaktiv');
   assert.deepEqual([h.honnan, h.hova, h.tipus, h.allapot], ['monitoring', 'proaktiv', 'jelzes', 'feldolgozva']);
+  assert.ok(list.some(x => x.hova === 'kozossegi' && x.honnan === 'monitoring' && x.allapot === 'feldolgozva')); // ugyanaz a jelzés a Közösségi médiához is megy
   assert.ok(h.anyag_id); // a riasztás anyagára hivatkozik
   const iroda = (await o.call('GET', '/api/iroda')).data.ugynokok;
   assert.equal(iroda.find(a => a.id === 'proaktiv').atadas_varakozik, 0);

@@ -78,7 +78,7 @@ await page.keyboard.press('Escape');
 await page.click('nav >> text=Beállítások');
 await page.waitForSelector('#f-nev');
 log('témák a beállításban:', (await page.locator('.mezo:has-text("Témák") .cimke').allInnerTexts()).map(s => s.replace(/\s*×$/, '')).join(', '));
-await page.locator('.mezo:has-text("Témák") input').fill('oltás'); await page.keyboard.press('Enter');
+await page.locator('input[aria-label="Témák"]').fill('oltás'); await page.keyboard.press('Enter');
 await page.click('text=Mentés'); await page.waitForSelector('.toast.latszik');
 log('mentés:', await page.locator('#toast').innerText());
 log('címzett szerkeszthető:', !(await page.locator('#f-email').getAttribute('readonly') !== null));
@@ -97,9 +97,9 @@ log('iroda jelzés a Proaktív kártyán:', await page.locator('.asztal[data-id=
 await page.click('nav >> text=Átadások'); await page.waitForSelector('.lista li');
 log('átadások száma:', await page.locator('.lista li').count(), '|', (await page.locator('.lista li').first().innerText()).replace(/\n/g, ' / ').slice(0, 160));
 await shot('10-atadasok');
-await page.goto(BASE + '#/asztal/kozossegi'); await page.waitForSelector('text=Ennél az asztalnál még nem ül senki');
-log('üres asztal:', (await page.locator('.kartya').first().innerText()).slice(0, 60));
-await shot('11-ures-asztal-atadassal');
+await page.goto(BASE + '#/asztal/kozossegi'); await page.waitForSelector('#kp-tema');
+log('Közösségi asztal: a Monitoring jelzése posztjavaslatot indított:', await page.locator('.sav:has(h2:text-is("Javaslatok")) li').count(), '| átadások:', await page.locator('.sav:has(h2:has-text("Átadások")) li').count());
+await shot('11-kozossegi-asztal-atadassal');
 
 // dokumentumtár: feltöltés (jó és hamis fájl), kérdés, keresés, megnyitás, kulcsszójavaslat jóváhagyása, törlés
 page.on('dialog', d => d.accept());
@@ -256,6 +256,26 @@ await page.goto(BASE + '#/bejovo'); await page.waitForSelector('.level-lista li'
 await page.locator('.level-lista li', { hasText: 'várólisták' }).click(); await page.waitForSelector('h3:has-text("Korábbi közlések erről")');
 log('Bejövő korábbi közlések:', await page.locator('h3:has-text("Korábbi közlések erről") + ul li').count(), '|', (await page.locator('h3:has-text("Korábbi közlések erről") ~ p.sugo').first().innerText()).slice(0, 70));
 await shot('29-bejovo-archivum');
+
+// Közösségi média: javaslat kérése, digitális jelzés, javaslat nézete (másolás, kommentkezelés, döntés), Bejövő-gomb
+await page.goto(BASE + '#/asztal/kozossegi'); await page.waitForSelector('#kp-tema');
+log('Közösségi asztal sávjai:', (await page.locator('.harom h2').allInnerTexts()).join(', '));
+await page.fill('#kp-tema', 'A műtéti várólista alakulása'); await page.fill('#kp-jelzes', 'Több újságíró is kérdezett.'); await page.click('button:text-is("Javaslat készítése")');
+await page.waitForSelector('h3:has-text("Kommentkezelési útmutató")');
+log('javaslat nézet:', (await page.locator('.kartya h3').allInnerTexts()).join(' | '));
+log('platformváltozatok:', await page.locator('.kartya:has(button:text-is("Másolás")) h3').allInnerTexts());
+await shot('30-kozossegi-javaslat');
+const beforeApprove = problems.length;
+await page.click('button:text-is("Elfogadom")'); await page.waitForSelector('.jelveny.figy[role=alert]');
+problems.splice(beforeApprove); // a kitöltendő rész miatti szándékos 422 várt válasz
+log('elfogadás kitöltendő résszel:', (await page.locator('.jelveny.figy[role=alert]').first().innerText()).slice(0, 80));
+await page.goto(BASE + '#/asztal/kozossegi'); await page.waitForSelector('#dj-ossz');
+await page.fill('#dj-ossz', 'Terjedő Facebook-bejegyzés a kórház bezárásáról'); await page.selectOption('#dj-hang', 'negativ'); await page.selectOption('#dj-eler', 'nagy'); await page.click('button:text-is("Jelzés rögzítése")');
+await page.waitForSelector('.jelveny.jo:has-text("van hozzá bejegyzés")');
+await shot('31-kozossegi-asztal');
+await page.goto(BASE + '#/bejovo'); await page.waitForSelector('.level-lista li');
+await page.locator('.level-lista li', { hasText: 'várólisták' }).click(); await page.waitForSelector('button:text-is("Közösségi támogatás kérése")');
+log('Bejövő: Közösségi támogatás kérése gomb látszik');
 
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');

@@ -10,6 +10,7 @@ import { computeTrends } from './trend.js';
 import { buildStats, orderItems, synthesize, renderDigest } from './digest.js';
 import { agentActive } from '../../core/profile.js';
 import { dayKey, escapeHtml } from '../../core/text.js';
+import { isSocial, buildSocialDigest } from './social.js';
 
 const AGENT = 'monitoring';
 const WHO = `ugynok:${AGENT}`;
@@ -49,16 +50,26 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   await store.save(all);
 
   // 3. trend és riasztások (azonos jelzés ugyanazon a napon csak egyszer megy ki)
-  const trends = computeTrends({ articles: all, profile, now: now() });
+  // A sajtó és a közösségi csatornák külön számolódnak: a közösségi bejegyzések nem torzítják a sajtó trendjét.
+  const pressAll = all.filter(a => !isSocial(a));
+  const socialAll = all.filter(isSocial);
+  const trends = computeTrends({ articles: pressAll, profile, now: now() });
+  const socialTrends = socialAll.length ? computeTrends({ articles: socialAll, profile, now: now() }) : [];
   const sentAlerts = new Set((await log.query({ tipus: 'riasztas_elkuldve' })).map(e => e.hivatkozas));
   const alerts = [];
   for (const a of classified.filter(x => x.cls.voros_vonal)) {
     const key = `voros:${a.id}`;
-    if (!sentAlerts.has(key)) alerts.push({ key, targy: 'Vörös vonalba eső cikk', line: `Vörös vonalba eső cikk: ${a.title} (${a.medium}) – ${a.url}` });
+    if (!sentAlerts.has(key)) alerts.push(isSocial(a)
+      ? { key, targy: 'Vörös vonalba eső közösségi bejegyzés', line: `Vörös vonalba eső közösségi bejegyzés: ${a.title} (${a.medium}) – ${a.url}` }
+      : { key, targy: 'Vörös vonalba eső cikk', line: `Vörös vonalba eső cikk: ${a.title} (${a.medium}) – ${a.url}` });
   }
   for (const t of trends.filter(x => x.signal)) {
     const key = `trend:${t.term}:${t.day}`;
     if (!sentAlerts.has(key)) alerts.push({ key, targy: `Felerősödő téma: ${t.term}`, line: `Hirtelen felerősödő téma: „${t.term}” – ma ${t.today} említés, az előző napok átlaga ${t.mean}.` });
+  }
+  for (const t of socialTrends.filter(x => x.signal)) {
+    const key = `trend-kozossegi:${t.term}:${t.day}`;
+    if (!sentAlerts.has(key)) alerts.push({ key, targy: `Felerősödő téma a közösségi csatornákon: ${t.term}`, line: `Hirtelen felerősödő téma a közösségi csatornákon: „${t.term}” – ma ${t.today} említés, az előző napok átlaga ${t.mean}.` });
   }
   if (alerts.length) {
     const subject = `Riasztás – ${profile.megnevezes}`;
@@ -71,6 +82,8 @@ export async function run(ctx, { mode = 'digest' } = {}) {
       await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: a.key, tartalom: { sor: a.line } });
       // Belső átadás a Proaktív asztalnak: a megszólalási javaslat alapja. Kifelé nem megy semmi.
       await ctx.atadasok?.send({ from: AGENT, to: 'proaktiv', tipus: 'jelzes', targy: a.targy, szoveg: a.line, anyagId: alertMaterialId || null });
+      // Ugyanez a jelzés a Közösségi média asztalához is eljut (a közösségi tér magyarázata, kezelése).
+      await ctx.atadasok?.send({ from: AGENT, to: 'kozossegi', tipus: 'jelzes', targy: a.targy, szoveg: a.line, anyagId: alertMaterialId || null });
     }
   }
 
@@ -81,7 +94,7 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   }
 
   // 4. napi szemle: minden eddig nem jelentett releváns cikk
-  const unreported = all.filter(a => !a.reportedAt);
+  const unreported = pressAll.filter(a => !a.reportedAt);
   const items = orderItems(unreported);
   const stats = buildStats(items);
   let synth;
@@ -94,14 +107,15 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   for (const d of synth.dropped) await log.append({ szereplo: WHO, tipus: 'hiba', tartalom: { hiba: 'ellenőrizhetetlen narratíva elvetve', szoveg: d } });
 
   const dateLabel = dayKey(now(), profile.utemezes.idozona);
-  const rendered = renderDigest({ profile, dateLabel, items, stats, trends, synthesis: synth.synthesis, errors });
+  const social = await buildSocialDigest({ ctx, socialAll, socialTrends, dateLabel, errors });
+  const rendered = renderDigest({ profile, dateLabel, items, stats, trends, synthesis: synth.synthesis, errors, extra: social ? `A közösségi csatornákról külön szemle készült (${social.darab} bejegyzés): a Közösségi média asztalán olvasható.` : null });
   const subject = `Sajtószemle – ${profile.megnevezes} – ${dateLabel}`;
   const sent = await outbox.send({ agent: AGENT, kind: 'belso_jelentes', to: profile.vezeto.email, subject, text: rendered.text, html: rendered.html });
   await ctx.anyagok?.add({ ugynok: AGENT, tipus: 'szemle', cim: subject, szoveg: rendered.text, html: rendered.html, meta: { cikkek: items.map(a => ({ n: a.n, id: a.id, title: a.title, url: a.url, medium: a.medium, hangnem: a.cls.hangnem, indoklas: a.cls.indoklas })) } });
   const stamp = now().toISOString();
   await store.save(all.map(a => (a.reportedAt ? a : { ...a, reportedAt: stamp })));
   await log.append({ szereplo: WHO, tipus: 'szemle_elkuldve', hivatkozas: sent.id, tartalom: { cikkek: items.length, trendjelzesek: trends.filter(t => t.signal).length, ai_mod: llm.mode } });
-  Object.assign(result, { digest: true, articles: items.length });
+  Object.assign(result, { digest: true, articles: items.length, kozossegi: social ? social.darab : 0 });
   await log.append({ szereplo: WHO, tipus: 'futas', tartalom: { mode, ...result } });
   return result;
 }

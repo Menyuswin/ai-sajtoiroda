@@ -86,3 +86,4 @@ A Make Free csomagja (2 forgatókönyv, havi 1000 művelet) mind a két helyét 
 2. Regisztrálás a `src/cli.js`-ben (`registerAgent(...)`).
 3. Az ügynök spec (`agents/NN-….yaml`) a kiindulás; a promptjai a `monitoring/prompts/` mintájára külön fájlokban éljenek.
 4. Ami kifelé szólna, azt **mindig** az `outbox`-on át, `approval` nélkül ugyanis elutasítja a kapu.
+5. Az irodába kötéshez: katalógus (`src/api/catalogue.js`, `elerheto: true`), átadás-feldolgozó az `agentctx.js`-ben, API-végpontok a `router.js`-ben, asztal a `ui/app.js`-ben, prompt három helyre (`src/worker/index.js`, `src/dev/serve.js`, `test/helpers.js`), bizalmas anyagtípus a `SENSITIVE_TYPES`-ba. Példa a teljes láncra: a Közösségi média ügynök (`docs/16`, `src/agents/kozossegi/`).

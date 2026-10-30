@@ -65,8 +65,9 @@ test('az AI nem csökkentheti a besorolást, de emelhet; a hibázó AI nem áll�
 async function setup({ env: extraEnv = {} } = {}) {
   const db = createD1Shim();
   const repo = createD1ProfileRepo({ db, now: () => NOW });
-  await repo.put(profile, { by: 'rendszer' });
-  await repo.put({ ...profile, ugyfel_id: 'masik-kft', megnevezes: 'Másik Kft.' }, { by: 'rendszer' });
+  // A Közösségi média automatikus vélemény-kérése a napi korlátot fogyasztaná; a Jogi tesztek ezt kizárják (külön teszt: kozossegi.test.js).
+  await repo.put({ ...profile, ugynokok: { ...profile.ugynokok, kozossegi: { aktiv: false } } }, { by: 'rendszer' });
+  await repo.put({ ...profile, ugyfel_id: 'masik-kft', megnevezes: 'Másik Kft.', ugynokok: { ...profile.ugynokok, kozossegi: { aktiv: false } } }, { by: 'rendszer' });
   const access = createAccessRepo({ db });
   await access.grant(LEADER, T, 'vezeto'); await access.grant('zoltan@uzemelteto.example', T, 'uzemelteto'); await access.grant('masik@masik.example', 'masik-kft', 'vezeto');
   const prompts = await readPrompts();

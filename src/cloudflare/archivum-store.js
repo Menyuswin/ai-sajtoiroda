@@ -5,7 +5,7 @@ import { norm } from '../core/text.js';
 let seq = 0;
 const newId = (now) => `${now().toISOString()}-${String(++seq % 1000000).padStart(6, '0')}-${crypto.randomUUID().slice(0, 6)}`;
 
-export const ARCHIVE_KINDS = { valasz: 'Válasz levélre', meghivo: 'Meghívó', nyilatkozat: 'Nyilatkozat', interju: 'Interjú', sajtokozlemeny: 'Sajtóközlemény', egyeb: 'Egyéb' };
+export const ARCHIVE_KINDS = { valasz: 'Válasz levélre', meghivo: 'Meghívó', nyilatkozat: 'Nyilatkozat', interju: 'Interjú', sajtokozlemeny: 'Sajtóközlemény', poszt: 'Közösségi poszt', egyeb: 'Egyéb' };
 export const ARCHIVE_LIMIT = 5000;
 export const MAX_STATEMENT = 20000;
 export class ArchiveError extends Error { constructor(status, message) { super(message); this.status = status; } }

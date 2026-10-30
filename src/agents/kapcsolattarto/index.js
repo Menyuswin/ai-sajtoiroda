@@ -8,6 +8,7 @@ import { agentActive } from '../../core/profile.js';
 import { escapeHtml } from '../../core/text.js';
 import { noteResponse } from '../esemenyszervezo/index.js';
 import { recordStatement, checkConsistency } from '../archivum/index.js';
+import { offerFromLetter } from '../kozossegi/index.js';
 
 export const AGENT = 'kapcsolattarto';
 const WHO = `ugynok:${AGENT}`;
@@ -49,6 +50,9 @@ export async function processLetter(ctx, id) {
   await levelek.setProcessed(id, { besorolas: cls, anyagId: anyagId || null, allapot: 'tervezet_kesz' });
   await log.append({ szereplo: WHO, tipus: 'valasz_tervezet', hivatkozas: id, tartalom: { anyag_id: anyagId, modell: draft.modell, forrasok: draft.forrasok.length, kockazatok: draft.kockazatok.length } });
 
+  // A közösségi magyarázat lehetősége: szigorú feltétellel (vörös vonal, panasz, feszült hangnem, ismétlődő téma) átadás a Közösségi média asztalnak.
+  try { await offerFromLetter(ctx, letter, cls, anyagId); }
+  catch (e) { await log.append({ szereplo: WHO, tipus: 'hiba', hivatkozas: id, tartalom: { hiba: `közösségi átadás nem sikerült: ${e.message}` } }); }
   await noteResponse(ctx, letter); // ha a feladó meghívott egy nyitott eseményre, a válasz-javaslat az esemény meghívói közt is megjelenik
   if (cls.voros_vonal) {
     const subject = `Riasztás – vörös vonalba eső megkeresés – ${profile.megnevezes}`;

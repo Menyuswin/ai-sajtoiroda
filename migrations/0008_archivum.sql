@@ -1,5 +1,5 @@
 -- Az Archívum: a kiadott közlések változtathatatlan nyilvántartása (docs/15). A teljes e-mail-cím nem kerül ide: csak a médium és a címtartomány.
--- forras_tipus: level_valasz | meghivo | kezi;  fajta: valasz | meghivo | nyilatkozat | interju | sajtokozlemeny | egyeb
+-- forras_tipus: level_valasz | meghivo | kezi;  fajta: valasz | meghivo | nyilatkozat | interju | sajtokozlemeny | poszt | egyeb
 CREATE TABLE IF NOT EXISTS kozlesek (
   id             TEXT PRIMARY KEY,
   tenant_id      TEXT NOT NULL,

@@ -125,6 +125,11 @@ export async function decideProposal(ctx, id, { dontes, csomag = false, by }) {
   if (!(await proactive.proposals.decide(id, { allapot: state, by }))) return { status: 409, hiba: 'Erről a javaslatról már döntöttek.' };
   await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: state, fajta: 'megszolalas', csomag_kerve: !!csomag && state === 'elfogadva' } });
   let csomagAtadas = null;
+  // „Poszt” formájú elfogadott javaslatból a Közösségi média ügynök készít platformonkénti szöveget (a döntés után; kifelé nem megy semmi).
+  if (state === 'elfogadva') {
+    const meta = p.anyag_id ? (await anyagok.get(p.anyag_id))?.meta : null;
+    if (meta?.javaslat?.forma === 'poszt') await atadasok.send({ from: AGENT, to: 'kozossegi', tipus: 'kerelem', targy: `Poszt: ${p.tema}`.slice(0, 200), szoveg: 'A vezető elfogadta a „poszt” formájú megszólalási javaslatot; kérjük a platformonkénti szövegváltozatokat.', anyagId: p.anyag_id, parentId: p.atadas_id });
+  }
   if (state === 'elfogadva' && csomag) {
     const meta = p.anyag_id ? (await anyagok.get(p.anyag_id))?.meta : null;
     const r = await atadasok.send({ from: AGENT, to: 'felkeszito', tipus: 'kerelem', targy: `Felkészítő csomag kérése: ${p.tema}`.slice(0, 200),

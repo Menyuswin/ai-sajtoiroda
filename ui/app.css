@@ -143,6 +143,7 @@ th { color: var(--halk); font-weight: 600; }
 .level-lista { padding: .5rem; margin: 0; max-height: 75vh; overflow: auto; }
 .level-lista li.kivalasztott { outline: 2px solid var(--akcent); outline-offset: -2px; }
 .cimke-sor { display: flex; flex-wrap: wrap; gap: .35rem; margin: .35rem 0; }
+.szamlalo.tul { color: var(--figy); font-weight: 600; }
 .level-szoveg { white-space: pre-wrap; word-break: break-word; background: var(--lap-2); border: 1px solid var(--vonal); border-radius: 8px; padding: .75rem; max-height: 22rem; overflow: auto; font: inherit; margin: .5rem 0; }
 fieldset.opciok { border: 1px solid var(--vonal); border-radius: 8px; margin: .75rem 0; padding: .5rem .75rem; display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
 fieldset.opciok legend { padding: 0 .35rem; font-size: .85rem; }

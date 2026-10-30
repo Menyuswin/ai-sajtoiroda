@@ -4,6 +4,8 @@ import { parse } from 'yaml';
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{1,62}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const SOCIAL_PLATFORMS = { facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', x: 'X' };
+export const SOURCE_PLATFORMS = { youtube: 'YouTube', reddit: 'Reddit', mastodon: 'Mastodon', bluesky: 'Bluesky', facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', x: 'X', tiktok: 'TikTok', egyeb: 'Egyéb' };
 export const MAILBOX_PROVIDERS = ['proba', 'icloud', 'gmail', 'exchange', 'imap'];
 const SECRET_NAME_RE = /^[A-Z][A-Z0-9_]{2,63}$/;
 
@@ -30,8 +32,8 @@ export function validateProfile(raw) {
   const terms = [...(k.szervezet || []), ...(k.szemelyek || []), ...(k.temak || [])];
   if (!terms.length) errors.push('kulcsszavak: legalább egy szervezet, személy vagy téma kell');
   const f = p.forrasok || {};
-  if (!((f.rss || []).length + (f.hirkereso || []).length + (f.sajat || []).length)) errors.push('forrasok: legalább egy forrás kell');
-  for (const s of [...(f.rss || []), ...(f.sajat || [])]) {
+  if (!((f.rss || []).length + (f.hirkereso || []).length + (f.sajat || []).length + (f.kozossegi || []).length)) errors.push('forrasok: legalább egy forrás kell');
+  for (const s of [...(f.rss || []), ...(f.sajat || []), ...(f.kozossegi || [])]) {
     if (!s || !/^https?:\/\//.test(s.url || '')) errors.push(`forrás URL érvénytelen: ${JSON.stringify(s)}`);
   }
   if (errors.length) throw new Error('Érvénytelen ügyfélprofil:\n- ' + errors.join('\n- '));
@@ -42,7 +44,7 @@ export function validateProfile(raw) {
     ...p,
     nyelv: p.nyelv || 'hu',
     kulcsszavak: { szervezet: [], szemelyek: [], temak: [], kizaro: [], ...k },
-    forrasok: { rss: [], hirkereso: [], sajat: [], ...f },
+    forrasok: { rss: [], hirkereso: [], sajat: [], ...f, kozossegi: (f.kozossegi || []).map(s => ({ nev: String(s.nev || '').trim(), url: String(s.url || '').trim(), platform: SOURCE_PLATFORMS[s.platform] ? s.platform : 'egyeb' })) },
     vorosvonalak: p.vorosvonalak || [],
     trend,
     utemezes: { idozona: 'Europe/Budapest', ...(p.utemezes || {}) },
@@ -50,7 +52,21 @@ export function validateProfile(raw) {
     ...(mailbox ? { postafiok: mailbox } : {}),
     kapcsolattarto: { alairas: '', hangnem: '', ...(p.kapcsolattarto || {}) },
     proaktiv: { szabalyok: '', ...(p.proaktiv || {}) },
+    kozossegi: normalizeSocial(p.kozossegi),
     ai_jelzes: p.ai_jelzes || 'Ezt a szemlét mesterséges intelligencia készítette elő; a hivatkozott cikkek ellenőrzése a vezető feladata.',
+  };
+}
+
+// A Közösségi média ügynök beállításai: platformok (zárt lista), hangnem, tiltott témák, hashtagek, emoji.
+export function normalizeSocial(k) {
+  const o = k || {};
+  const list = (v, n, max) => [...new Set((Array.isArray(v) ? v : []).map(x => String(x).trim().slice(0, n)).filter(Boolean))].slice(0, max);
+  return {
+    platformok: (Array.isArray(o.platformok) ? o.platformok : ['facebook', 'linkedin']).filter((p, i, a) => SOCIAL_PLATFORMS[p] && a.indexOf(p) === i),
+    hangnem: String(o.hangnem || '').trim().slice(0, 300),
+    tiltott_temak: list(o.tiltott_temak, 100, 30),
+    hashtagek: list(o.hashtagek, 40, 10).map(x => (x.startsWith('#') ? x : `#${x}`)).map(x => x.replace(/\s+/g, '')),
+    emoji: o.emoji === true,
   };
 }
 
@@ -69,7 +85,7 @@ export function agentActive(profile, agentId, now = new Date()) {
 }
 
 // Korlátok (költségvédelem és visszaélés elleni védelem): a kezelőfelületen át történő módosításra érvényesek.
-export const LIMITS = { kifejezes: 100, forras: 30 };
+export const LIMITS = { kifejezes: 100, forras: 30, kozossegi_forras: 20 };
 
 export function checkLimits(profile) {
   const k = profile.kulcsszavak;
@@ -78,5 +94,7 @@ export function checkLimits(profile) {
   const sources = [...profile.forrasok.rss, ...profile.forrasok.sajat];
   if (sources.length + profile.forrasok.hirkereso.length > LIMITS.forras) throw new Error(`Legfeljebb ${LIMITS.forras} forrás adható meg`);
   for (const s of sources) if (!/^https:\/\//.test(s.url)) throw new Error(`Csak https:// forráscím adható meg: ${s.url}`);
+  if (profile.forrasok.kozossegi.length > LIMITS.kozossegi_forras) throw new Error(`Legfeljebb ${LIMITS.kozossegi_forras} közösségi forrás adható meg`);
+  for (const s of profile.forrasok.kozossegi) if (!/^https:\/\//.test(s.url)) throw new Error(`Csak https:// forráscím adható meg: ${s.url}`);
   return profile;
 }

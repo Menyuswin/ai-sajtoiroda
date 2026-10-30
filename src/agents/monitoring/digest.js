@@ -73,7 +73,7 @@ export async function synthesize({ items, stats, trends, profile, llm, prompts }
   return validateSynthesis(extractJson(raw), new Set(items.map(a => a.n)));
 }
 
-export function renderDigest({ profile, dateLabel, items, stats, trends, synthesis, errors }) {
+export function renderDigest({ profile, dateLabel, items, stats, trends, synthesis, errors, cim = 'Sajtószemle', extra = null }) {
   const signals = trends.filter(t => t.signal);
   const red = items.filter(a => a.cls.voros_vonal);
   const uncertain = items.filter(a => a.cls.bizonytalan).length;
@@ -81,8 +81,9 @@ export function renderDigest({ profile, dateLabel, items, stats, trends, synthes
   const numbers = `${stats.darab} cikk: ${t.negativ} negatív, ${t.semleges} semleges, ${t.pozitiv} pozitív${uncertain ? ` (${uncertain} besorolás bizonytalan)` : ''}.`;
 
   const md = [];
-  md.push(`# Sajtószemle – ${profile.megnevezes} – ${dateLabel}`, '');
+  md.push(`# ${cim} – ${profile.megnevezes} – ${dateLabel}`, '');
   md.push(`**${numbers}**`, '');
+  if (extra) md.push(extra, '');
   if (signals.length || red.length) {
     md.push('## Figyelem');
     for (const s of signals) md.push(`- „${s.term}”: ma ${s.today} említés, az előző napok átlaga ${s.mean} (szórás ${s.std}).`);
@@ -110,7 +111,8 @@ export function renderDigest({ profile, dateLabel, items, stats, trends, synthes
   const text = md.join('\n');
 
   const h = [];
-  h.push(`<h2>Sajtószemle – ${escapeHtml(profile.megnevezes)} – ${escapeHtml(dateLabel)}</h2>`, `<p><strong>${escapeHtml(numbers)}</strong></p>`);
+  h.push(`<h2>${escapeHtml(cim)} – ${escapeHtml(profile.megnevezes)} – ${escapeHtml(dateLabel)}</h2>`, `<p><strong>${escapeHtml(numbers)}</strong></p>`);
+  if (extra) h.push(`<p>${escapeHtml(extra)}</p>`);
   if (signals.length || red.length) {
     h.push('<h3>Figyelem</h3><ul>');
     for (const s of signals) h.push(`<li>„${escapeHtml(s.term)}”: ma ${s.today} említés, az előző napok átlaga ${s.mean} (szórás ${s.std}).</li>`);

@@ -9,6 +9,9 @@ compatibility_flags = ["nodejs_compat"]
 [build]
 command = "node scripts/build-ui.mjs"
 
+# Saját aldomén (a manyai.hu DNS-e ugyanebben a Cloudflare-fiókban van).
+routes = [{ pattern = "iroda.manyai.hu", custom_domain = true }]
+
 [triggers]
 # A Gmail/Exchange postafiókot ez az ütemezés kérdezi le; sürgős megkeresésekhez sűrítse (pl. "*/15 * * * *"). A levélhíd (iCloud) levelei azonnal beérkeznek.
 crons = ["30 * * * *"]
@@ -16,7 +19,7 @@ crons = ["30 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "ai-sajtoiroda"
-database_id = "IDE-KERUL-A-D1-AZONOSITO"   # a `wrangler d1 create ai-sajtoiroda` adja
+database_id = "f786bddf-1389-4646-b019-860f11917b00"   # a `wrangler d1 create ai-sajtoiroda` adta
 migrations_dir = "migrations"
 
 # A dokumentumok eredeti fájljainak tárolása (Cloudflare R2). Amíg az R2 nincs bekapcsolva a fiókban, ez a rész maradjon kikommentezve:

@@ -83,26 +83,41 @@ export async function defaultFetchText(url, { timeoutMs = 10000 } = {}) {
   return res.text();
 }
 
-// Visszaad: { articles, errors } – egy hibás forrás nem állítja le a futást.
+// Érthető magyarázat egy lekérési hibához (a felület forrásállapot-paneljéhez).
+export function explainError(msg) {
+  const m = String(msg || '');
+  if (/HTTP 403/.test(m)) return 'A portál elutasítja az automatikus lekérést (403); valószínűleg blokkolja a felhőszolgáltatók címeit.';
+  if (/HTTP 404|HTTP 410/.test(m)) return 'A cím nem létezik (404); ellenőrizze az RSS-címet.';
+  if (/HTTP 429|HTTP 503/.test(m)) return 'A szolgáltató túlterhelt, vagy elutasítja az automatikus kéréseket (429/503).';
+  if (/HTTP 5\d\d/.test(m)) return 'A szolgáltató hibát jelzett (5xx); később újra próbálható.';
+  if (/timeout|aborted|TimeoutError/i.test(m)) return 'A szolgáltató nem válaszolt időben.';
+  if (/nincs cikk/.test(m)) return 'A csatorna elérhető, de nincs benne cikk (nem hírcsatorna, vagy üres).';
+  return m.slice(0, 160);
+}
+
+// Visszaad: { articles, errors, report } – egy hibás forrás nem állítja le a futást; a report minden forrásról szól.
 export async function collectArticles(profile, { fetchText = defaultFetchText, now = () => new Date() } = {}) {
   const fetchedAt = now().toISOString();
   const jobs = [
-    ...profile.forrasok.rss.map(s => ({ medium: s.nev || s.url, url: s.url })),
-    ...profile.forrasok.sajat.map(s => ({ medium: s.nev || s.url, url: s.url })),
-    ...profile.forrasok.hirkereso.map(q => ({ medium: 'Hírkereső', url: newsSearchUrl(q, profile.nyelv) })),
+    ...profile.forrasok.rss.map(s => ({ medium: s.nev || s.url, url: s.url, tipus: 'rss', nev: s.nev || s.url })),
+    ...profile.forrasok.sajat.map(s => ({ medium: s.nev || s.url, url: s.url, tipus: 'sajat', nev: s.nev || s.url })),
+    ...profile.forrasok.hirkereso.map(q => ({ medium: 'Hírkereső', url: newsSearchUrl(q, profile.nyelv), tipus: 'hirkereso', nev: `Keresés: ${q}` })),
     // Közösségi csatorna: nyilvános hírcsatornák (YouTube, Reddit, Mastodon, Bluesky stb.); a bejegyzések `csatorna: 'kozossegi'` jelölést kapnak.
-    ...(profile.forrasok.kozossegi || []).map(s => ({ medium: s.nev || s.url, url: s.url, extra: { csatorna: 'kozossegi', platform: s.platform || 'egyeb' } })),
+    ...(profile.forrasok.kozossegi || []).map(s => ({ medium: s.nev || s.url, url: s.url, tipus: 'kozossegi', nev: s.nev || s.url, extra: { csatorna: 'kozossegi', platform: s.platform || 'egyeb' } })),
   ];
   const articles = [];
   const errors = [];
+  const report = [];
   await Promise.all(jobs.map(async (j) => {
     try {
       const items = parseFeed(await fetchText(j.url), j.medium, fetchedAt, j.extra || {});
       if (!items.length) throw new Error('nincs cikk a csatornában');
       articles.push(...items);
+      report.push({ url: j.url, nev: j.nev, tipus: j.tipus, ok: true, db: items.length });
     } catch (e) {
       errors.push({ forras: j.url, hiba: String(e.message || e) });
+      report.push({ url: j.url, nev: j.nev, tipus: j.tipus, ok: false, hiba: String(e.message || e) });
     }
   }));
-  return { articles, errors };
+  return { articles, errors, report };
 }

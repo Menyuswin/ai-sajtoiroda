@@ -34,7 +34,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 | Archívum Munkatárs (`docs/15`, `src/agents/archivum/`) | kész, tesztelt: a kiadott közlések változtathatatlan nyilvántartása (e-mail-cím nélkül), egységes keresés, idővonal, korábbi közlések a tervezet mellett, AI-s ellentmondás-jelzés szó szerinti idézettel (AI nélkül nem ítél), megőrzés |
 | Közösségi média Munkatárs (`docs/16`, `src/agents/kozossegi/`) | kész, tesztelt: posztjavaslat platformonként (Facebook, LinkedIn, Instagram, X), kommentkezelési útmutató, program által ellenőrzött platform-szabályok, automatikus jogi vélemény és Archívum-összevetés, „Másolás” és „Kiadtam” (→ Archívum „poszt”); jelzés a Monitoringtól, a Kapcsolattartótól (ismétlődő/feszült/vörös vonalas megkeresés + Bejövő-gomb), a Proaktívtól és kézi digitális jelzésből; **a Monitoring közösségi csatornái** (nyilvános RSS/Atom, a szakterületi kulcsszavak szerint) külön közösségi szemlét és igény szerinti jelentést adnak; semmit nem tesz közzé; X/Facebook/Instagram/TikTok közvetlen olvasása nincs |
 
-159 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
+163 automatikus teszt (`npm test`) átmegy. Böngészős végpontok közötti kipróbálás: `test/e2e/iroda.e2e.mjs`.
 
 ## Alapszabályok (a modellből, nem alkudhatók)
 
@@ -91,7 +91,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - **Bizalmas anyag:** a `src/api/router.js` `SENSITIVE_TYPES` listája (valasz_tervezet, felkeszito_csomag, megszolalasi_javaslat, esemeny_koncepcio, esemeny_utomunka, jogi_velemeny, poszt_javaslat): az itt szereplő anyagtípusokat csak a vezető olvashatja; új, bizalmas anyagtípust ide is fel kell venni.
 - **Közös védelmek, amelyeket minden új munkatársnak át kell vennie:** napi korlát (a `countSince` mintára), a tartalmat csak a vezető látja (az üzemeltető csak darabszámot), a forrásjelölés-ellenőrzés (`src/agents/common/sources.js`: `stripInvalidRefs`), `[KITÖLTENDŐ]` a nem alátámasztott részre, a „nem küldhető AI-nak” szűrés a dokumentumkeresésnél, a bemenet adat és nem utasítás (zárt műveletlista), minden döntés a naplóba.
 - **Migrációk:** `migrations/0001`–`0010` (init, iroda, átadások, dokumentumok, levelek, proaktív, események, archívum, közösségi, belépés). Új migráció: következő sorszám; a `d1-shim` és a `wrangler d1 migrations apply` is ezt olvassa.
-- **Tesztelés:** `npm test` (159, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre, `test/jogi.test.js` a Jogira, `test/archivum.test.js` az Archívumra, `test/kozossegi.test.js` a Közösségi médiára és a Monitoring közösségi csatornáira; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
+- **Tesztelés:** `npm test` (163, hálózat nélkül); `test/levelezes.test.js` a levelekre, `test/felkeszito-proaktiv.test.js` a Felkészítőre és a Proaktívra, `test/esemenyszervezo.test.js` az Eseményszervezőre, `test/jogi.test.js` a Jogira, `test/archivum.test.js` az Archívumra, `test/kozossegi.test.js` a Közösségi médiára és a Monitoring közösségi csatornáira; e2e: `NODE_PATH=/opt/node22/lib/node_modules node test/e2e/iroda.e2e.mjs` (képernyőképek: `out/e2e/`); a Worker-csomag próbája: `npx wrangler deploy --dry-run --outdir /tmp/wr`.
 - **Felhőmunkamenet apróságai:** a Playwright előre telepített (helyi `npm install playwright` elrontja, nem kell); `tools/levelhid` külön csomag (saját `npm install`); a Playwrightnál a `has-text` kis-nagybetű-független részszövegre illeszt (pl. „Felvétel” a „felvétele” gombra is): pontos illesztéshez `:text-is(...)`.
 
 **Mi nincs még kipróbálva élesben (összefoglalva):** valódi hírforrások, valódi AI-minőség, Cloudflare Worker/D1/Access/R2 élesben, valódi iCloud/Gmail/Exchange, levélküldés, telefon. A részletek a „Korlátok” szakaszban.
@@ -108,6 +108,7 @@ Koncepció + működő, tesztelt **száraz módú** rendszer; **semmi nincs éle
 - A **Jogi munkatárs** szabályalapú rétege kulcsszavas és mintaalapú (tévedhet mindkét irányba), az AI-minőség nem mért, és nem jogi tanács: a jogász nem pótolható. Részletek: `docs/14`, 8. fejezet.
 - Az **Archívum** ellentmondás-ellenőrzésének minősége nem mért; az idézet-ellenőrzés a hamis jelzést kiszűri, a kihagyottat nem; a keresés szó alapú. Részletek: `docs/15`, 8. fejezet.
 - A **Közösségi média** AI-s szövegeinek minősége és hangneme nem mért (hamis API-val tesztelt); AI nélkül csak váz. **Az X-et, a Facebookot, az Instagramot és a TikTokot az iroda nem olvassa közvetlenül** (fizetős API kell): a Monitoring közösségi csatornái csak nyilvános RSS/Atom hírcsatornákat (YouTube, Reddit, Mastodon, Bluesky stb.) látnak, a többit a vezető kézi digitális jelzésként viszi fel; valódi csatornákon nem próbáltuk. A hosszkorlátok ajánlott határok; az automatikus indítás küszöbei (3 megkeresés/7 nap, negatív és nagy elérésű jelzés, minden Monitoring-riasztás) kiindulóértékek: az első éles heteken a zajt ellenőrizni kell. Részletek: `docs/16`, 10. fejezet.
+- **Élő hírforrások (2026-10-30 tapasztalat):** az első éles futáson a Google News keresések 503-at, a Telex 403-at, az Infostart 404-et adtak (a Worker címéről); a névkeresések tehát jelenleg nem működnek. A forrásállapot-panel (`docs/18`) mutatja, mi működik. A lekérés böngésző-azonosítóval (`User-Agent`) megy (`src/agents/monitoring/sources.js`): ezt őszintén azonosítható értékre kellene cserélni, amit a tulajdonossal egyeztetni kell, mert egyes források ezután blokkolhatnak.
 - A **jelmondatos belépés** védelme a jelmondat erősségén múlik (nincs e-mailes kód); külső ügyfeleknek nem elég. Valódi Cloudflare-en még nem próbáltuk.
 - A **Cloudflare Access** aláírás-ellenőrzése helyben generált kulccsal tesztelt, valódi Access-szel nem.
 - Cloudflare ingyenes csomagján a külső kérések száma (invokációnként) szűk lehet; több hírforrásnál fizetős Workers ajánlott.
@@ -124,7 +125,7 @@ git config user.name ClaudeMZ && git config user.email noreply@anthropic.com
 
 # 3. Függőségek és tesztek
 npm install
-npm test                      # 159 teszt, hálózat nélkül
+npm test                      # 163 teszt, hálózat nélkül
 
 # 4. Az iroda kipróbálása a böngészőben (kitalált adatokkal, memóriában)
 npm run iroda                 # http://127.0.0.1:8787/ ;  --uzemelteto: üzemeltetői nézet

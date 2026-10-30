@@ -67,6 +67,13 @@
 
   // ---------- fejléc és útválasztás
   const NAV = [['#/', 'Iroda'], ['#/bejovo', 'Bejövő', 'vezeto'], ['#/jelentesek', 'Jelentések'], ['#/atadasok', 'Átadások'], ['#/dokumentumok', 'Dokumentumtár'], ['#/naplo', 'Napló'], ['#/beallitasok', 'Beállítások']];
+  const korSzoveg = (perc) => (perc < 60 ? `${perc} perce` : perc < 2880 ? `${Math.round(perc / 60)} órája` : `${Math.round(perc / 1440)} napja`);
+  const futasJelveny = (f) => {
+    if (!f || f.allapot === 'nincs') return h('span', { class: 'jelveny', title: 'A Monitoring még nem futott. Az ütemező óránként, a 30. percben indul.', text: 'Még nem futott' });
+    const t = `Utolsó futás: ${f.utolso}. Időtartam: ${f.idotartam_ms ?? '?'} ms, külső kérés: ${f.kulso_keres ?? '?'}, lekért cikk: ${f.cikk_lekert ?? '?'}, új: ${f.cikk_uj ?? '?'}.${f.hiba ? ` Hiba: ${f.hiba}` : ''}`;
+    if (f.allapot === 'rendben') return h('a', { class: 'jelveny jo', href: '#/beallitasok', title: t, text: `Futás: ${korSzoveg(f.kor_perc)}` });
+    return h('a', { class: 'jelveny figy', href: '#/beallitasok', title: t, text: f.allapot === 'kesik' ? `Késik: utolsó futás ${korSzoveg(f.kor_perc)}` : 'Hiba a futásban' });
+  };
   function renderHeader(route) {
     const i = state.iroda;
     $head.replaceChildren(
@@ -74,6 +81,7 @@
       h('nav', { 'aria-label': 'Fő menü' }, NAV.filter(([, , only]) => !only || i.felhasznalo.szerep === only).map(([href, label]) => h('a', { href, ...(isCurrent(href, route) ? { 'aria-current': 'page' } : {}), text: label }))),
       h('div', { class: 'jobb' },
         i.mod.elo ? h('span', { class: 'jelveny jo', text: 'Éles üzem' }) : h('span', { class: 'jelveny figy', text: 'Próbaüzem: levél nem megy ki' }),
+        futasJelveny(i.futas),
         i.mod.ai === 'mock' ? h('span', { class: 'jelveny', title: 'Az AI-kapcsolat nincs bekapcsolva; szabályalapú elemzés fut.', text: 'AI nélkül (szabályalapú)' }) : null,
         i.ugyfelek.length > 1 ? h('select', { 'aria-label': 'Ügyfél', onchange: (e) => { state.tenant = e.target.value; boot(); } }, i.ugyfelek.map(u => h('option', { value: u, ...(u === i.ugyfel.id ? { selected: true } : {}), text: u }))) : null,
         installEvent ? h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { installEvent.prompt(); await installEvent.userChoice; installEvent = null; renderHeader((location.hash || '#/').slice(2)); }), text: 'Telepítés a gépre' }) : null,
@@ -1038,6 +1046,7 @@
   }
   async function viewBeallitasok(my = routeToken) {
     const { profil: p, szerep } = await api('GET', '/api/profil');
+    const fs = await api('GET', '/api/forrasok/allapot');
     const op = szerep === 'uzemelteto';
     const nev = h('input', { type: 'text', id: 'f-nev', value: p.megnevezes, maxlength: '120' });
     const kw = { szervezet: tagInput('Szervezeti nevek', p.kulcsszavak.szervezet, 'A szervezet neve és rövidítései.'), szemelyek: tagInput('Személyek', p.kulcsszavak.szemelyek, 'Vezetők, szóvivők, figyelt személyek.'), temak: tagInput('Témák', p.kulcsszavak.temak, 'Ragozott alakot is megtalál („ápolóhiány” – „ápolóhiányról”).'), kizaro: tagInput('Kizáró szavak', p.kulcsszavak.kizaro, 'Az ilyen szót tartalmazó találatot kihagyja.') };
@@ -1093,6 +1102,13 @@
       h('div', { class: 'kartya' }, h('h2', { text: 'Kulcsszavak' }), kw.szervezet.el, kw.szemelyek.el, kw.temak.el, kw.kizaro.el),
       h('div', { class: 'kartya' }, h('h2', { text: 'Források' }), h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Hírportálok (RSS)' }), rssBox, h('span', { class: 'sugo', text: 'Csak https:// címek adhatók meg.' })), keres.el,
         h('div', { class: 'mezo' }, h('span', { class: 'felirat', text: 'Közösségi csatornák (nyilvános RSS/Atom)' }), kforrBox, h('span', { class: 'sugo', text: 'Pl. YouTube-csatorna, subreddit, Mastodon- vagy Bluesky-fiók csatornája. Az X, Facebook, Instagram és TikTok közvetlenül nem olvasható (fizetős hozzáférést kér). A Közösségi média asztalára külön szemle készül belőlük.' }))),
+      h('div', { class: 'kartya' }, h('h2', { text: 'Források állapota' }),
+        h('p', { class: 'sugo', text: fs.futas.allapot === 'nincs' ? 'A Monitoring még nem futott.' : `Az utolsó futás ${korSzoveg(fs.futas.kor_perc)} volt (${fs.futas.cikk_lekert ?? '?'} cikket kért le, ebből ${fs.futas.cikk_uj ?? '?'} új és releváns; ${fs.futas.kulso_keres ?? '?'} külső kérés).` }),
+        fs.forrasok.length ? h('table', { class: 'tabla' }, h('thead', {}, h('tr', {}, ['Forrás', 'Állapot', 'Cikk', 'Utolsó siker'].map(x => h('th', { text: x })))), h('tbody', {}, fs.forrasok.map(r => h('tr', {},
+          h('td', { title: r.url, text: r.nev }), h('td', {}, h('span', { class: `jelveny ${r.ok ? 'jo' : 'figy'}`, text: r.ok ? 'Rendben' : 'Hiba' }), r.ok ? null : h('div', { class: 'meta', text: r.magyarazat })),
+          h('td', { text: r.ok ? String(r.cikkek) : '–' }), h('td', { text: r.utolso_siker_ido ? when(r.utolso_siker_ido) : 'még nem sikerült' }))))) : h('p', { class: 'ures-szoveg', text: 'Még nincs forrásadat.' }),
+        h('div', { class: 'sor' }, h('button', { class: 'gomb', type: 'button', onclick: guard(async () => { const r = await api('POST', '/api/forrasok/proba', {}); toast(r.hibas ? `${r.hibas} forrás hibás (${r.forrasok} közül).` : `Mind a ${r.forrasok} forrás elérhető.`, !!r.hibas); await viewBeallitasok(); }), text: 'Források próbája most' })),
+        h('p', { class: 'sugo', text: 'A próba a Cloudflare-ből kéri le a forrásokat, vagyis azt mutatja, amit az ütemező is lát. Percenként egyszer kérhető.' })),
       h('div', { class: 'kartya' }, h('h2', { text: 'Riasztás' }), voros.el),
       h('div', { class: 'kartya' }, h('h2', { text: 'Időzítés és címzett' }),
         h('div', { class: 'mezo' }, h('label', { for: 'f-ido', text: 'A napi szemle időpontja (az ügyfél időzónájában)' }), ido),

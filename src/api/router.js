@@ -33,6 +33,8 @@ import { EVENT_FORMATS, LIMITS as EVENT_LIMITS, RESPONSES } from '../cloudflare/
 import { createPost, decidePost, recordPublished, addSignal, DAILY_LIMIT as POST_LIMIT, SIGNAL_LIMIT_DAY } from '../agents/kozossegi/index.js';
 import { PLATFORM_LIMITS } from '../agents/kozossegi/rules.js';
 import { SocialError, POST_STATES, MOODS, REACH } from '../cloudflare/kozossegi-store.js';
+import { collectArticles, defaultFetchText, explainError } from '../agents/monitoring/sources.js';
+import { runBadge, systemHealth, PROBE_COOLDOWN_S } from '../cloudflare/allapot-store.js';
 import { sessionLogin, passphraseUsable, passphraseOk, issueSession, setCookie, clearCookie, createThrottle } from './session.js';
 import { validateMailbox, normalizeSocial, SOCIAL_PLATFORMS, SOURCE_PLATFORMS } from '../core/profile.js';
 
@@ -187,6 +189,11 @@ async function route(request, env, deps) {
   if (method === 'POST' && (hid = url.pathname.match(/^\/hid\/([a-z0-9][a-z0-9-]{1,62})\/levelek$/))) return bridgeIngest(request, env, deps, hid[1], now);
   if (!url.pathname.startsWith('/api/')) return json({ hiba: 'Nem található.' }, 404);
 
+  // Egészség-végpont: belépés nélkül, tartalom és ügyfélnév nélkül. Külső figyelőnek (pl. UptimeRobot): 200 = rendben, 503 = késik a futás.
+  if (method === 'GET' && url.pathname === '/api/egeszseg') {
+    const h = await systemHealth(env.DB, now().getTime());
+    return json(h, h.allapot === 'kesik' ? 503 : 200);
+  }
   // Saját belépés (jelmondat): csak akkor él, ha a Cloudflare Access nincs beállítva.
   if (method === 'POST' && (url.pathname === '/api/belepes' || url.pathname === '/api/kilepes')) return sessionEndpoints(request, env, deps, url, now);
 
@@ -251,7 +258,7 @@ async function route(request, env, deps) {
         utolso: last ? { cim: last.cim, ido: last.ido } : null, olvasatlan: a.id === 'kapcsolattarto' ? (role === 'vezeto' ? letterCounts.olvasatlan : 0) : unread[a.id] || 0, jovahagyasra_var: a.id === 'jogi' ? openHighRisk : a.id === 'esemenyszervezo' ? openEvents : a.id === 'kozossegi' ? openPosts : a.id === 'kapcsolattarto' ? ['uj', 'tervezet_kesz', 'halasztva', 'hiba'].reduce((n, k) => n + (letterCounts[k] || 0), 0) : a.id === 'proaktiv' ? openProposals : pending[a.id] || 0, atadas_nyitott: (open[a.id]?.varakozik || 0) + (open[a.id]?.kezbesitve || 0), atadas_varakozik: open[a.id]?.varakozik || 0 });
     }
     return json({ ugyfel: { id: tenantId, megnevezes: profile.megnevezes }, felhasznalo: { email: who.email, szerep: role },
-      mod: { elo: config.live, ai: llm.mode, belepes: who.mod || 'proba' }, ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
+      mod: { elo: config.live, ai: llm.mode, belepes: who.mod || 'proba' }, futas: runBadge((await lctx.allapot.get()).futas, now().getTime()), ugynokok: agents, elrendezes: { ...defaultLayout(), ...(layout || {}) },
       ugyfelek: roles.map(r => r.tenantId) });
   }
   if (method === 'PUT' && p === '/api/iroda/elrendezes') {
@@ -798,6 +805,20 @@ async function route(request, env, deps) {
       }
     } catch (e) { evErr(e); }
     throw new HttpError(404, 'Nem található.');
+  }
+
+  // ---- Források állapota és próbája (hírforrások; a tartalom nem bizalmas, ezért az üzemeltető is látja)
+  if (method === 'GET' && p === '/api/forrasok/allapot') {
+    const st = await lctx.allapot.get();
+    return json({ futas: runBadge(st.futas, now().getTime()), forrasok: st.forrasok.map(r => ({ nev: r.nev, url: r.url, tipus: r.tipus, utolso_ido: r.utolso_ido, utolso_siker_ido: r.utolso_siker_ido, cikkek: r.cikkek, ok: !r.hiba, hiba: r.hiba, magyarazat: r.hiba ? explainError(r.hiba) : null })), proba_varakozas_mp: PROBE_COOLDOWN_S });
+  }
+  if (method === 'POST' && p === '/api/forrasok/proba') {
+    if (!(await lctx.allapot.probeAllowed())) throw new HttpError(429, `A próba percenként egyszer kérhető; várjon ${PROBE_COOLDOWN_S} másodpercet.`);
+    await lctx.allapot.markProbe();
+    const { report } = await collectArticles(profile, { fetchText: deps.fetchText || defaultFetchText, now });
+    await lctx.allapot.recordSources(report);
+    await log.append({ szereplo: actor, tipus: 'futas', tartalom: { esemeny: 'forras_proba', forrasok: report.length, hibas: report.filter(r => !r.ok).length } });
+    return json({ forrasok: report.length, hibas: report.filter(r => !r.ok).length });
   }
 
   // ---- Átadások a munkatársak között

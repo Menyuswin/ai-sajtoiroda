@@ -12,6 +12,7 @@ import { createProactiveStore } from './proaktiv-store.js';
 import { createEventStore } from './esemeny-store.js';
 import { createArchive } from './archivum-store.js';
 import { createSocialStore } from './kozossegi-store.js';
+import { createStatusStore } from './allapot-store.js';
 import { createMailStore } from '../mail/store.js';
 import { createDocs } from '../docs/store.js';
 import { AGENTS, agentById } from '../api/catalogue.js';
@@ -50,6 +51,7 @@ export function buildAgentCtx({ env, profile, now, prompts, llmFetch, mailbox = 
     esemeny: createEventStore({ db: env.DB, tenantId, now }),
     archivum: createArchive({ db: env.DB, tenantId, now }),
     social: createSocialStore({ db: env.DB, tenantId, now }),
+    allapot: createStatusStore({ db: env.DB, tenantId, now }),
   };
   // Gyári feldolgozók: a megérkezett (vagy megérkezéskor kézbesített) átadásokat a munkatársak itt dolgozzák fel.
   const own = new Map([

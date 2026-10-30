@@ -1,6 +1,6 @@
 # Fejlesztési terv, 1. lépcső: megbízható működés a levélhíd előtt
 
-*Állapot: **terv, jóváhagyásra vár** (2026-10-30). A tulajdonos jóváhagyta az 1. lépcső irányát („futási korlátok, értesítés, életjel, napló-adattakarékosság”); ez a dokumentum a megvalósítás pontos terve. Az egyes pontok alatt a döntésre váró kérdések állnak.*
+*Állapot: **folyamatban**: az A4 elkészült (2026-10-30), a többi jóváhagyott sorrendben következik (A5, A2, A3). A tulajdonos jóváhagyta az 1. lépcső irányát („futási korlátok, értesítés, életjel, napló-adattakarékosság”); ez a dokumentum a megvalósítás pontos terve. Az egyes pontok alatt a döntésre váró kérdések állnak.*
 
 ## 0. Miért ez a négy dolog, és miért ebben a sorrendben
 
@@ -75,3 +75,12 @@ Az éles rendszer ma látszólag működik, de négy hiány miatt **csendben is 
 **Telepítés:** minden lépés után `git pull`, `npx wrangler d1 migrations apply ai-sajtoiroda --remote` (az A4 miatt), `npx wrangler deploy`; az A3-nál a `wrangler.toml` és az Email Routing beállítása Önnel közösen.
 
 **Nem változik:** a „semmi nem megy ki jóváhagyás nélkül” szabály; a próbaüzem (`SAJTOIRODA_LIVE=0`); az AI kikapcsolt állapota (az AI-kulcs külön lépés).
+
+## Mi készült el: A4 (2026-10-30)
+
+A sorrendet az éles első futás naplója módosította (a Google News 503-at, a Telex 403-at, az Infostart 404-et adott), ezért az A4 került előre.
+- **Életjel:** minden Monitoring-futás rögzíti az idejét, időtartamát, a külső kérések számát, a lekért és az új cikkek számát (`migrations/0011_allapot.sql`, `src/cloudflare/allapot-store.js`). Az Iroda fejlécében jelvény: „Futás: 12 perce” (zöld), „Késik” (180 perc csend után) vagy „Hiba a futásban” (piros); a jelvényre kattintva a Beállításokra jut.
+- **Forrásállapot:** a Beállításokban új „Források állapota” kártya: forrásonként rendben/hiba, a cikkek száma, az utolsó sikeres idő, és hiba esetén **érthető magyarázat** (pl. „A portál elutasítja az automatikus lekérést (403)”).
+- **Források próbája:** gomb, amely a Cloudflare-ből kéri le az összes forrást (azt mutatja, amit az ütemező is lát); percenként egyszer kérhető. Az üzemeltető is látja és használhatja (a hírforrások nem bizalmasak).
+- **Egészség-végpont:** `GET /api/egeszseg` belépés nélkül; csak `ok` / `kesik` / `indul` és a futás kora percben, ügyfélnév és tartalom nélkül; késésnél 503, hogy külső figyelő (pl. UptimeRobot) jelezhessen.
+- **Tesztek:** `test/allapot.test.js` (5 teszt). **Nem része:** a külső figyelő beállítása (az Ön döntése), a mérés eredményére épülő A2 (kötegelés, keret).

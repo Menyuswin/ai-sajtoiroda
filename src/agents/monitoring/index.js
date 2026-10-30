@@ -24,7 +24,8 @@ export async function run(ctx, { mode = 'digest' } = {}) {
   }
 
   // 1. gyűjtés, duplikátumok és nem releváns cikkek kiszűrése
-  const { articles: fetched, errors } = await collectArticles(profile, { fetchText, now });
+  const { articles: fetched, errors, report } = await collectArticles(profile, { fetchText, now });
+  try { await ctx.allapot?.recordSources(report); } catch (e) { await log.append({ szereplo: WHO, tipus: 'hiba', tartalom: { hiba: `a forrásállapot rögzítése nem sikerült: ${e.message}` } }); }
   for (const e of errors) await log.append({ szereplo: WHO, tipus: 'hiba', hivatkozas: e.forras, tartalom: { hiba: e.hiba } });
   const known = await store.load();
   const fresh = filterArticles(dedupe(fetched, known), profile);

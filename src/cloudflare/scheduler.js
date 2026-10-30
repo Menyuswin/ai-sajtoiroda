@@ -45,7 +45,17 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
         const sent = await log.query({ tipus: 'szemle_elkuldve' });
         const lastDigestDay = sent.length ? dayKey(sent[sent.length - 1].ido, profile.utemezes.idozona) : null;
         const mode = decideMode(profile, now(), lastDigestDay);
-        const result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText, prompts, models: config.models, anyagok: desk.anyagok, atadasok: handoffs }, { mode });
+        // Életjel: a futás ideje, időtartama, a külső kérések száma és az eredmény rögzül (a forrásonkénti állapotot a Monitoring írja).
+        let kulsoKeres = 0;
+        const countedFetch = (...a) => { kulsoKeres++; return fetchText(...a); };
+        const kezdet = now().toISOString(), t0 = Date.now();
+        let result;
+        try { result = await monitoringAgent.run({ profile, log, store, outbox, llm, now, fetchText: countedFetch, prompts, models: config.models, anyagok: desk.anyagok, atadasok: handoffs, allapot: base.allapot }, { mode }); }
+        catch (e) {
+          await base.allapot.recordRun({ kezdet, vege: now().toISOString(), siker: false, idotartamMs: Date.now() - t0, kulsoKeres, hiba: String(e.message || e) }).catch(() => {});
+          throw e;
+        }
+        if (!result.skipped) await base.allapot.recordRun({ kezdet, vege: now().toISOString(), siker: true, idotartamMs: Date.now() - t0, kulsoKeres, cikkLekert: result.fetched ?? null, cikkUj: result.fresh ?? null }).catch(() => {});
         if (mode === 'digest' && profile.megorzes?.nyers_cikk_honap) {
           const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - profile.megorzes.nyers_cikk_honap);
           await store.purgeOlderThan(cutoff.toISOString());

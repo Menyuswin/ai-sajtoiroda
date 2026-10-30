@@ -30,7 +30,7 @@ const card = page.locator('.asztal[data-id="monitoring"]');
 const before = await card.boundingBox();
 const grip = card.locator('.fogo');
 const g = await grip.boundingBox();
-await page.mouse.move(g.x + 30, g.y + 15); await page.mouse.down(); await page.mouse.move(g.x + 330, g.y + 215, { steps: 8 }); await page.mouse.up();
+await page.mouse.move(g.x + 30, g.y + 15); await page.mouse.down(); await page.mouse.move(g.x + 30, g.y + 495, { steps: 8 }); await page.mouse.up();
 const after = await card.boundingBox();
 log('húzás: eltolódás', Math.round(after.x - before.x), Math.round(after.y - before.y));
 await page.waitForTimeout(700);
@@ -225,6 +225,21 @@ await page.click('button:has-text("Utómunka készítése")'); await page.waitFo
 await page.click('button:has-text("Az utómunka megnyitása")'); await page.waitForSelector('.nezo h2');
 log('utómunka címe:', await page.locator('.nezo h2').first().innerText());
 await shot('25-utomunka'); await page.keyboard.press('Escape');
+
+// Jogi és kockázat: vélemény beillesztett szövegre, jelvény az anyagnál
+await page.goto(BASE + '#/asztal/jogi'); await page.waitForSelector('#jg-szoveg');
+log('Jogi sávjai:', (await page.locator('.harom h2').allInnerTexts()).join(', '));
+await page.fill('#jg-szoveg', 'Kiss Géza korrupt, és csalt a közpénzzel. Hatósági eljárás is indult. Írjon: peter.nagy@masik.example'); await page.selectOption('#jg-fajta', 'poszt');
+await page.click('button:has-text("Vélemény készítése")'); await page.waitForSelector('.nezo h2');
+log('vélemény címe:', await page.locator('.nezo h2').first().innerText(), '|', (await page.locator('.nezo p:has-text("Besorolás")').first().innerText()).slice(0, 60));
+await shot('26-jogi-velemeny'); await page.keyboard.press('Escape');
+await page.goto(BASE + '#/asztal/jogi'); await page.waitForSelector('.sav:has(h2:has-text("Vélemények")) li');
+log('Jogi vélemények:', await page.locator('.sav:has(h2:has-text("Vélemények")) li').count(), '| iroda kártya:', (await (async () => { await page.goto(BASE); await page.waitForSelector('.asztal'); return page.locator('.asztal[data-id="jogi"]').innerText(); })()).replace(/\n/g, ' / ').slice(0, 110));
+await page.goto(BASE + '#/bejovo'); await page.waitForSelector('.level-lista li');
+await page.selectOption('#lv-szuro', ''); await page.waitForSelector('.level-lista li:has-text("Hatósági")');
+await page.locator('.level-lista li', { hasText: 'Hatósági' }).click(); await page.waitForSelector('.level-szoveg');
+log('Bejövő jogi jelvény:', (await page.locator('.level-reszlet .jelveny:has-text("Jogi vélemény")').first().innerText()).slice(0, 60));
+await shot('27-bejovo-jogi');
 
 // telepíthetőség (PWA): service worker, kapcsolat nélküli héj, az adat nem kerül a gyorsítótárba
 await page.goto(BASE); await page.waitForSelector('.asztal');

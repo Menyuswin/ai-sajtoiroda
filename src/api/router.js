@@ -24,6 +24,8 @@ import { OCCASIONS } from '../agents/felkeszito/package.js';
 import { createProposal, decideProposal, DAILY_LIMIT as PROPOSAL_LIMIT } from '../agents/proaktiv/index.js';
 import { CalendarError, CAL_TYPES } from '../cloudflare/proaktiv-store.js';
 import { startOfDayIso } from '../agents/common/sources.js';
+import { searchAll, timeline, ArchiveError, ARCHIVE_KINDS, CHECK_LIMIT } from '../agents/archivum/index.js';
+import { ARCHIVE_LIMIT, MAX_STATEMENT } from '../cloudflare/archivum-store.js';
 import { createOpinion, DAILY_LIMIT as OPINION_LIMIT, MAX_TEXT as OPINION_MAX } from '../agents/jogi/index.js';
 import { CATEGORIES as RISK_CATEGORIES, KINDS as RISK_KINDS, LEVELS as RISK_LEVELS } from '../agents/jogi/analysis.js';
 import { createEvent, decideEvent, inviteCandidates, addInvites, sendInvites, setInviteResponse, createPostWork, importContacts, EventError, LIMITS_DAILY as EVENT_DAILY } from '../agents/esemenyszervezo/index.js';
@@ -236,6 +238,12 @@ async function route(request, env, deps) {
         utasitasok: [], anyagok: role === 'vezeto' ? await desk.anyagok.list({ ugynok: a.id, limit: 30 }) : [], atadasok,
         munka: { tipus: 'kapcsolattarto', szamok: await lctx.levelek.counts(), postafiok: await mailboxStatus(lctx, env, profile), tartalom_lathato: role === 'vezeto',
           legutobbi: role === 'vezeto' ? (await lctx.levelek.list({ limit: 6 })) : [] } });
+    }
+    if (a.id === 'archivum') {
+      const leader = role === 'vezeto';
+      return json({ ugynok: a, allapot: agentActive(profile, a.id, now()) ? 'dolgozik' : 'szunetel', szunet_ig: profile.ugynokok?.[a.id]?.szunet_ig || null, utasitasok: [], anyagok: [], atadasok,
+        munka: { tipus: 'archivum', tartalom_lathato: leader, kozles_db: await lctx.archivum.count(), korlat: ARCHIVE_LIMIT, max_szoveg: MAX_STATEMENT, fajtak: ARCHIVE_KINDS, ellenorzes_ma: await lctx.archivum.checksSince(startOfDayIso(now())), ellenorzes_korlat: CHECK_LIMIT, megorzes_honap: profile.megorzes?.kozles_honap ?? 36,
+          legutobbi: leader ? await lctx.archivum.list({ limit: 8 }) : [] } });
     }
     if (a.id === 'jogi') {
       const leader = role === 'vezeto';
@@ -463,8 +471,10 @@ async function route(request, env, deps) {
       await lctx.levelek.markRead(letter.id);
       const anyag = letter.anyag_id ? await desk.anyagok.get(letter.anyag_id) : null;
       if (anyag) await desk.anyagok.markRead(anyag.id);
+      const arcMeta = anyag?.meta || {};
+      const korabbi = await lctx.archivum.related(`${letter.targy} ${letter.besorolas?.tema || ''}`, { limit: 5 });
       const jogiOps = letter.anyag_id ? await desk.anyagok.opinionsFor(letter.anyag_id) : [];
-      return json({ jogi: jogiOps.length ? { besorolas: worstLevel(jogiOps), anyag_id: jogiOps[0].id, jogasz_javasolt: jogiOps.some(o => o.jogasz_javasolt) } : null, level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
+      return json({ archivum: { korabbi, ellentmondasok: arcMeta.ellentmondasok || [], ellenorizve: !!arcMeta.ellenorizve, megjegyzes: arcMeta.ellenorzes_megjegyzes || null }, jogi: jogiOps.length ? { besorolas: worstLevel(jogiOps), anyag_id: jogiOps[0].id, jogasz_javasolt: jogiOps.some(o => o.jogasz_javasolt) } : null, level: letter, tervezet: anyag?.meta && anyag.meta.opciok ? { opciok: anyag.meta.opciok, kockazatok: anyag.meta.kockazatok || [], alapja: anyag.meta.alapja || [], forrasok: anyag.meta.forrasok || [], modell: anyag.meta.modell, kizart_ai: anyag.meta.kizart_ai || 0 } : null, ai: lctx.llm.mode !== 'mock', elo: config.live });
     }
     if ((m = p.match(/^\/api\/levelek\/([^/]+)\/dontes$/)) && method === 'POST') {
       const b = await body();
@@ -530,6 +540,46 @@ async function route(request, env, deps) {
       await log.append({ szereplo: actor, tipus: 'naptar_modositas', hivatkozas: decodeURIComponent(m[1]), tartalom: { esemeny: 'torles' } });
       return json({ ok: true });
     }
+    throw new HttpError(404, 'Nem található.');
+  }
+
+  // ---- Archívum: keresés, idővonal, közlések (a tartalmat csak a vezető látja és kezeli)
+  if (p.startsWith('/api/archivum')) {
+    if (role !== 'vezeto') throw new HttpError(403, 'Ezt csak a vezető kezelheti.');
+    const A = lctx.archivum;
+    const arcErr = (e) => { if (e instanceof ArchiveError) throw new HttpError(e.status, e.message); throw e; };
+    try {
+      if (method === 'GET' && p === '/api/archivum/kereses') {
+        const fajta = url.searchParams.get('fajta') || null;
+        if (fajta && !ARCHIVE_KINDS[fajta]) throw new HttpError(400, 'Ismeretlen fajta.');
+        return json(await searchAll(lctx, url.searchParams.get('q') || '', { fajta, tol: url.searchParams.get('tol') || null, ig: url.searchParams.get('ig') || null }));
+      }
+      if (method === 'GET' && p === '/api/archivum/idovonal') return json({ idovonal: await timeline(lctx, url.searchParams.get('tema') || '') });
+      if (method === 'GET' && p === '/api/archivum/kozlesek') return json({ kozlesek: await A.list({ fajta: url.searchParams.get('fajta') || null, tol: url.searchParams.get('tol') || null, ig: url.searchParams.get('ig') || null, limit: 200 }), fajtak: ARCHIVE_KINDS });
+      if (method === 'GET' && p === '/api/archivum/export.csv') {
+        const rows = await A.exportAll();
+        const cell = (v) => { let s = v == null ? '' : String(v); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
+        const out = [['kiadva', 'fajta', 'cim', 'cimzett_medium', 'cimzett_domain', 'jovahagyta', 'kiment', 'szoveg'].map(cell).join(',')].concat(rows.map(r => [r.kiadva, r.fajta, r.cim, r.cimzett_medium, r.cimzett_domain, r.jovahagyta, r.kiment ? 'igen' : 'nem', r.szoveg].map(cell).join(','))).join('\r\n');
+        await log.append({ szereplo: actor, tipus: 'kozles', tartalom: { esemeny: 'export', darab: rows.length } });
+        return new Response(out, { headers: { ...SECURITY, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="kozlesek.csv"', 'Cache-Control': 'no-store' } });
+      }
+      if (method === 'POST' && p === '/api/archivum/kozlesek') {
+        const b = await body();
+        const r = await A.addManual({ cim: b.cim, datum: b.datum, fajta: b.fajta, szoveg: b.szoveg, medium: b.medium, by: profile.vezeto.email });
+        if (!r.uj) throw new HttpError(409, 'Ez a közlés már szerepel az archívumban.');
+        await log.append({ szereplo: actor, tipus: 'kozles', hivatkozas: r.id, tartalom: { esemeny: 'kezi_felvitel', fajta: b.fajta, kiadva: b.datum } });
+        return json({ id: r.id }, 201);
+      }
+      if ((m = p.match(/^\/api\/archivum\/kozlesek\/([^/]+)$/))) {
+        const id = decodeURIComponent(m[1]);
+        if (method === 'GET') { const k = await A.get(id); if (!k) throw new HttpError(404, 'Nincs ilyen közlés.'); return json({ kozles: k }); }
+        if (method === 'DELETE') {
+          if (!(await A.remove(id))) throw new HttpError(404, 'Nincs ilyen közlés.');
+          await log.append({ szereplo: actor, tipus: 'kozles', hivatkozas: id, tartalom: { esemeny: 'torolve' } });
+          return json({ ok: true });
+        }
+      }
+    } catch (e) { arcErr(e); }
     throw new HttpError(404, 'Nem található.');
   }
 

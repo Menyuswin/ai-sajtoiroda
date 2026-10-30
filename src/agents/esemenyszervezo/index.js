@@ -6,6 +6,7 @@ import { suggestDay } from '../proaktiv/index.js';
 import { EventError, EVENT_FORMATS, LIMITS, RESPONSES } from '../../cloudflare/esemeny-store.js';
 import { agentActive } from '../../core/profile.js';
 import { dayKey, escapeHtml, norm } from '../../core/text.js';
+import { recordStatement } from '../archivum/index.js';
 
 export const AGENT = 'esemenyszervezo';
 const WHO = `ugynok:${AGENT}`;
@@ -200,6 +201,10 @@ export async function sendInvites(ctx, id, { by }) {
       await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, tartalom: { dontes: 'meghivok_kuldese', fajta: 'esemeny', elkuldve: sent, megszakadt: true } });
       throw new EventError(502, `A kiküldés megszakadt (${sent} meghívó elment): ${e.message}`);
     }
+  }
+  if (sent) {
+    let h = 0; for (const ch of body) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0; // ugyanaz a meghívószöveg ugyanahhoz az eseményhez egyszer kerül az archívumba
+    await recordStatement(ctx, { forrasTipus: 'meghivo', forrasId: `${id}:${(h >>> 0).toString(16)}`, fajta: 'meghivo', cim: subject, szoveg: body, cimzettMedium: `Sajtólista (${sent} címzett, esemény: ${ev.cim})`.slice(0, 120), jovahagyta: profile.vezeto.email, kiment: delivered > 0 });
   }
   await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'meghivok_kuldese', fajta: 'esemeny', esemeny: ev.cim, darab: sent, kiment: delivered } });
   return { elkuldve: sent, kiment: delivered };

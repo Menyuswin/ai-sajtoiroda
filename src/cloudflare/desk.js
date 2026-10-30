@@ -34,6 +34,11 @@ export function createDesk({ db, tenantId, now = () => new Date() }) {
       async markRead(id) {
         await db.prepare('UPDATE anyagok SET olvasott = 1 WHERE tenant_id = ? AND id = ?').bind(tenantId, id).run();
       },
+      // A keresésnek: a legutóbbi anyagok szövege (a szűrést a hívó végzi, és a hozzáférési szabályt is a hívó érvényesíti).
+      async recentTexts(limit = 300) {
+        const { results } = await db.prepare('SELECT id, ugynok, tipus, cim, szoveg, ido FROM anyagok WHERE tenant_id = ? ORDER BY ido DESC, id DESC LIMIT ?').bind(tenantId, limit).all();
+        return results;
+      },
       async countSince(ugynok, tipus, iso) {
         return (await db.prepare('SELECT COUNT(*) AS n FROM anyagok WHERE tenant_id = ? AND ugynok = ? AND tipus = ? AND ido >= ?').bind(tenantId, ugynok, tipus, iso).first()).n;
       },

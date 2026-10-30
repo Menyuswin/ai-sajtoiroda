@@ -6,7 +6,7 @@ export const AGENTS = [
   { id: 'monitoring', fajl: '03-monitoring', nev: 'Sajtószemle- és Monitoring Ügynök', munkanev: 'Media Monitoring Agent', szakasz: 1, elerheto: true },
   { id: 'proaktiv', fajl: '04-proaktiv-strategia', nev: 'Proaktív Kommunikációs Stratégia Ügynök', munkanev: 'Agenda & Opportunity Agent', szakasz: 2, elerheto: true },
   { id: 'esemenyszervezo', fajl: '05-esemenyszervezo', nev: 'Eseményszervező Ügynök', munkanev: 'Event & Logistics Agent', szakasz: 3, elerheto: true },
-  { id: 'archivum', fajl: '06-archivum', nev: 'Archívum- és Tudásmenedzsment Ügynök', munkanev: 'Archive & Knowledge Agent', szakasz: 'kiegészítő', elerheto: false },
+  { id: 'archivum', fajl: '06-archivum', nev: 'Archívum- és Tudásmenedzsment Ügynök', munkanev: 'Archive & Knowledge Agent', szakasz: 'kiegészítő', elerheto: true },
   { id: 'kozossegi', fajl: '07-kozossegi-media', nev: 'Közösségimédia- és Digitális Narratíva Ügynök', munkanev: 'Social & Digital Agent', szakasz: 'kiegészítő', elerheto: false },
   { id: 'jogi', fajl: '08-jogi-kockazat', nev: 'Jogi- és Kockázatfigyelő Ügynök', munkanev: 'Legal & Risk Agent', szakasz: 'kiegészítő', elerheto: true },
 ];

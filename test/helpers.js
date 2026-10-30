@@ -21,6 +21,7 @@ export const readPrompts = async () => ({
   proposal: await readFile(join(promptDir, 'proaktiv-javaslat.md'), 'utf8'),
   eventConcept: await readFile(join(promptDir, 'esemeny-koncepcio.md'), 'utf8'),
   legal: await readFile(join(promptDir, 'jogi-velemeny.md'), 'utf8'),
+  consistency: await readFile(join(promptDir, 'archivum-ellentmondas.md'), 'utf8'),
 });
 
 export async function makeCtx({ now = new Date('2026-10-29T06:30:00Z'), fetchText, llmMode = 'mock', profileMod, llmFetch } = {}) {

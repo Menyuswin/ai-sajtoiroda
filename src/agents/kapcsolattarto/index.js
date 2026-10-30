@@ -7,6 +7,7 @@ import { buildDraft, hasPlaceholder } from './draft.js';
 import { agentActive } from '../../core/profile.js';
 import { escapeHtml } from '../../core/text.js';
 import { noteResponse } from '../esemenyszervezo/index.js';
+import { recordStatement, checkConsistency } from '../archivum/index.js';
 
 export const AGENT = 'kapcsolattarto';
 const WHO = `ugynok:${AGENT}`;
@@ -37,7 +38,14 @@ export async function processLetter(ctx, id) {
     await levelek.setProcessed(id, { besorolas: cls, anyagId: null, allapot: 'hiba' });
     return { ok: false, hiba: true };
   }
-  const anyagId = await anyagok?.add({ ugynok: AGENT, tipus: 'valasz_tervezet', cim: `Választervezet: ${letter.targy}`, szoveg: draftText(draft), meta: { level_id: id, besorolas: cls, ...draft } });
+  // Az Archívum: kapcsolódó korábbi közlések (mindig) és ellentmondás-jelzés (csak AI-val, idézettel).
+  const cons = await checkConsistency(ctx, { draftText: draft.opciok.map(o => o.szoveg).filter(Boolean).join('\n\n'), topic: `${letter.targy} ${cls.tema}` });
+  const archivumMeta = { korabbi: cons.korabbi.map(({ id: kid, cim, kiadva, fajta, kivonat }) => ({ id: kid, cim, kiadva, fajta, kivonat })), ellentmondasok: cons.ellentmondasok, ellenorzes_megjegyzes: cons.megjegyzes, ellenorizve: cons.vizsgalt };
+  const anyagId = await anyagok?.add({ ugynok: AGENT, tipus: 'valasz_tervezet', cim: `Választervezet: ${letter.targy}`, szoveg: draftText(draft), meta: { level_id: id, besorolas: cls, ...draft, ...archivumMeta } });
+  if (cons.ellentmondasok.length) {
+    await log.append({ szereplo: 'ugynok:archivum', tipus: 'javaslat', hivatkozas: id, tartalom: { fajta: 'ellentmondas_jelzes', darab: cons.ellentmondasok.length, kozlesek: cons.ellentmondasok.map(c => c.kozles_id) } });
+    await atadasok?.send({ from: 'archivum', to: AGENT, tipus: 'jelzes', targy: `Ellentmondás a korábbi közlésekkel: ${letter.targy}`.slice(0, 200), szoveg: `A választervezet ${cons.ellentmondasok.length} ponton ellentmondhat korábbi közlésnek (pl. ${cons.ellentmondasok[0].kiadva || ''}: „${cons.ellentmondasok[0].regi_reszlet.slice(0, 120)}”). Nézze át, mielőtt jóváhagyja.`, anyagId: anyagId || null });
+  }
   await levelek.setProcessed(id, { besorolas: cls, anyagId: anyagId || null, allapot: 'tervezet_kesz' });
   await log.append({ szereplo: WHO, tipus: 'valasz_tervezet', hivatkozas: id, tartalom: { anyag_id: anyagId, modell: draft.modell, forrasok: draft.forrasok.length, kockazatok: draft.kockazatok.length } });
 
@@ -133,6 +141,7 @@ export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by, j
       // A címzett mindig a levél feladója; a felületről nem módosítható (nem lehet vele tetszőleges címre küldeni).
       const sent = await outbox.send({ agent: AGENT, kind: 'valasz', to: letter.felado, subject, text, html: toHtml(text), approval: { dontes: 'jovahagyva', by: profile.vezeto.email } });
       await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'jovahagyva', opcio: dontes, jogi_tudomasul: ops.some(o => o.besorolas === 'magas') ? true : undefined, kuldes: sent.id, kiment: !!sent.delivered, cimzett: letter.felado } });
+      await recordStatement(ctx, { forrasTipus: 'level_valasz', forrasId: id, fajta: 'valasz', cim: subject, szoveg: text, cimzettEmail: letter.felado, jovahagyta: profile.vezeto.email, kiment: !!sent.delivered });
       return { status: 200, allapot: 'jovahagyva', kiment: !!sent.delivered };
     } catch (e) {
       await levelek.reopen(id);

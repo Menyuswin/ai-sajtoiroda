@@ -69,6 +69,10 @@ export async function runScheduled(env, { now = () => new Date(), fetchText = de
           entry.kapcsolattarto = { error: String(e.message || e) };
         }
       }
+      if (profile.megorzes?.kozles_honap !== 0) {
+        const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - (profile.megorzes?.kozles_honap ?? 36));
+        await base.archivum.purgeBefore(dayKey(cutoff, profile.utemezes.idozona));
+      }
       if (profile.megorzes?.naptar_honap !== 0) {
         const cutoff = new Date(now()); cutoff.setMonth(cutoff.getMonth() - (profile.megorzes?.naptar_honap ?? 12));
         await base.proactive.calendar.purgeBefore(dayKey(cutoff, profile.utemezes.idozona));

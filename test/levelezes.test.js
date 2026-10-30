@@ -151,7 +151,7 @@ test('jóváhagyás: a tervezet csak a vezető döntésére, a feladónak, a kim
   assert.equal((await s.call('POST', q, { dontes: 'kesobb', targy: 'x', szoveg: 'y' })).status, 409);
   assert.equal((await s.rows('SELECT * FROM proba_levelek WHERE kind = ?', 'valasz')).length, 1);
   const d = (await s.log({ tipus: 'dontes' })).at(-1);
-  assert.equal(d.tartalom.cimzett, 'eva@hirportal.example'); assert.equal(d.szereplo, `ember:${LEADER}`);
+  assert.equal(d.tartalom.cimzett_domain, 'hirportal.example'); assert.equal(d.tartalom.cimzett, undefined); assert.equal(d.szereplo, `ember:${LEADER}`);
 });
 
 test('az egyéb döntések: elvetés, halasztás (később még eldönthető), továbbítás átadásként; minden naplózott', async () => {
@@ -321,4 +321,14 @@ test('éles módban levélküldő nélkül a jóváhagyott válasz nem megy el, 
   assert.equal(r.status, 502);
   assert.equal((await s.call('GET', '/api/levelek')).data.levelek[0].allapot, 'tervezet_kesz');
   assert.equal((await s.rows('SELECT * FROM proba_levelek')).length, 0);
+});
+
+test('a napló nem őriz személyes adatot a levelekről: se teljes e-mail-címet, se feladónevet, se a levél tárgyát (csak címtartományt, karakterszámot és a besorolás témáját)', async () => {
+  const s = await setup();
+  await s.call('POST', '/api/levelek', { felado: 'eva.kovacs@titkos-lap.example', felado_nev: 'Kovács Éva', targy: 'Interjúkérés Példa Pál ügyében', szoveg: 'Hatósági eljárás indult? Kérem, nyilatkozzanak.' });
+  const raw = JSON.stringify(await s.log({}));
+  for (const tiltott of ['eva.kovacs', 'Kovács Éva']) assert.ok(!raw.includes(tiltott), `a napló tartalmazza: ${tiltott}`);
+  assert.ok(!(await s.log({})).some(e => e.tartalom && 'targy' in e.tartalom && e.tipus === 'level'), 'a levél tárgya nem kerül a naplóba (csak a besorolás témája)');
+  const fogadva = (await s.log({ tipus: 'level' })).find(e => e.tartalom?.esemeny === 'fogadva');
+  assert.equal(fogadva.tartalom.felado_domain, 'titkos-lap.example'); assert.ok(fogadva.tartalom.targy_karakter > 0);
 });

@@ -84,3 +84,6 @@ A sorrendet az éles első futás naplója módosította (a Google News 503-at, 
 - **Források próbája:** gomb, amely a Cloudflare-ből kéri le az összes forrást (azt mutatja, amit az ütemező is lát); percenként egyszer kérhető. Az üzemeltető is látja és használhatja (a hírforrások nem bizalmasak).
 - **Egészség-végpont:** `GET /api/egeszseg` belépés nélkül; csak `ok` / `kesik` / `indul` és a futás kora percben, ügyfélnév és tartalom nélkül; késésnél 503, hogy külső figyelő (pl. UptimeRobot) jelezhessen.
 - **Tesztek:** `test/allapot.test.js` (5 teszt). **Nem része:** a külső figyelő beállítása (az Ön döntése), a mérés eredményére épülő A2 (kötegelés, keret).
+
+## Mi készült el: A5 (2026-10-30)
+A napló a beérkezett levélről már csak a feladó **címtartományát**, a tárgy és a szöveg **karakterszámát** őrzi; a jóváhagyott válasznál a címzett címtartományát. A riasztás naplósora és a belső átadások tárgya a besorolás **témáját** használja a levél tárgya helyett. Teszt: `test/levelezes.test.js` (a napló nem tartalmaz teljes e-mail-címet és feladónevet). **Megjegyzés:** a besorolás „téma” címkéje (AI nélkül a tárgyból képzett) a naplóban marad; az AI-s téma rövid összefoglaló, de nem garantáltan név nélküli.

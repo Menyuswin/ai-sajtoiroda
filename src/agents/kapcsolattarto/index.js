@@ -11,6 +11,8 @@ import { recordStatement, checkConsistency } from '../archivum/index.js';
 import { offerFromLetter } from '../kozossegi/index.js';
 
 export const AGENT = 'kapcsolattarto';
+// A naplóba nem kerül személyes adat: a feladónak csak a címtartománya (a napló 36 hónapig él, a levél 90 napig).
+const domainOf = (email) => { const m = String(email || '').toLowerCase().match(/@([a-z0-9.-]+\.[a-z]{2,})$/); return m ? m[1] : null; };
 const WHO = `ugynok:${AGENT}`;
 export const MAX_PROCESS_PER_RUN = 20; // költségkorlát futásonként; a többi a következő futásra marad
 export const FORWARD_TO = ['jogi', 'proaktiv', 'felkeszito'];
@@ -45,7 +47,7 @@ export async function processLetter(ctx, id) {
   const anyagId = await anyagok?.add({ ugynok: AGENT, tipus: 'valasz_tervezet', cim: `Választervezet: ${letter.targy}`, szoveg: draftText(draft), meta: { level_id: id, besorolas: cls, ...draft, ...archivumMeta } });
   if (cons.ellentmondasok.length) {
     await log.append({ szereplo: 'ugynok:archivum', tipus: 'javaslat', hivatkozas: id, tartalom: { fajta: 'ellentmondas_jelzes', darab: cons.ellentmondasok.length, kozlesek: cons.ellentmondasok.map(c => c.kozles_id) } });
-    await atadasok?.send({ from: 'archivum', to: AGENT, tipus: 'jelzes', targy: `Ellentmondás a korábbi közlésekkel: ${letter.targy}`.slice(0, 200), szoveg: `A választervezet ${cons.ellentmondasok.length} ponton ellentmondhat korábbi közlésnek (pl. ${cons.ellentmondasok[0].kiadva || ''}: „${cons.ellentmondasok[0].regi_reszlet.slice(0, 120)}”). Nézze át, mielőtt jóváhagyja.`, anyagId: anyagId || null });
+    await atadasok?.send({ from: 'archivum', to: AGENT, tipus: 'jelzes', targy: `Ellentmondás a korábbi közlésekkel: ${cls.tema}`.slice(0, 200), szoveg: `A választervezet ${cons.ellentmondasok.length} ponton ellentmondhat korábbi közlésnek (pl. ${cons.ellentmondasok[0].kiadva || ''}: „${cons.ellentmondasok[0].regi_reszlet.slice(0, 120)}”). Nézze át, mielőtt jóváhagyja.`, anyagId: anyagId || null });
   }
   await levelek.setProcessed(id, { besorolas: cls, anyagId: anyagId || null, allapot: 'tervezet_kesz' });
   await log.append({ szereplo: WHO, tipus: 'valasz_tervezet', hivatkozas: id, tartalom: { anyag_id: anyagId, modell: draft.modell, forrasok: draft.forrasok.length, kockazatok: draft.kockazatok.length } });
@@ -59,11 +61,11 @@ export async function processLetter(ctx, id) {
     const line = `Vörös vonalba eső levél érkezett: „${letter.targy}” (${letter.felado_nev || letter.felado}). A választervezet az asztalán vár.`;
     const note = 'Ezt a jelzést mesterséges intelligencia készítette elő; a levél ellenőrzése a vezető feladata.';
     await outbox.send({ agent: AGENT, kind: 'riasztas', to: profile.vezeto.email, subject, text: `- ${line}\n\n${note}`, html: `<body style="font-family:sans-serif"><h3>${escapeHtml(subject)}</h3><p>${escapeHtml(line)}</p><p><em>${escapeHtml(note)}</em></p></body>` });
-    await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: `level:${id}`, tartalom: { sor: line } });
+    await log.append({ szereplo: WHO, tipus: 'riasztas_elkuldve', hivatkozas: `level:${id}`, tartalom: { sor: `Vörös vonalba eső levél érkezett (téma: ${cls.tema}).` } });
   }
   if (cls.jogi_gyanu) {
     // Belső kérdés a Jogi munkatársnak; üres asztalnál vár. Kifelé nem megy semmi.
-    await atadasok?.send({ from: AGENT, to: 'jogi', tipus: 'kerdes', targy: `Jogi kérdés a levélben: ${letter.targy}`.slice(0, 200), szoveg: `A beérkezett levél jogi vonatkozást érinthet (téma: ${cls.tema}). A választervezet az asztalon van; kérjük a jogi szempontú véleményt a küldés előtt.`, anyagId: anyagId || null });
+    await atadasok?.send({ from: AGENT, to: 'jogi', tipus: 'kerdes', targy: `Jogi kérdés a levélben: ${cls.tema}`.slice(0, 200), szoveg: `A beérkezett levél jogi vonatkozást érinthet (téma: ${cls.tema}). A választervezet az asztalon van; kérjük a jogi szempontú véleményt a küldés előtt.`, anyagId: anyagId || null });
   }
   return { ok: true, cls, draft };
 }
@@ -78,7 +80,7 @@ export async function ingest(ctx, rawMessages, forras, { processLimit = MAX_PROC
     const r = await levelek.add(msg, forras);
     if (!r.uj) { duplikatum++; continue; }
     fogadott++;
-    await log.append({ szereplo: forras === 'kezi' ? 'rendszer' : WHO, tipus: 'level', hivatkozas: r.id, tartalom: { esemeny: 'fogadva', forras, felado: msg.felado, targy: msg.targy, karakter: msg.szoveg.length } });
+    await log.append({ szereplo: forras === 'kezi' ? 'rendszer' : WHO, tipus: 'level', hivatkozas: r.id, tartalom: { esemeny: 'fogadva', forras, felado_domain: domainOf(msg.felado), targy_karakter: msg.targy.length, karakter: msg.szoveg.length } });
   }
   const feldolgozva = await processPending(ctx, processLimit);
   return { fogadott, duplikatum, ervenytelen, feldolgozva };
@@ -144,7 +146,7 @@ export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by, j
     try {
       // A címzett mindig a levél feladója; a felületről nem módosítható (nem lehet vele tetszőleges címre küldeni).
       const sent = await outbox.send({ agent: AGENT, kind: 'valasz', to: letter.felado, subject, text, html: toHtml(text), approval: { dontes: 'jovahagyva', by: profile.vezeto.email } });
-      await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'jovahagyva', opcio: dontes, jogi_tudomasul: ops.some(o => o.besorolas === 'magas') ? true : undefined, kuldes: sent.id, kiment: !!sent.delivered, cimzett: letter.felado } });
+      await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'jovahagyva', opcio: dontes, jogi_tudomasul: ops.some(o => o.besorolas === 'magas') ? true : undefined, kuldes: sent.id, kiment: !!sent.delivered, cimzett_domain: domainOf(letter.felado) } });
       await recordStatement(ctx, { forrasTipus: 'level_valasz', forrasId: id, fajta: 'valasz', cim: subject, szoveg: text, cimzettEmail: letter.felado, jovahagyta: profile.vezeto.email, kiment: !!sent.delivered });
       return { status: 200, allapot: 'jovahagyva', kiment: !!sent.delivered };
     } catch (e) {
@@ -164,7 +166,7 @@ export async function decideLetter(ctx, id, { dontes, szoveg, targy, hova, by, j
   }
   if (dontes === 'tovabbit') {
     if (!FORWARD_TO.includes(hova)) return { status: 400, hiba: 'Ismeretlen címzett munkatárs.' };
-    const r = await atadasok.send({ from: AGENT, to: hova, tipus: 'kerelem', targy: `Továbbított levél: ${letter.targy}`.slice(0, 200), szoveg: `A vezető továbbította a levelet (feladó: ${letter.felado_nev || letter.felado}). A választervezet az asztalon van.`, anyagId: letter.anyag_id });
+    const r = await atadasok.send({ from: AGENT, to: hova, tipus: 'kerelem', targy: `Továbbított levél: ${letter.besorolas?.tema || 'téma nélkül'}`.slice(0, 200), szoveg: `A vezető továbbította a levelet (feladó: ${letter.felado_nev || letter.felado}). A választervezet az asztalon van.`, anyagId: letter.anyag_id });
     if (!r.ok) return { status: 409, hiba: `Az átadás nem sikerült: ${r.ok_reason}` };
     await levelek.decide(id, { allapot: 'tovabbitva', by });
     await log.append({ szereplo: by, tipus: 'dontes', hivatkozas: id, dontes_ref: id, tartalom: { dontes: 'tovabbitva', hova } });
